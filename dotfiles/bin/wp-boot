@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Start awww-daemon and set a random wallpaper from ~/Pictures/walls.
+# Used as niri's only wallpaper spawn entry.
+set -u
+
+awww-daemon &
+daemon_pid=$!
+
+wall="$(find "$HOME/Pictures/walls" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | shuf -n 1)"
+if [ -z "$wall" ]; then
+  echo "wp-boot: no wallpapers in ~/Pictures/walls, leaving daemon running with no image" >&2
+  exit 0
+fi
+
+# Wait for the daemon to accept connections (max ~5s).
+for _ in $(seq 1 50); do
+  if awww img --transition-type fade --transition-duration 1 "$wall" 2>/dev/null; then
+    echo "wp-boot: wallpaper set to $wall"
+    exit 0
+  fi
+  sleep 0.1
+done
+
+echo "wp-boot: awww-daemon did not respond in time" >&2
+exit 1

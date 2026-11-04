@@ -5,12 +5,12 @@ Dynamic Island / ColorOS-style top-center pill for Niri on Wayland, built with Q
 ## Features
 
 - Compact pill anchored to the top edge of the primary screen.
-- Live clock and date, always visible in the collapsed state.
-- Click the pill to toggle collapsed/expanded.
-- Hide/show the pill through IPC. When hidden, only a thin sliver remains as a target for showing it again.
-- Expanded state shows a large clock, date, battery, volume, workspace number and workspace indicator row.
-- Niri workspace-aware temporary expansion with iOS-like width/height/radius morphing.
-- Three themes defined centrally in `themes.js`: `gruvbox`, `eink`, `vercel`.
+- Live clock, always visible in the collapsed state (no date, no separator).
+- Click the pill to expand/collapse the info panel.
+- `toggle()` hides/shows the whole notch completely; when hidden, nothing remains on screen.
+- Expanded state shows a large clock, battery, volume, workspace number and workspace indicator row.
+- Niri workspace-aware temporary expansion with smoother iOS-style morphing.
+- Three themes defined centrally in `themes.js`: `gruvbox`, `eink`, and `vercel` (Black, the default).
 - Theme selection persists across Quickshell reloads via `PersistentProperties`.
 
 ## Files
@@ -23,27 +23,27 @@ Dynamic Island / ColorOS-style top-center pill for Niri on Wayland, built with Q
 
 ## Quick test
 
-```sh
-quickshell --config notchD
-```
+This config is registered as `programs.quickshell.configs.notchD` with
+`activeConfig = "notchD"` (see `../../home/quickshell.nix`) and is bound to
+`Mod+Shift+Space`. For an isolated test run against the working tree:
 
-Register it as your Home Manager named Quickshell config if desired; this directory is intentionally self-contained.
+```sh
+quickshell --path "$PWD"
+```
 
 ## IPC
 
 Quickshell 0.3.2 exposes functions through `IpcHandler`.
 
 ```sh
-# Toggle collapsed/hidden state
+# Hide/show the entire notch (nothing remains on screen when hidden)
 quickshell ipc -c notchD call notchD toggle
-
-# Expand / collapse explicitly
-quickshell ipc -c notchD call notchD expand
-quickshell ipc -c notchD call notchD collapse
-
-# Hide and show the pill
 quickshell ipc -c notchD call notchD hide
 quickshell ipc -c notchD call notchD show
+
+# Expand / collapse the info panel explicitly
+quickshell ipc -c notchD call notchD expand
+quickshell ipc -c notchD call notchD collapse
 
 # Switch themes
 quickshell ipc -c notchD call notchD setTheme gruvbox
@@ -69,7 +69,7 @@ Current themes:
 | --- | --- |
 | `gruvbox` | Gruvbox Dark with warm accent |
 | `eink` | Light near-white paper / e-ink |
-| `vercel` | Vercel/Linear-like inverse e-ink |
+| `vercel` | Black (Vercel/Linear inverse e-ink), default |
 
 Theme changes happen at runtime from expanded view dots or from `setTheme()`. `PersistentProperties` keeps the selected theme across Quickshell reloads. It is not a full disk-backed application settings system, so a cold restart may rely on the default/reloadable value path.
 
@@ -153,10 +153,12 @@ Only the first screen in `Quickshell.screens` is used. This keeps the implementa
 This configuration was run against Quickshell 0.3.2 on Wayland and loaded
 without QML errors. Its IPC surface was exercised successfully:
 
+Interaction model: clicking the pill expands/collapses the info panel. `toggle()` (bound to `Mod+Shift+Space` in this repo) hides/shows the *whole* notch; nothing is left on screen while hidden. Use `show()` to bring it back.
+
 ```sh
-quickshell ipc -c notchD call notchD currentTheme   # -> gruvbox
+quickshell ipc -c notchD call notchD currentTheme   # -> vercel
 quickshell ipc -c notchD call notchD workspaceInfo  # -> {"id":1,"idx":1,"known":true}
-quickshell ipc -c notchD call notchD setTheme eink  # -> true
+quickshell ipc -c notchD call notchD setTheme gruvbox  # -> true
 quickshell ipc -c notchD call notchD toggle
 ```
 

@@ -8,7 +8,7 @@ ShellRoot {
     PersistentProperties {
         id: persisted
         reloadableId: "notchD-settings"
-        property string theme: "gruvbox"
+        property string theme: "vercel"
     }
 
     readonly property var primaryScreen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
@@ -30,6 +30,9 @@ ShellRoot {
         aboveWindows: true
         focusable: false
         exclusiveZone: 0
+
+        // A hidden notch leaves nothing on screen at all.
+        visible: !notch.hidden
 
         NotchD {
             id: notch

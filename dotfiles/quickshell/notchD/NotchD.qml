@@ -9,14 +9,14 @@ Item {
 
     // Set by the shell: machine-readable output name, e.g. "eDP-1".
     property string outputName: ""
-    property string themeName: "gruvbox"
+    property string themeName: "vercel"
 
     signal themeChangeRequested(string themeName)
 
     readonly property var theme: Theme.resolve(root.themeName)
     readonly property bool effectiveExpanded: !root.hidden && (root.expanded || root.workspaceHold)
 
-    readonly property int targetWidth: root.hidden ? 112 : (root.effectiveExpanded ? 438 : 178)
+    readonly property int targetWidth: root.hidden ? 112 : (root.effectiveExpanded ? 438 : 112)
     readonly property int targetHeight: root.hidden ? 6 : (root.effectiveExpanded ? 212 : 38)
 
     property bool expanded: false
@@ -32,20 +32,26 @@ Item {
     property int volumePercent: -1
 
     readonly property string timeText: Qt.formatDateTime(clock.date, "HH:mm")
-    readonly property string dateText: Qt.formatDateTime(clock.date, "ddd, d MMM")
     readonly property string batteryText: root.batteryPercent >= 0 ? root.batteryPercent + "%" : "--"
     readonly property string volumeText: root.volumePercent >= 0 ? root.volumePercent + "%" : "--"
 
     clip: true
 
+    // Click expands/collapses the panel; `toggle()` is a total hide/show.
+    function toggleExpand() {
+        root.expanded = !root.expanded;
+        root.workspaceHold = false;
+    }
+
+    // toggle() is a total hide/show, not an expand/collapse.
     function toggle() {
         if (root.hidden) {
             root.hidden = false;
+        } else {
+            root.hidden = true;
             root.expanded = false;
-            return;
+            root.workspaceHold = false;
         }
-        root.expanded = !root.expanded;
-        root.workspaceHold = false;
     }
 
     function expand() {
@@ -456,22 +462,22 @@ Item {
 
         Behavior on width {
             NumberAnimation {
-                duration: 420
-                easing.type: Easing.OutCubic
+                duration: 340
+                easing.type: Easing.InOutCubic
             }
         }
 
         Behavior on height {
             NumberAnimation {
-                duration: 420
-                easing.type: Easing.OutCubic
+                duration: 340
+                easing.type: Easing.InOutCubic
             }
         }
 
         Behavior on radius {
             NumberAnimation {
-                duration: 420
-                easing.type: Easing.OutCubic
+                duration: 340
+                easing.type: Easing.InOutCubic
             }
         }
 
@@ -497,22 +503,22 @@ Item {
 
         Behavior on width {
             NumberAnimation {
-                duration: 420
-                easing.type: Easing.OutCubic
+                duration: 340
+                easing.type: Easing.InOutCubic
             }
         }
 
         Behavior on height {
             NumberAnimation {
-                duration: 420
-                easing.type: Easing.OutCubic
+                duration: 340
+                easing.type: Easing.InOutCubic
             }
         }
 
         Behavior on radius {
             NumberAnimation {
-                duration: 420
-                easing.type: Easing.OutCubic
+                duration: 340
+                easing.type: Easing.InOutCubic
             }
         }
 
@@ -532,7 +538,7 @@ Item {
             anchors.fill: parent
             enabled: true
             hoverEnabled: true
-            onClicked: root.toggle()
+            onClicked: root.toggleExpand()
         }
 
         Item {
@@ -547,37 +553,14 @@ Item {
                 }
             }
 
-            Row {
+            Text {
                 anchors.centerIn: parent
-                spacing: 10
-
-                Text {
-                    text: root.timeText
-                    color: root.theme.fg
-                    font.family: "Roboto"
-                    font.pixelSize: 17
-                    font.weight: Font.DemiBold
-                    renderType: Text.QtRendering
-                }
-
-                Rectangle {
-                    width: 4
-                    height: 4
-                    radius: 2
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: root.theme.accent
-                    opacity: 0.9
-                }
-
-                Text {
-                    text: root.dateText
-                    color: root.theme.muted
-                    font.family: "Roboto"
-                    font.pixelSize: 12
-                    font.weight: Font.Medium
-                    anchors.verticalCenter: parent.verticalCenter
-                    renderType: Text.QtRendering
-                }
+                text: root.timeText
+                color: root.theme.fg
+                font.family: "Roboto"
+                font.pixelSize: 17
+                font.weight: Font.DemiBold
+                renderType: Text.QtRendering
             }
         }
 
@@ -589,7 +572,8 @@ Item {
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 220
+                    duration: 180
+                    easing.type: Easing.OutCubic
                 }
             }
 
@@ -602,27 +586,14 @@ Item {
                     Layout.fillWidth: true
                     spacing: 16
 
-                    ColumnLayout {
-                        spacing: -2
-
-                        Text {
-                            text: root.timeText
-                            color: root.theme.fg
-                            font.family: "Roboto"
-                            font.pixelSize: 46
-                            font.weight: Font.DemiBold
-                            lineHeight: 0.95
-                            renderType: Text.QtRendering
-                        }
-
-                        Text {
-                            text: root.dateText
-                            color: root.theme.muted
-                            font.family: "Roboto"
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
-                            renderType: Text.QtRendering
-                        }
+                    Text {
+                        text: root.timeText
+                        color: root.theme.fg
+                        font.family: "Roboto"
+                        font.pixelSize: 46
+                        font.weight: Font.DemiBold
+                        lineHeight: 0.95
+                        renderType: Text.QtRendering
                     }
 
                     Item {

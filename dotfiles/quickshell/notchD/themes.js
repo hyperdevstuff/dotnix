@@ -43,21 +43,21 @@ var themes = {
 
     vercel: {
         name: "vercel",
-        label: "Vercel Inverse",
-        bg: "#0a0a0a",
-        elevated: "#141414",
+        label: "Black",
+        bg: "#000000",
+        elevated: "#111111",
         fg: "#ededed",
         muted: "#8f8f8f",
         accent: "#ffffff",
         accentDim: "#5e6ad2",
-        border: "#2a2a2a",
+        border: "#1f1f1f",
         green: "#23e69b",
         red: "#ff6b6b",
         blue: "#5e6ad2",
         purple: "#5e6ad2",
         aqua: "#8ec07c",
         shadow: "#000000",
-        hairline: "#2a2a2a"
+        hairline: "#1f1f1f"
     }
 };
 
@@ -66,7 +66,7 @@ function has(name) {
 }
 
 function resolve(name) {
-    return has(name) ? themes[name] : themes.gruvbox;
+    return has(name) ? themes[name] : themes.vercel;
 }
 
 function names() {

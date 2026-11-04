@@ -16,14 +16,14 @@ input {
 
     touchpad {
         tap
-        natural-scroll
+	natural-scroll
     }
 }
 
 // Pinned to 144 Hz — the panel's true max. VRR is enabled below.
 output "eDP-1" {
     mode "1920x1080@144.001"
-    scale 1.25
+    scale 1.1
     variable-refresh-rate
 }
 

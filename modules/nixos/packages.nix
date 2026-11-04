@@ -9,6 +9,7 @@
     lm_sensors
     smartmontools
     nvme-cli
+    powertop
     nvtopPackages.nvidia
     git
     gh

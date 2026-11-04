@@ -9,8 +9,10 @@
 {
   imports = [
     ./foot.nix
+    ./kitty.nix
     ./shell.nix
     ./niri.nix
+    ./nvim.nix
     ./quickshell.nix
     ./fuzzel.nix
     ./mako.nix
@@ -64,6 +66,8 @@
     obsidian
     papirus-icon-theme
     adwaita-icon-theme
+    fsearch
+    lazygit
   ];
 
   home.pointerCursor = {

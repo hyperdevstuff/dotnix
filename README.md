@@ -15,7 +15,7 @@ NixOS + Home Manager configuration for `hyper`, built around:
 ```text
 .
 ├── flake.nix
-├── hosts/nixos/
+├── hosts/LOQ/
 │   ├── default.nix                    # host settings, boot, user
 │   └── hardware-configuration.nix     # copied from /etc/nixos
 ├── modules/nixos/
@@ -45,13 +45,13 @@ The configuration is not activated automatically. Review it first.
 
 ```bash
 # Evaluate only (does not build or switch)
-nix eval --raw ~/dotnix#nixosConfigurations.nixos.config.system.build.toplevel.drvPath
+nix eval --raw ~/dotnix#nixosConfigurations.LOQ.config.system.build.toplevel.drvPath
 
 # Build the system closure without activating it
-sudo nixos-rebuild build --flake ~/dotnix#nixos
+sudo nixos-rebuild build --flake ~/dotnix#LOQ
 
 # Install as the next boot generation, then reboot
-sudo nixos-rebuild boot --flake ~/dotnix#nixos
+sudo nixos-rebuild boot --flake ~/dotnix#LOQ
 ```
 
 Use `switch` instead of `boot` only once the graphical session is known to work.
@@ -157,8 +157,8 @@ journalctl --user -u quickshell -b
 journalctl -u greetd -b
 
 # Build-time checks (no activation)
-nix eval --raw ~/dotnix#nixosConfigurations.nixos.config.system.build.toplevel.drvPath
-nixos-rebuild build --flake ~/dotnix#nixos
+nix eval --raw ~/dotnix#nixosConfigurations.LOQ.config.system.build.toplevel.drvPath
+nixos-rebuild build --flake ~/dotnix#LOQ
 ```
 
 
@@ -174,12 +174,20 @@ nixos-rebuild build --flake ~/dotnix#nixos
   git commit -m "initial dotnix configuration"
   ```
 
-- **Hostname:** `LOQ` (set in `hosts/nixos/default.nix`), so future machines can
+- **Hostname:** `LOQ` (set in `hosts/LOQ/default.nix`), so future machines can
   be told apart. Change it there if you prefer a lowercase or different name.
 
-- **Shell:** `ls`, `ll`, `la`, `lla`, and `lt` are eza aliases with icons,
-  Git status, and headers. zoxide is initialised with `--cmd cd`, so plain
-  `cd` uses the frecency database and `cdi` opens the interactive picker.
+- **Shell:** `ls`, `ll`, `la`, `lla`, `lt`, `lS`, `lm`, `lG` are eza aliases with
+  icons, Git status, and headers. zoxide is initialised with `--cmd cd`, so plain
+  `cd` uses the frecency database and `cdi` opens the interactive picker. The
+  prompt is **hydro** (fish-native, async Git). See `docs/fish-aliases.md` for
+  the full alias reference, including the aliases adapted from the old dotfiles.
+
+- **Neovim:** LazyVim config imported into `dotfiles/nvim` (2026-11-05), symlinked
+  to `~/.config/nvim`. Lazy.nvim clones its plugins on first launch (needs network).
+
+- **Terminals:** foot is the primary (Catppuccin Mocha), kitty has beam cursor,
+  cursor trail, 8px margins and vim-scroll binds, ghostty is installed as fallback.
 
 - **Keyboard:** CapsLock and Escape are swapped for Niri via the
   `caps:swapescape` XKB option.

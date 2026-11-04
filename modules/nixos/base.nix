@@ -68,6 +68,12 @@
     fstrim.enable = true;
     fwupd.enable = true;
     udisks2.enable = true;
+    # Intel 12th gen: let thermald throttle gracefully before the firmware
+    # hits hard limits. Helps battery and sustained boost clocks.
+    thermald.enable = true;
+    # With 11 GB RAM, kill memory hogs before the kernel OOM killer stalls
+    # the whole session.
+    earlyoom.enable = true;
   };
 
   zramSwap = {

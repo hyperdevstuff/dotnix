@@ -5,6 +5,7 @@ import QtQuick
 ShellRoot {
     id: shell
 
+    // notchD is a minimal Dynamic Island-style pill: only the time, no other info.
     PersistentProperties {
         id: persisted
         reloadableId: "notchD-settings"
@@ -31,13 +32,11 @@ ShellRoot {
         focusable: false
         exclusiveZone: 0
 
-        // A hidden notch leaves nothing on screen at all.
         visible: !notch.hidden
 
         NotchD {
             id: notch
             anchors.fill: parent
-            outputName: panel.screen && panel.screen.name ? panel.screen.name : ""
             themeName: persisted.theme
             onThemeChangeRequested: themeName => persisted.theme = themeName
         }
@@ -46,16 +45,9 @@ ShellRoot {
     IpcHandler {
         target: "notchD"
 
+        // toggle() is a total hide/show; nothing remains on screen while hidden.
         function toggle(): void {
             notch.toggle();
-        }
-
-        function expand(): void {
-            notch.expand();
-        }
-
-        function collapse(): void {
-            notch.collapse();
         }
 
         function hide(): void {
@@ -79,12 +71,8 @@ ShellRoot {
             return notch.themeName;
         }
 
-        function workspaceInfo(): string {
-            return JSON.stringify({
-                id: notch.currentWorkspaceId,
-                idx: notch.currentWorkspaceIdx,
-                known: notch.workspaceKnown
-            });
+        function reload(): void {
+            Quickshell.reload(true);
         }
     }
 }

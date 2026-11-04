@@ -5,7 +5,7 @@ NixOS + Home Manager configuration for `hyper`, built around:
 - **NixOS unstable** (`nixos-unstable`) and **Home Manager master**
 - **Niri** scrollable-tiling Wayland compositor
 - **Fuzzel** application launcher
-- **Quickshell** `notchD` — a Dynamic-Island-style pill (clock, Niri workspaces)
+- **Quickshell** `notchD` — a minimal Dynamic-Island-style pill with the current time only
 - **greetd + tuigreet** text login
 - **NVIDIA open kernel modules** for the RTX 4050 Max-Q
 - **PipeWire + WirePlumber**, **mako**, **swaybg**, **swaylock**
@@ -76,10 +76,11 @@ sudo nixos-rebuild switch --rollback
 | `Mod+D` / `Mod+Space` | app launcher (fuzzel) |
 | `Mod+C` | close window |
 | `Mod+Shift+C` | center column |
-| `Mod+Shift+Space` | toggle the NotchD pill |
+| `Mod+Shift+Space` / `Mod+Shift+N` | toggle the NotchD pill |
+| `Mod+N` | show the NotchD pill |
 | `Mod+Shift+B` | set brightness to 60% |
 | `Mod+Shift+A` | audio settings (pavucontrol) |
-| `Mod+Shift+N` | Wi-Fi / Ethernet settings |
+| `Mod+Alt+N` | Wi-Fi / Ethernet settings |
 | `Mod+Shift+E` | quit Niri |
 | `Mod+Shift+Slash` | hotkey overlay |
 | `Mod+O` | overview |
@@ -133,10 +134,10 @@ sudo nixos-rebuild switch --rollback
 ## Quickshell themes
 
 `notchD` ships with three themes: **gruvbox** (Gruvbox Dark), **eink**
-(paper-like light), and **vercel** (Vercel/Linear inverse E-Ink). The clock is
-always visible; Niri workspace changes expand the pill to show workspace
-indicators and then collapse automatically. See
-`dotfiles/quickshell/notchD/README.md` for IPC commands and theme switching.
+(paper-like light), and **vercel** (Black, the default). The pill is a
+minimal clock and can be hidden completely; nothing remains on screen while
+hidden. See `dotfiles/quickshell/notchD/README.md` for IPC commands and
+theme switching.
 
 ## Troubleshooting
 
@@ -149,6 +150,7 @@ journalctl --user -u niri -b
 # Quickshell / NotchD
 quickshell --version
 quickshell ipc -c notchD call notchD toggle
+quickshell ipc -c notchD call notchD reload
 journalctl --user -u quickshell -b
 
 # Login manager

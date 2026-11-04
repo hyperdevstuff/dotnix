@@ -20,13 +20,14 @@ input {
     }
 }
 
-// Uncomment after logging in and running `niri msg outputs` to pin the
-// laptop panel's mode/scale. Leaving this out lets niri use the preferred
-// mode automatically.
-/-output "eDP-1" {
-    mode "1920x1080@60.000"
-    scale 1
+// Pinned to 144 Hz — the panel's true max. VRR is enabled below.
+output "eDP-1" {
+    mode "1920x1080@144.001"
+    scale 1.25
+    variable-refresh-rate
 }
+
+// niri supports VRR via `variable-refresh-rate` — enabled for the panel above.
 
 layout {
     gaps 8
@@ -98,7 +99,9 @@ binds {
     Mod+Space hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
     Super+Alt+L hotkey-overlay-title="Lock the screen" { spawn "swaylock" "-f"; }
 
-    // Quickshell NotchD pill (expand/collapse).
+    // Quickshell NotchD pill (expand/show) and toggle (hide/show).
+    Mod+N hotkey-overlay-title="Expand NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "show"; }
+    Mod+Shift+N hotkey-overlay-title="Toggle NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
     Mod+Shift+Space hotkey-overlay-title="Toggle NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
 
     // Volume keys.
@@ -121,7 +124,7 @@ binds {
     // Brightness preset + audio/network panels.
     Mod+Shift+B hotkey-overlay-title="Set brightness to 60%" { spawn "brightnessctl" "set" "60%"; }
     Mod+Shift+A hotkey-overlay-title="Audio settings" { spawn "pavucontrol"; }
-    Mod+Shift+N hotkey-overlay-title="Wi-Fi / Ethernet settings" { spawn "nm-connection-editor"; }
+    Mod+Alt+N hotkey-overlay-title="Wi-Fi / Ethernet settings" { spawn "nm-connection-editor"; }
 
     // Overview.
     Mod+O repeat=false { toggle-overview; }

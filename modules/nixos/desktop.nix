@@ -53,7 +53,6 @@
   environment.systemPackages = with pkgs; [
     # Niri starts xwayland-satellite automatically when an X11 client needs it.
     xwayland-satellite
-
     foot
     kitty
     ghostty

@@ -8,12 +8,18 @@
       url = "github:nix-community/home-manager/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    helium-browser = {
+      url = "github:oxcl/nix-flake-helium-browser";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     {
       nixpkgs,
       home-manager,
+      helium-browser,
       ...
     }@inputs:
     let
@@ -21,7 +27,7 @@
       username = "hyper";
     in
     {
-      nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.LOQ = nixpkgs.lib.nixosSystem {
         inherit system;
 
         specialArgs = {
@@ -29,7 +35,7 @@
         };
 
         modules = [
-          ./hosts/nixos
+          ./hosts/LOQ
 
           home-manager.nixosModules.home-manager
           {
@@ -43,6 +49,7 @@
 
             home-manager.users.${username} = import ./home;
           }
+
         ];
       };
     };

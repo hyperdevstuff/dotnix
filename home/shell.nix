@@ -31,8 +31,8 @@ in
       la = "eza -a ${ezaArgs}";
       lla = "eza -la ${ezaArgs}";
       lt = "eza --tree --level=2 ${ezaArgs}";
-      rebuild = "sudo nixos-rebuild switch --flake ${config.home.homeDirectory}/dotnix#nixos";
-      rebuild-boot = "sudo nixos-rebuild boot --flake ${config.home.homeDirectory}/dotnix#nixos";
+      rebuild = "sudo nixos-rebuild switch --flake ${config.home.homeDirectory}/dotnix#LOQ";
+      rebuild-boot = "sudo nixos-rebuild boot --flake ${config.home.homeDirectory}/dotnix#LOQ";
       flake-update = "nix flake update --flake ${config.home.homeDirectory}/dotnix";
       gc = "sudo nix-collect-garbage -d";
     };

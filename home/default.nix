@@ -2,6 +2,7 @@
   config,
   pkgs,
   username,
+  inputs,
   ...
 }:
 
@@ -13,11 +14,25 @@
     ./quickshell.nix
     ./fuzzel.nix
     ./mako.nix
+    inputs.helium-browser.homeModules.default
 
     # Phase 2: install OpenCode from nixpkgs only after the desktop
     # configuration has been built and booted successfully.
     # ./opencode.nix
   ];
+
+  programs.helium = {
+    enable = true;
+
+    flags = [
+      "--ozone-platform-hint=wayland"
+    ];
+
+    policies = {
+      "BrowserSignin" = 0;
+      "SyncDisabled" = true;
+    };
+  };
 
   home = {
     username = username;
@@ -38,12 +53,15 @@
   };
 
   home.packages = with pkgs; [
+    brave-origin
     firefox
     mpv
     imv
     zathura
     yazi
     nixfmt
+    t3code
+    obsidian
     papirus-icon-theme
     adwaita-icon-theme
   ];

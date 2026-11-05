@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# wp-pick — choose a wallpaper through fuzzel, then apply it with `wp`.
+# Favorites are listed first with a star, followed by the normal wallpapers.
+# The first entry toggles the current wallpaper's favorite status.
+set -euo pipefail
+
+WALLS="$HOME/Pictures/walls"
+FAVS="${XDG_CONFIG_HOME:-$HOME/.config}/wallpapers/favorites"
+current="$(awww query 2>/dev/null | head -1 | sed 's/.*: //')"
+
+favs=()
+if [ -f "$FAVS" ]; then
+  while IFS= read -r f; do
+    [ -n "$f" ] && [ -f "$f" ] && favs+=("$f")
+  done < "$FAVS"
+fi
+
+is_fav() {
+  local x
+  for x in "${favs[@]}"; do
+    [ "$x" = "$1" ] && return 0
+  done
+  return 1
+}
+
+menu=()
+if [ -n "$current" ]; then
+  if is_fav "$current"; then
+    menu+=("★ Unfavorite current")
+  else
+    menu+=("☆ Favorite current")
+  fi
+fi
+
+for f in "${favs[@]}"; do
+  if [[ "$f" == "$WALLS/"* ]]; then
+    menu+=("★ ${f#"$WALLS/"}")
+  fi
+done
+
+while IFS= read -r rel; do
+  if [ "$WALLS/$rel" = "$current" ] || is_fav "$WALLS/$rel"; then
+    continue
+  fi
+  menu+=("$rel")
+done < <(find "$WALLS" -type f \
+  \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
+  | sed "s|^$WALLS/||" | sort)
+
+pick="$(printf '%s\n' "${menu[@]}" | fuzzel --dmenu --prompt="Wallpaper: " --lines=18 --width=60)" || exit 0
+[ -z "$pick" ] && exit 0
+
+case "$pick" in
+  "☆ Favorite current")   exec wp fav add "$current" ;;
+  "★ Unfavorite current") exec wp fav rm "$current" ;;
+esac
+
+rel="${pick#★ }"
+exec wp "$WALLS/$rel"

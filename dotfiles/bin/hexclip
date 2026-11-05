@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# hexclip — copy Hex's most recent dictation back onto the clipboard.
+#
+# Hex restores the previous clipboard after it pastes, so Ctrl+Alt+C is the
+# deliberate "keep this one" path. Requires hex and wl-clipboard on PATH.
+set -euo pipefail
+
+text="$(
+  hex history --limit 1 --json 2>/dev/null \
+    | jq -r '.entries[0].final_text // empty'
+)"
+
+if [ -z "$text" ]; then
+  echo "hexclip: no dictation history found" >&2
+  exit 1
+fi
+
+printf '%s' "$text" | wl-copy

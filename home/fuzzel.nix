@@ -23,7 +23,8 @@
     inner-pad=10
 
     [border]
-    width=2
-    radius=12
+    width=1
+    radius=14
+    selection-radius=8
   '';
 }

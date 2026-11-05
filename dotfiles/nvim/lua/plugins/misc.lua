@@ -79,37 +79,18 @@ return {
     opts = {},
   },
   {
-    "christoomey/vim-tmux-navigator",
-    event = "VeryLazy",
+    "kdheepak/lazygit.nvim",
     cmd = {
-      "TmuxNavigateLeft",
-      "TmuxNavigateDown",
-      "TmuxNavigateUp",
-      "TmuxNavigateRight",
-      "TmuxNavigatePrevious",
+      "LazyGit",
+      "LazyGitConfig",
+      "LazyGitCurrentFile",
+      "LazyGitFilter",
+      "LazyGitFilterCurrentFile",
     },
+    dependencies = { "nvim-lua/plenary.nvim" },
     keys = {
-      { "<c-h>", "<cmd><C-U>TmuxNavigateLeft<cr>" },
-      { "<c-j>", "<cmd><C-U>TmuxNavigateDown<cr>" },
-      { "<c-k>", "<cmd><C-U>TmuxNavigateUp<cr>" },
-      { "<c-l>", "<cmd><C-U>TmuxNavigateRight<cr>" },
-      { "<c-\\>", "<cmd><C-U>TmuxNavigatePrevious<cr>" },
+      { "<leader>gl", "<cmd>LazyGit<cr>", desc = "LazyGit" },
+      { "<leader>gL", "<cmd>LazyGitCurrentFile<cr>", desc = "LazyGit current file" },
     },
   },
-  {
-    "alex-popov-tech/store.nvim",
-    cmd = "Store",
-    lazy = true,
-    keys = {
-      { "<leader>ls", "<cmd>Store<cr>", desc = "Open Plugin Store" },
-    },
-  },
-  {
-    "shahshlok/vim-coach.nvim",
-    opts = {},
-    keys = {
-      { "<leader>?", "<cmd>VimCoach<cr>", desc = "Vim Coach" },
-    },
-  },
-  { "wakatime/vim-wakatime", lazy = false },
 }

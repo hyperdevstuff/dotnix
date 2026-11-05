@@ -16,10 +16,25 @@
     # nvidia-settings is X11-only and of little use on Wayland.
     nvidiaSettings = false;
 
-    # Suspend/resume helpers can cause black screens on some laptops.
-    # Enable these deliberately if suspend misbehaves.
-    powerManagement.enable = false;
+    # NVIDIA power management for suspend/resume. With the open modules and
+    # driver 595+, NixOS defaults kernelSuspendNotifier = true, which sets
+    # NVreg_UseKernelSuspendNotifiers=1 and NVreg_PreserveVideoMemoryAllocations=1
+    # instead of installing the legacy nvidia-suspend/resume services.
+    powerManagement.enable = true;
+
+    # The driver saves the VRAM snapshot to NVreg_TemporaryFilePath (default
+    # /tmp) on every suspend. On this laptop / is a slow USB HDD, so that
+    # snapshot adds seconds to each cycle. /dev/shm is tmpfs and survives
+    # s2idle, so keep the snapshot in RAM instead.
+    # Tradeoff: if a GPU workload ever allocates more than the free tmpfs
+    # (currently ~5.8G), suspend may fail; remove this line if that happens.
+    moduleParams.nvidia.NVreg_TemporaryFilePath = "/dev/shm";
   };
+
+  # This laptop's ACPI S3 (deep) path hard-hangs in the open NVIDIA driver's
+  # device-suspend callbacks; the journal stops right after "OOM killer
+  # disabled". s2idle is the recoverable sleep state on this hardware.
+  boot.kernelParams = [ "mem_sleep_default=s2idle" ];
 
   # Niri wiki: stop the driver hoarding VRAM in Wayland compositors.
   # https://github.com/YaLTeR/niri/wiki/Nvidia#high-vram-usage-fix

@@ -38,3 +38,11 @@ output_path = "/home/hyper/.config/matugen/generated/fuzzel-colors.ini"
 input_path = "./templates/mako-colors"
 output_path = "/home/hyper/.config/matugen/generated/mako-colors"
 post_hook = 'makoctl reload || true'
+
+# Niri has no variables, so the whole palette block is generated and pulled
+# in with `include` from dotfiles/niri/config.kdl. Reload so the change is
+# applied without waiting for the config watcher.
+[templates.niri]
+input_path = "./templates/niri-colors.kdl"
+output_path = "/home/hyper/.config/niri/generated/colors.kdl"
+post_hook = 'niri msg action load-config-file || true'

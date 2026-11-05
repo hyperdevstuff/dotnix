@@ -19,19 +19,49 @@
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.configurationLimit = 10;
 
+  # The SPD5118 RAM temperature sensor fails to resume on this laptop
+  # ("spd5118 0-0050: PM: dpm_run_callback(): spd5118_resume [spd5118]
+  # returns -6") and adds several seconds to every resume. It is only a
+  # monitoring sensor, so keep the driver from binding.
+  boot.blacklistedKernelModules = [ "spd5118" ];
+
+  # The built-in AT keyboard hangs off i8042/serio0, whose wakeup source is
+  # disabled by default; only the USB (ITE) keyboard and the power button
+  # could wake the machine. Enable serio0 so any built-in key wakes it.
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="serio", KERNEL=="serio0", ATTR{power/wakeup}="enabled"
+  '';
+
   time.timeZone = "Asia/Kolkata";
 
-  i18n.defaultLocale = "en_IN";
+  # Use the UTF-8 locale explicitly. Bare "en_IN" resolves to
+  # en_IN.ISO8859-1, which makes xkbcommon, fuzzel and Hex fail to find a
+  # compose file ("No Compose file for locale en_IN.ISO8859-1").
+  i18n.defaultLocale = "en_IN.UTF-8";
   i18n.extraLocaleSettings = {
-    LC_ADDRESS = "en_IN";
-    LC_IDENTIFICATION = "en_IN";
-    LC_MEASUREMENT = "en_IN";
-    LC_MONETARY = "en_IN";
-    LC_NAME = "en_IN";
-    LC_NUMERIC = "en_IN";
-    LC_PAPER = "en_IN";
-    LC_TELEPHONE = "en_IN";
-    LC_TIME = "en_IN";
+    LC_ADDRESS = "en_IN.UTF-8";
+    LC_IDENTIFICATION = "en_IN.UTF-8";
+    LC_MEASUREMENT = "en_IN.UTF-8";
+    LC_MONETARY = "en_IN.UTF-8";
+    LC_NAME = "en_IN.UTF-8";
+    LC_NUMERIC = "en_IN.UTF-8";
+    LC_PAPER = "en_IN.UTF-8";
+    LC_TELEPHONE = "en_IN.UTF-8";
+    LC_TIME = "en_IN.UTF-8";
+  };
+
+  # glibc's locale list spells this one "en_IN/UTF-8" (no dot); the NixOS
+  # module appends "/UTF-8" to defaultLocale, so the derived list contains
+  # "en_IN.UTF-8/UTF-8", which glibc rejects. Build the archive explicitly
+  # from glibc's own names — it still exposes the en_IN.UTF-8 alias at
+  # runtime, which is what LANG uses.
+  i18n.glibcLocales = pkgs.glibcLocales.override {
+    allLocales = false;
+    locales = [
+      "C.UTF-8/UTF-8"
+      "en_US.UTF-8/UTF-8"
+      "en_IN/UTF-8"
+    ];
   };
 
   services.xserver.xkb = {

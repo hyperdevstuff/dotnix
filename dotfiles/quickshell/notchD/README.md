@@ -30,6 +30,15 @@ XF86AudioRaiseVolume { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "5%+"; 
 XF86MonBrightnessUp  { spawn "brightnessctl" "set" "+5%"; spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "showBrightness"; }
 ```
 
+## Desktop menu
+
+Right-clicking the empty desktop opens a small wallpaper menu (random,
+gruvbox, black & white, manga, choose via fuzzel, reload theme). It lives in
+the same Quickshell process: a transparent bottom-layer surface catches the
+click, an overlay renders the card at the cursor, and a dismiss layer closes
+it on Escape or any outside click. Right-clicking a window is unaffected
+because windows sit above the bottom layer.
+
 ## IPC
 
 ```sh
@@ -38,12 +47,14 @@ expand / collapse
 peek <surface>
 showVolume / showBrightness
 toggleStyle / setStyle pill|notch
+openDesktopMenu / closeDesktopMenu
 status          # JSON
 ```
 
 ## Files
 
 - `shell.qml` — ShellRoot, overlay PanelWindow, dismiss layer, IPC.
+- `DesktopMenu.qml` — desktop right-click menu and wallpaper actions.
 - `IslandState.qml` — state machine.
 - `NotchD.qml` — capsule, ears, surfaces, animations.
 - `Theme.qml` — black/white palette (singleton).

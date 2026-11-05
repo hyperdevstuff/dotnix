@@ -1,26 +1,134 @@
 #!/usr/bin/env bash
 # wp — set wallpaper and regenerate the desktop theme from it.
 # Usage:
-#   wp              random wallpaper from ~/Pictures/walls (recursive)
-#   wp random       same
-#   wp gruvbox      random from walls/gruvbox  (warm, manga, sepia)
-#   wp bw           random from walls/bw       (black-and-white / e-ink)
-#   wp <path>       explicit image
+#   wp                    random wallpaper from ~/Pictures/walls (recursive)
+#   wp random             same
+#   wp gruvbox            random from walls/gruvbox  (warm, manga, sepia)
+#   wp bw                 random from walls/bw       (black-and-white / e-ink)
+#   wp manga              random from walls/manga    (manga panels)
+#   wp fav                random from your favorites
+#   wp fav add [path]     favorite a wallpaper (default: the current one)
+#   wp fav rm [path]      unfavorite a wallpaper (default: the current one)
+#   wp fav toggle [path]  toggle favorite (default: the current one)
+#   wp fav list           list favorites
+#   wp refresh            regenerate the theme from the current wallpaper
+#   wp <path>             explicit image
 #
+# Favorites live in ~/.config/wallpapers/favorites (one absolute path per line).
 # Scheme mapping: walls/bw -> SchemeMonochrome (paper/e-ink), everything
-# else -> SchemeContent (keeps the wall's dominant hue).
+# else -> SchemeTonalSpot (material default: keeps a usable, colorful accent
+# instead of scheme-content's often-white primary/secondary).
+# Mode is `smart`, so light wallpapers get light chrome and dark ones dark.
 set -euo pipefail
 
 WALLS="$HOME/Pictures/walls"
+FAVS="${XDG_CONFIG_HOME:-$HOME/.config}/wallpapers/favorites"
 
 pick() {
   find "$1" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | shuf -n 1
 }
 
+current_wall() {
+  awww query 2>/dev/null | head -1 | sed 's/.*: //'
+}
+
+# Absolute, normalized path for a user-provided path (or the current wallpaper).
+norm_path() {
+  local p="${1:-}"
+  [ -z "$p" ] && p="$(current_wall)"
+  [ -z "$p" ] && return 1
+  [[ "$p" != /* ]] && p="$PWD/$p"
+  realpath -m -- "$p"
+}
+
+fav_list() {
+  [ -f "$FAVS" ] || return 0
+  while IFS= read -r f; do
+    [ -n "$f" ] && [ -f "$f" ] && printf '%s\n' "$f"
+  done < "$FAVS"
+}
+
+fav_has() {
+  [ -f "$FAVS" ] && grep -qxF -- "$1" "$FAVS"
+}
+
+fav_add() {
+  local p
+  p="$(norm_path "${1:-}")" || { echo "wp: no current wallpaper" >&2; return 1; }
+  [ -f "$p" ] || { echo "wp: no such file: $p" >&2; return 1; }
+  mkdir -p "$(dirname "$FAVS")"
+  touch "$FAVS"
+  if fav_has "$p"; then
+    echo "wp: already a favorite: $p"
+  else
+    printf '%s\n' "$p" >> "$FAVS"
+    echo "wp: favorited: $p"
+  fi
+}
+
+fav_rm() {
+  local p tmp
+  p="$(norm_path "${1:-}")" || { echo "wp: no current wallpaper" >&2; return 1; }
+  [ -f "$FAVS" ] || { echo "wp: no favorites yet" >&2; return 1; }
+  tmp="$(mktemp)"
+  grep -vxF -- "$p" "$FAVS" > "$tmp" || true
+  mv -- "$tmp" "$FAVS"
+  echo "wp: unfavorited: $p"
+}
+
+fav_toggle() {
+  local p
+  p="$(norm_path "${1:-}")" || { echo "wp: no current wallpaper" >&2; return 1; }
+  if fav_has "$p"; then
+    fav_rm "$p"
+  else
+    fav_add "$p"
+  fi
+}
+
+usage() {
+  cat <<'EOF'
+wp — set wallpaper and regenerate the desktop theme from it.
+
+Usage:
+  wp                        random wallpaper from ~/Pictures/walls (recursive)
+  wp random                 same
+  wp gruvbox                random from walls/gruvbox
+  wp bw                     random from walls/bw (black & white / e-ink)
+  wp manga                  random from walls/manga
+  wp fav                    random from your favorites (alias: wp best)
+  wp fav add [path]         favorite a wallpaper (default: the current one)
+  wp fav rm [path]          unfavorite a wallpaper (default: the current one)
+  wp fav toggle [path]      toggle favorite (default: the current one)
+  wp fav list               list favorites
+  wp refresh                regenerate the theme from the current wallpaper
+  wp <path>                 apply an explicit image
+  wp -h | --help | help     show this help
+
+Favorites are stored in ~/.config/wallpapers/favorites.
+EOF
+}
+
 case "${1:-random}" in
+  -h|--help|help) usage; exit 0 ;;
   random)  wall="$(pick "$WALLS")" ;;
   gruvbox) wall="$(pick "$WALLS/gruvbox")" ;;
   bw)      wall="$(pick "$WALLS/bw")" ;;
+  manga)   wall="$(pick "$WALLS/manga")" ;;
+  fav|best)
+    case "${2:-random}" in
+      add)       fav_add "${3:-}"; exit 0 ;;
+      rm|remove) fav_rm "${3:-}"; exit 0 ;;
+      toggle)    fav_toggle "${3:-}"; exit 0 ;;
+      list|ls)   fav_list; exit 0 ;;
+    esac
+    wall="$(fav_list | shuf -n 1 || true)"
+    if [ -z "$wall" ]; then
+      echo "wp: no favorites yet — add one with: wp fav add" >&2
+      exit 1
+    fi
+    ;;
+  refresh) wall="$(current_wall)" ;;
   *)       wall="$1" ;;
 esac
 
@@ -33,8 +141,12 @@ awww img --transition-type center --transition-duration 0.6 "$wall"
 
 case "$wall" in
   "$WALLS/bw/"*) scheme=scheme-monochrome ;;
-  *)             scheme=scheme-content ;;
+  *)             scheme=scheme-tonal-spot ;;
 esac
 
-matugen image "$wall" --type "$scheme"
+# niri has no variables: matugen writes an include file that config.kdl
+# pulls in. The directory must exist before matugen writes it.
+mkdir -p "$HOME/.config/niri/generated"
+
+matugen image "$wall" --type "$scheme" --mode smart
 echo "wp: $wall ($scheme)"

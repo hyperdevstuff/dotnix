@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# try-shell — run another Quickshell shell inside a nested niri window.
+#
+# Usage:
+#   try-shell <git-url|path> [name]
+#
+# Examples:
+#   try-shell https://github.com/amanhex/Ukishima ukishima
+#   try-shell https://github.com/duxlabs-dev/dux-shell dux
+#   try-shell ~/src/some-shell my-shell
+#
+# It never touches the real session: the trial shell runs in a nested niri
+# (Alt is Mod there), and quitting that window returns you to the desktop.
+# Clones live in ~/.local/share/quickshell/trials/<name>.
+set -euo pipefail
+
+src="${1:-}"
+if [ -z "$src" ]; then
+  echo "usage: try-shell <git-url|path> [name]" >&2
+  exit 2
+fi
+
+trials="$HOME/.local/share/quickshell/trials"
+name="${2:-$(basename "${src%.git}")}"
+dir="$trials/$name"
+
+case "$src" in
+  http://*|https://*|git@*|ssh://*)
+    if [ -d "$dir/.git" ]; then
+      echo "try-shell: updating $dir"
+      git -C "$dir" pull --ff-only
+    else
+      echo "try-shell: cloning $src"
+      mkdir -p "$trials"
+      git clone --depth 1 "$src" "$dir"
+    fi
+    ;;
+  *)
+    dir="$(readlink -f "$src")"
+    ;;
+esac
+
+if [ ! -d "$dir" ]; then
+  echo "try-shell: no such directory: $dir" >&2
+  exit 1
+fi
+
+# Pick the project's own launcher when it has one; it usually handles env
+# (MALLOC_CONF, dependency checks) better than a bare quickshell call.
+launcher=()
+if [ -x "$dir/launch.sh" ]; then
+  launcher=("$dir/launch.sh")
+elif [ -f "$dir/shell.qml" ]; then
+  launcher=(quickshell -p "$dir")
+elif [ -f "$dir/quickshell/shell.qml" ]; then
+  launcher=(quickshell -p "$dir/quickshell")
+else
+  echo "try-shell: no launch.sh or shell.qml in $dir" >&2
+  exit 1
+fi
+
+runner="$(mktemp -t try-shell-run.XXXXXX)"
+{
+  echo '#!/usr/bin/env bash'
+  printf 'exec'
+  printf ' %q' "${launcher[@]}"
+  printf '\n'
+} > "$runner"
+chmod +x "$runner"
+
+config="$(mktemp -t try-shell-niri.XXXXXX)"
+cat > "$config" <<EOF
+input {
+    mod-key-nested "Alt"
+}
+
+spawn-at-startup "$runner"
+
+binds {
+    Mod+Return { spawn "foot"; }
+    Mod+Q { close-window; }
+    Mod+Shift+E { quit; }
+}
+
+layout {
+    gaps 10
+}
+EOF
+
+echo "try-shell: launching $name in nested niri (Mod = Alt, quit with Mod+Shift+E)"
+exec niri -c "$config"

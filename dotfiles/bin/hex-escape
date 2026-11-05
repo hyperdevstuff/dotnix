@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# hex-escape — Esc handler that cancels a running Hex dictation.
+#
+# On Wayland Hex cannot grab a single key only while recording, so niri
+# forwards every Escape here. While Hex is recording this cancels the
+# dictation; otherwise it replays Escape to the focused window with wtype so
+# everything else behaves normally.
+set -u
+
+# Overview is compositor UI, not a client: a replayed Escape would not close
+# it, so handle it directly.
+if niri msg overview-state --json 2>/dev/null | grep -q '"is_open": *true'; then
+  niri msg action toggle-overview
+  exit 0
+fi
+
+state="$(hex status --json 2>/dev/null | grep -o '"state": *"[^"]*"' | head -1)"
+
+case "$state" in
+  *'"recording"'*)
+    hex dictation cancel
+    ;;
+  *)
+    # Not recording (or Hex isn't running): pass Escape through.
+    wtype -k Escape
+    ;;
+esac

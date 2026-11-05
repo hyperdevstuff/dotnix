@@ -3,6 +3,11 @@
 //
 // "Mod" is Super on a TTY and Alt when niri runs as a window.
 
+// Wallpaper-derived colors (primary/outline/error) written by matugen.
+// `wp` and `wp-boot` regenerate this file and reload niri. The seed in
+// home/matugen.nix guarantees it exists before niri starts.
+include "/home/hyper/.config/niri/generated/colors.kdl"
+
 input {
     keyboard {
         xkb {
@@ -10,13 +15,13 @@ input {
             // Swap CapsLock and Escape.
             options "caps:swapescape"
         }
-
-        numlock
     }
 
     touchpad {
         tap
-	natural-scroll
+        natural-scroll
+        // Ignore accidental taps/pointer motion while typing.
+        dwt
     }
 }
 
@@ -30,7 +35,7 @@ output "eDP-1" {
 // niri supports VRR via `variable-refresh-rate` — enabled for the panel above.
 
 layout {
-    gaps 8
+    gaps 10
 
     center-focused-column "never"
 
@@ -42,28 +47,29 @@ layout {
 
     default-column-width { proportion 0.5; }
 
+    // Minimal look: no focus glow, one hairline border around every window.
+    // Colors come from the matugen include above; width/shadows stay here.
     focus-ring {
-        width 3
-        active-color "#cba6f7"
-        inactive-color "#45475a"
+        off
     }
 
     border {
-        off
+      off
     }
 
     shadow {
         on
-        softness 20
-        spread 2
-        offset x=0 y=4
-        color "#00000066"
+        softness 16
+        spread 0
+        offset x=0 y=3
+        color "#00000044"
     }
 
     // Show tabs only when a column stacks more than one window.
     tab-indicator {
         hide-when-single-tab
         place-within-column
+        corner-radius 6
     }
 }
 
@@ -81,7 +87,81 @@ prefer-no-csd
 
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
+// Motion: springs for workspace/camera motion (smooth with a hint of bounce),
+// ease-out for windows. Window open grows from a circle; close is a subtle
+// scale + fade. Shaders are from the niri animations docs.
 animations {
+    workspace-switch {
+        spring damping-ratio=0.9 stiffness=550 epsilon=0.0001
+    }
+
+    window-open {
+        duration-ms 260
+        curve "ease-out-expo"
+        custom-shader r"
+            vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+                vec3 coords_tex = niri_geo_to_tex * coords_geo;
+                vec4 color = texture2D(niri_tex, coords_tex.st);
+
+                vec2 coords = (coords_geo.xy - vec2(0.5, 0.5)) * size_geo.xy * 2.0;
+                coords = coords / length(size_geo.xy);
+                float p = niri_clamped_progress;
+                if (p * p <= dot(coords, coords))
+                    color = vec4(0.0);
+
+                return color;
+            }
+        "
+    }
+
+    window-close {
+        duration-ms 170
+        curve "ease-out-quad"
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                float p = niri_clamped_progress;
+                float scale = mix(1.0, 0.96, p);
+                coords_geo = vec3((coords_geo.xy - vec2(0.5)) / scale + vec2(0.5), 1.0);
+
+                vec3 coords_tex = niri_geo_to_tex * coords_geo;
+                vec4 color = texture2D(niri_tex, coords_tex.st);
+                return color * (1.0 - p);
+            }
+        "
+    }
+
+    horizontal-view-movement {
+        spring damping-ratio=0.9 stiffness=550 epsilon=0.0001
+    }
+
+    window-movement {
+        spring damping-ratio=0.9 stiffness=600 epsilon=0.0001
+    }
+
+    window-resize {
+        spring damping-ratio=1.0 stiffness=650 epsilon=0.0001
+    }
+
+    config-notification-open-close {
+        spring damping-ratio=0.6 stiffness=1000 epsilon=0.001
+    }
+
+    exit-confirmation-open-close {
+        spring damping-ratio=0.6 stiffness=500 epsilon=0.01
+    }
+
+    screenshot-ui-open {
+        duration-ms 200
+        curve "ease-out-quad"
+    }
+
+    overview-open-close {
+        spring damping-ratio=0.85 stiffness=500 epsilon=0.0001
+    }
+
+    recent-windows-close {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.001
+    }
 }
 
 // Lock before logind suspends on lid close (logind HandleLidSwitch=suspend).
@@ -101,22 +181,59 @@ window-rule {
     open-floating true
 }
 
+// Rounded windows that match the hairline border and shadow. This is the
+// classic niri setup: niri rounds the border/shadow, then clips the window
+// (and its client-side shadows) to the same geometry.
+window-rule {
+    geometry-corner-radius 10
+    clip-to-geometry true
+}
+
+// Fuzzel: let niri round the launcher and blur the wallpaper behind it.
+// The generated fuzzel background stays slightly translucent so the blur
+// is visible.
+layer-rule {
+    match namespace="fuzzel"
+    geometry-corner-radius 14
+    background-effect {
+        xray true
+        blur true
+        noise 0.02
+        saturation 1.1
+    }
+}
+
 binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
     // Terminal and launcher.
     Mod+Return hotkey-overlay-title="Open foot" { spawn "foot"; }
     Mod+T hotkey-overlay-title="Open foot" { spawn "foot"; }
-    Mod+Q hotkey-overlay-title="Open kitty" { spawn "kitty"; }
+    Mod+Q hotkey-overlay-title="Open kitty" { spawn "kitty" "--single-instance"; }
     Mod+B hotkey-overlay-title="Open Helium" { spawn "helium"; }
+    Mod+E hotkey-overlay-title="Open Dolphin" { spawn "dolphin"; }
     Mod+D hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
     Mod+Space hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
     Super+Alt+L allow-when-locked=true hotkey-overlay-title="Lock the screen" { spawn "swaylock" "-f"; }
 
     // Quickshell NotchD pill (expand/show) and toggle (hide/show).
-    Mod+N hotkey-overlay-title="Expand NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "--" "show"; }
+    Mod+N hotkey-overlay-title="Expand NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "--" "expand"; }
     Mod+Shift+N hotkey-overlay-title="Toggle NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
     Mod+Shift+Space hotkey-overlay-title="Toggle NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
+
+    // Hex dictation. niri has no working GlobalShortcuts portal, so we bind
+    // Hex's own control commands (upstream's recommended Wayland setup).
+    // Toggle mode means one press starts, the next stops and transcribes.
+    // F10 is the hardware touchpad-toggle key on the LOQ, so paste-last is
+    // Ctrl+Alt+V instead.
+    Alt+Space hotkey-overlay-title="Hex: dictate" { spawn "hex" "dictation" "toggle"; }
+    Ctrl+Alt+V hotkey-overlay-title="Hex: paste last dictation" { spawn "hex" "paste-last"; }
+    Ctrl+Alt+C hotkey-overlay-title="Hex: copy last dictation" { spawn "/home/hyper/.local/bin/hexclip"; }
+    Mod+Alt+X hotkey-overlay-title="Hex: cancel dictation" { spawn "hex" "dictation" "cancel"; }
+    // On Wayland Hex cannot grab Esc only while recording, so every Esc goes
+    // through a tiny helper: it cancels a running dictation, otherwise
+    // replays Esc to the focused window with wtype.
+    Escape { spawn "/home/hyper/.local/bin/hex-escape"; }
 
     // Volume keys.
     XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+ -l 1.0"; }

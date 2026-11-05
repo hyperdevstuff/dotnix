@@ -9,7 +9,7 @@ ShellRoot {
     PersistentProperties {
         id: persisted
         reloadableId: "notchD-settings"
-        property string style: "notch"   // pill | notch
+        property string style: "pill"   // pill | notch
         property bool hidden: false
     }
 
@@ -19,6 +19,12 @@ ShellRoot {
         id: islandState
         hidden: persisted.hidden
         onHiddenChanged: persisted.hidden = hidden
+    }
+
+    // Right-click on the empty desktop: wallpaper actions.
+    DesktopMenu {
+        id: desktopMenu
+        screen: shell.primaryScreen
     }
 
     // Overlay window (full width, fixed height)
@@ -106,12 +112,15 @@ ShellRoot {
         function setStyle(s: string) {
             if (s === "pill" || s === "notch") persisted.style = s;
         }
+        function openDesktopMenu() { desktopMenu.menuOpen = true; }
+        function closeDesktopMenu() { desktopMenu.menuOpen = false; }
         function status(): string {
             return JSON.stringify({
                 style: persisted.style,
                 hidden: islandState.hidden,
                 expanded: islandState.expanded,
-                surface: islandState.surface
+                surface: islandState.surface,
+                desktopMenu: desktopMenu.menuOpen
             });
         }
     }

@@ -6,7 +6,8 @@ import Quickshell.Wayland
 import Quickshell.WindowManager
 import Quickshell.Io
 
-// Compositor seam. Adapted from Ukishima Singletons/WmGeneric.qml (MIT).
+// Compositor seam. niri-backed via NDJSON event stream (niri msg --json event-stream).
+// Adapted from amanhex/Ukishima Singletons/WmGeneric.qml (MIT) event-stream pattern.
 // niri-only in practice; everything talks to this object.
 Singleton {
     id: root
@@ -14,34 +15,94 @@ Singleton {
     readonly property bool available: true
     readonly property string compositor: Quickshell.env("NIRI_SOCKET") ? "niri" : "generic"
 
+    // Live state from niri's event stream.
+    property var workspacesData: []
+    property var windowsData: []
+    property bool overviewOpen: false
+
+    // Restart the event stream if it exits.
+    Timer {
+        id: restartTimer
+        interval: 1000
+        repeat: false
+        onTriggered: { eventProc.running = true; }
+    }
+
+    Process {
+        id: eventProc
+        running: root.compositor === "niri"
+        command: ["niri", "msg", "--json", "event-stream"]
+        stdout: SplitParser {
+            onRead: (line) => root.handleEventLine(line)
+        }
+        onExited: {
+            restartTimer.start();
+        }
+    }
+
+    function handleEventLine(line) {
+        if (!line) return;
+        const l = String(line).trim();
+        if (l.length === 0) return;
+        let ev;
+        try { ev = JSON.parse(l); }
+        catch (e) { console.warn("Compositor: malformed event:", e); return; }
+        if (!ev || typeof ev !== "object") return;
+
+        if (ev.WorkspacesChanged && ev.WorkspacesChanged.workspaces) {
+            root.workspacesData = ev.WorkspacesChanged.workspaces;
+        } else if (ev.WindowsChanged && ev.WindowsChanged.windows) {
+            root.windowsData = ev.WindowsChanged.windows;
+        } else if (ev.OverviewOpenedOrClosed) {
+            root.overviewOpen = !!ev.OverviewOpenedOrClosed.is_open;
+        }
+        // KeyboardLayoutsChanged / ConfigLoaded / CastsChanged are acknowledged
+        // but not consumed by this seam.
+    }
+
+    function workspaceById(id) {
+        const list = root.workspacesData || [];
+        for (let i = 0; i < list.length; i++)
+            if (list[i] && list[i].id === id) return list[i];
+        return null;
+    }
+
     readonly property var windows: {
         const out = [];
-        const tls = ToplevelManager.toplevels.values;
-        const seen = {};
-        for (let i = 0; i < tls.length; i++) {
-            const t = tls[i];
-            if (!t) continue;
-            const cls = String(t.appId || "");
-            const title = String(t.title || "");
-            const base = cls + "|" + title;
-            seen[base] = (seen[base] || 0) + 1;
-            const key = base + "#" + seen[base];
-            const screens = [];
-            if (t.screens) {
-                for (let s = 0; s < t.screens.length; s++)
-                    if (t.screens[s]) screens.push(String(t.screens[s].name));
-            }
+        const ws = root.windowsData || [];
+        for (let i = 0; i < ws.length; i++) {
+            const w = ws[i];
+            if (!w) continue;
+            const wr = root.workspaceById(w.workspace_id);
+            const output = wr ? String(wr.output || "") : "";
+            const screens = output ? [output] : [];
             out.push({
-                id: key, appId: cls, title: title,
-                active: !!t.activated, activated: !!t.activated,
-                minimized: !!t.minimized, fullscreen: !!t.fullscreen,
-                screens: screens, raw: t
+                id: String(w.id),
+                appId: String(w.app_id || ""),
+                title: String(w.title || ""),
+                pid: w.pid,
+                workspaceId: w.workspace_id,
+                workspace: { id: w.workspace_id, name: wr && wr.name ? String(wr.name) : (wr ? String(wr.idx) : ""), raw: wr },
+                active: !!w.is_focused,
+                activated: !!w.is_focused,
+                minimized: false,
+                fullscreen: false,
+                isFloating: !!w.is_floating,
+                isUrgent: !!w.is_urgent,
+                screens: screens,
+                raw: w
             });
         }
         return out;
     }
 
     function focusedScreen() {
+        // Prefer the focused workspace's output.
+        const list = root.workspacesData || [];
+        for (let i = 0; i < list.length; i++) {
+            const w = list[i];
+            if (w && w.is_focused) return String(w.output || "");
+        }
         const t = ToplevelManager.activeToplevel;
         const own = t && t.screens && t.screens.length > 0 ? t.screens[0] : null;
         if (own && own.name) return String(own.name);
@@ -56,62 +117,46 @@ Singleton {
         return null;
     }
 
-    function coordOf(ws) {
-        return (ws && ws.coordinates && ws.coordinates.length) ? ws.coordinates[0] : 0;
-    }
-
-    property var wsCache: ({})
-
     function workspacesFor(output) {
-        const screen = root.screenFor(output);
-        if (!screen) return [];
-
-        let sets = [];
-        try {
-            const proj = WindowManager.screenProjection(screen);
-            sets = proj ? proj.windowsets : [];
-        } catch (e) { sets = []; }
-
-        if (!sets || sets.length === 0) {
-            sets = [];
-            const all = WindowManager.windowsets;
-            for (let i = 0; i < all.length; i++) {
-                const p = all[i] ? all[i].projection : null;
-                if (!p || !p.screens) continue;
-                for (let s = 0; s < p.screens.length; s++) {
-                    if (p.screens[s] && p.screens[s].name === output) {
-                        sets.push(all[i]); break;
-                    }
-                }
-            }
-        }
-
         const out = [];
-        let sig = output + "|";
-        for (let i = 0; i < sets.length; i++) {
-            const ws = sets[i];
-            if (!ws || ws.shouldDisplay === false) continue;
-            const coord = root.coordOf(ws);
-            const name = ws.name && String(ws.name).length > 0 ? String(ws.name) : String(coord);
-            sig += "w" + ws.id + ":" + name + ":" + coord + ",";
-            out.push({ id: String(ws.id), name: name, coord: coord, raw: ws });
+        const list = root.workspacesData || [];
+        for (let i = 0; i < list.length; i++) {
+            const w = list[i];
+            if (!w || String(w.output) !== String(output)) continue;
+            out.push({
+                id: String(w.id),
+                idx: w.idx,
+                name: w.name ? String(w.name) : String(w.idx),
+                output: String(w.output || ""),
+                isUrgent: !!w.is_urgent,
+                isActive: !!w.is_active,
+                isFocused: !!w.is_focused,
+                activeWindowId: w.active_window_id,
+                raw: { id: w.id, idx: w.idx, name: w.name, active: !!w.is_active, focused: !!w.is_focused }
+            });
         }
-        const cached = root.wsCache[output];
-        if (cached && cached.sig === sig) return cached.list;
-
         out.sort(function (a, b) {
-            if (a.coord !== b.coord) return a.coord - b.coord;
+            const ia = (a.idx != null) ? a.idx : 0;
+            const ib = (b.idx != null) ? b.idx : 0;
+            if (ia !== ib) return ia - ib;
             return String(a.name).localeCompare(String(b.name));
         });
-        root.wsCache[output] = { sig: sig, list: out };
         return out;
     }
 
     function activateWorkspace(ws) {
         if (!ws) return;
-        if (ws.raw && ws.raw.canActivate) { ws.raw.activate(); return; }
-        if (root.compositor === "niri")
-            Quickshell.execDetached(["niri", "msg", "action", "focus-workspace", String(ws.name)]);
+        const raw = ws.raw || {};
+        let ref = null;
+        if (raw.name) ref = String(raw.name);
+        else if (raw.idx != null) ref = String(raw.idx);
+        else if (ws.idx != null) ref = String(ws.idx);
+        else ref = String(ws.name || "");
+        if (root.compositor === "niri" && ref) {
+            Quickshell.execDetached(["niri", "msg", "action", "focus-workspace", ref]);
+            return;
+        }
+        if (ws.raw && ws.raw.canActivate) ws.raw.activate();
     }
 
     function activeWorkspaceName(output) {
@@ -122,15 +167,8 @@ Singleton {
     }
 
     function fullscreenOn(output) {
-        const list = root.windows;
-        const activeWs = root.activeWorkspaceName(output);
-        for (let i = 0; i < list.length; i++) {
-            const w = list[i];
-            if (!w.fullscreen || w.screens.indexOf(output) < 0) continue;
-            if (w.active) return true;
-            if (activeWs && w.workspace && w.workspace.name === activeWs) return true;
-            if (!activeWs) return true;
-        }
-        return false;
+        // niri event stream does not expose fullscreen; fall back to active toplevel.
+        const t = ToplevelManager.activeToplevel;
+        return !!(t && t.fullscreen);
     }
 }

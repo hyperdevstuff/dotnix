@@ -132,8 +132,8 @@ Item {
                 }
                 RowLayout {
                     spacing: 10
-                    Text { text: "BAT " + (Services.System.batteryPercent) + "%"; color: Theme.muted; font.pixelSize: 11 }
-                    Text { text: "VOL " + Math.round(Services.System.volume * 100) + "%"; color: Theme.muted; font.pixelSize: 11 }
+                    Text { text: Services.System.batteryReady ? ("BAT " + Services.System.batteryPercent + "%" + (Services.System.batteryCharging ? " ⚡" : "")) : "BAT --%"; color: Theme.muted; font.pixelSize: 11 }
+                    Text { text: Services.System.volumeMuted ? "VOL MUTED" : ("VOL " + Math.round(Services.System.volume * 100) + "%"); color: Theme.muted; font.pixelSize: 11 }
                     Text { text: "BRI " + Math.round(Services.System.brightness * 100) + "%"; color: Theme.muted; font.pixelSize: 11 }
                 }
                 Text {

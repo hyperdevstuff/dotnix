@@ -6,7 +6,6 @@ return {
       "mikavilpas/blink-ripgrep.nvim",
       "xzbdmw/colorful-menu.nvim",
       "marcoSven/blink-cmp-yanky",
-      { "petertriho/cmp-git", opts = {} },
     },
     opts = {
       fuzzy = {
@@ -38,7 +37,6 @@ return {
         nerd_font_variant = "mono",
       },
       sources = {
-        compat = { "git" },
         default = {
           "lsp",
           "snippets",
@@ -104,9 +102,6 @@ return {
               end
               return 0
             end,
-          },
-          git = {
-            score_offset = -1,
           },
         },
       },

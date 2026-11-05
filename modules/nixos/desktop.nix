@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   programs.niri = {
@@ -7,6 +7,17 @@
     # Nautilus is only needed for the GNOME portal's file chooser.
     # We use the GTK portal instead, so skip the Nautilus closure.
     useNautilus = false;
+
+    # Backport the upstream niri-session fix: `systemctl --user
+    # import-environment` without a variable list is deprecated. Upstream
+    # main replaced it with dbus-update-activation-environment --all.
+    package = pkgs.niri.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace resources/niri-session \
+          --replace-fail 'systemctl --user import-environment' \
+            'dbus-update-activation-environment --systemd --all'
+      '';
+    });
   };
 
   services.greetd = {
@@ -14,7 +25,9 @@
     useTextGreeter = true;
 
     settings.default_session = {
-      command = "${pkgs.tuigreet}/bin/tuigreet --time --time-format '%I:%M %p' --greeting 'Welcome to nixos' --asterisks --remember --remember-user-session --cmd ${pkgs.niri}/bin/niri-session";
+      # Use programs.niri.package (the patched derivation), not pkgs.niri,
+      # otherwise the session bypasses the niri-session import-environment fix.
+      command = "${pkgs.tuigreet}/bin/tuigreet --time --time-format '%I:%M %p' --greeting 'Welcome to nixos' --asterisks --remember --remember-user-session --cmd ${config.programs.niri.package}/bin/niri-session";
       user = "greeter";
     };
   };
@@ -56,6 +69,8 @@
     foot
     kitty
     ghostty
+    # KDE file manager, bound to Mod+E.
+    kdePackages.dolphin
     swaybg
     swaylock
     wl-clipboard

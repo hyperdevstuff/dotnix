@@ -21,7 +21,7 @@ Singleton {
     // Notch geometry
     readonly property real radius:    16
     readonly property real earSize:   10
-    readonly property bool notchMode: true   // pill | notch
+    readonly property bool notchMode: false   // pill | notch
 
     // Sizes
     readonly property int pillW:      76

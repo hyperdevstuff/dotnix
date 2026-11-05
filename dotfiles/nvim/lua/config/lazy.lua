@@ -1,5 +1,12 @@
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
+-- The directory can exist but be an interrupted clone (only .git inside).
+-- Treat that as missing and re-clone instead of failing `require("lazy")`.
+local lazy_ok = vim.fn.isdirectory(lazypath) == 1
+  and vim.fn.filereadable(lazypath .. "/lua/lazy/init.lua") == 1
+if not lazy_ok then
+  if vim.fn.isdirectory(lazypath) == 1 then
+    vim.fn.delete(lazypath, "rf")
+  end
   local lazyrepo = "https://github.com/folke/lazy.nvim.git"
   local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
   if vim.v.shell_error ~= 0 then
@@ -20,8 +27,6 @@ require("lazy").setup({
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
     -- import/override with your plugins
     { import = "plugins" },
-    { import = "lazyvim.plugins.extras.linting.eslint" },
-    { import = "lazyvim.plugins.extras.formatting.prettier" },
   },
   defaults = {
     -- By default, only LazyVim plugins will be lazy-loaded. Your custom plugins will load during startup.
@@ -33,6 +38,11 @@ require("lazy").setup({
     -- version = "*", -- try installing the latest stable version for plugins that support semver
   },
   install = { colorscheme = { "kanagawa-dragon" } },
+  -- config/ is a read-only Home Manager symlink into the nix store; keep the
+  -- lockfile in the writable data dir instead.
+  lockfile = vim.fn.stdpath("data") .. "/lazy-lock.json",
+  -- No plugin needs luarocks; skip the hererocks/luarocks machinery.
+  rocks = { enabled = false },
   checker = {
     enabled = true, -- check for plugin updates periodically
     notify = true, -- notify on update
@@ -53,7 +63,3 @@ require("lazy").setup({
     },
   },
 })
-
-vim.g.zenbones_darken_comments = 45
-vim.cmd.colorscheme("kanagawa-dragon") -- gruvbox-material , zenbones, kanagawa (dragon, wave, lotus)
---(zenwritten neobones vimbones rosebones forestbones nordbones tokyobones seoulbones duckbones zenburned kanagawabones randombones )

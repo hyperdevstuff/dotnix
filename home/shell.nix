@@ -54,6 +54,7 @@ in
 
       # --- basics ---
       n = "nvim";
+      x = "exit";
       mk = "mkdir";
       ".." = "cd ..";
       "..." = "cd ../..";
@@ -138,6 +139,7 @@ in
       settings = {
         init.defaultBranch = "main";
         pull.rebase = false;
+        core.editor = "nvim";
       };
     };
   };

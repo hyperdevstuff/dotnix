@@ -2,7 +2,7 @@ return {
   {
     "LazyVim/LazyVim",
     opts = {
-      colorscheme = "gruvbox-material",
+      colorscheme = "kanagawa-dragon",
     },
   },
   {
@@ -25,7 +25,6 @@ return {
         "bash",
         "regex",
         "typescript",
-        "zig",
       })
       -- opts.incremental_selection.keymaps.init_selection = "<C-n>"
       -- opts.incremental_selection.keymaps.node_incremental = "<C-n>"

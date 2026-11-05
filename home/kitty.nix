@@ -22,6 +22,10 @@
       bold_italic_font = "auto";
     };
 
+    extraConfig = ''
+      include /home/hyper/.config/matugen/generated/kitty-colors.conf
+    '';
+
     # Vim-style scrolling; jump between shell prompts with p/n/o.
     keybindings = {
       "kitty_mod+k" = "scroll_line_up";

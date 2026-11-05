@@ -1,0 +1,40 @@
+# dotnix - matugen configuration
+# Generates per-app color files from the current wallpaper.
+# Run by `wp` (explicit) or `wp-boot` (at niri startup). Apps pick the
+# generated files up via their `include` directives.
+# Templates live in dotfiles/matugen/templates/ (adapted from matugen-themes,
+# https://github.com/InioX/matugen-themes, GPL-2.0).
+
+[config]
+version_check = false
+# Warm manga/sepia anchor: when the image yields no strong color, fall back
+# to a gruvbox gold rather than a random hue.
+fallback_color = "#fabd2f"
+prefer = "closest-to-fallback"
+caching = false
+
+# We set the wallpaper ourselves via awww in `wp` / `wp-boot`; matugen only
+# generates colors.
+[config.wallpaper]
+set = false
+# Required by the schema even with set=false; `wp`/`wp-boot` call awww themselves.
+command = "true"
+
+[templates.kitty]
+input_path = "./templates/kitty.conf"
+output_path = "/home/hyper/.config/matugen/generated/kitty-colors.conf"
+post_hook = 'pkill -SIGUSR1 kitty || true'
+
+[templates.foot]
+input_path = "./templates/foot-colors.ini"
+output_path = "/home/hyper/.config/matugen/generated/foot-colors.ini"
+post_hook = 'pkill -SIGUSR1 foot || true'
+
+[templates.fuzzel]
+input_path = "./templates/fuzzel-colors.ini"
+output_path = "/home/hyper/.config/matugen/generated/fuzzel-colors.ini"
+
+[templates.mako]
+input_path = "./templates/mako-colors"
+output_path = "/home/hyper/.config/matugen/generated/mako-colors"
+post_hook = 'makoctl reload || true'

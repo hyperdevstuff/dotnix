@@ -73,6 +73,10 @@ sudo nixos-rebuild switch --rollback
 | --- | --- |
 | `Mod+Return` / `Mod+T` | terminal (foot) |
 | `Mod+Q` | terminal (kitty) |
+| `Mod+B` | browser (Helium) |
+| `Mod+V` | clipboard history (cliphist + fuzzel) |
+| `Mod+Alt+V` | toggle floating |
+| `Mod+Shift+V` | focus floating/tiling |
 | `Mod+D` / `Mod+Space` | app launcher (fuzzel) |
 | `Mod+C` | close window |
 | `Mod+Shift+C` | center column |
@@ -91,13 +95,22 @@ sudo nixos-rebuild switch --rollback
 | `Mod+R` | cycle preset column width |
 | `Mod+F` | maximize column |
 | `Mod+Shift+F` | fullscreen |
-| `Mod+V` | toggle floating |
+| `Mod+Ctrl+Shift+F` | windowed fullscreen (fake) |
 | `Mod+W` | tabbed column |
+| `Mod+Shift+M` | center window |
+| `Mod+G` | focus previous window |
+| `Mod+Ctrl+Comma` / `Mod+Ctrl+Period` | swap window left/right |
+| `Mod+Ctrl+BracketLeft` / `Mod+Ctrl+BracketRight` | wrapping column focus |
+| `Mod+Shift+D` / `Mod+Ctrl+D` | dynamic cast window / monitor |
+| `Mod+Ctrl+Shift+D` | clear dynamic cast target |
+| `Mod+Shift+Print` | screenshot window to clipboard |
 | `Print` | screenshot |
 | `Super+Alt+L` | lock (swaylock) |
 | `CapsLock` / `Escape` | swapped (`caps:swapescape`) |
 
 `Mod` is **Super**.
+
+An interactive niri keybind/capability reference lives at `docs/niri.html` — open it in any browser (`xdg-open docs/niri.html`).
 
 ## Display, audio, network
 

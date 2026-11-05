@@ -1,37 +1,29 @@
 { pkgs, ... }:
 
 {
-  programs.fuzzel = {
-    enable = true;
+  # Fuzzel reads include from the default section and keeps its own
+  # section scope afterwards. HM's ini module can't express a top-level
+  # include, so the config is written by hand. fuzzel itself is installed
+  # via modules/nixos/desktop.nix.
+  home.packages = [ pkgs.fuzzel ];
 
-    settings = {
-      main = {
-        terminal = "${pkgs.foot}/bin/foot";
-        font = "JetBrainsMono Nerd Font:size=11";
-        icon-theme = "Papirus-Dark";
-        layer = "overlay";
-        prompt = "> ";
-        width = 40;
-        lines = 12;
-        horizontal-pad = 18;
-        vertical-pad = 14;
-        inner-pad = 10;
-      };
+  xdg.configFile."fuzzel/fuzzel.ini".text = ''
+    include=/home/hyper/.config/matugen/generated/fuzzel-colors.ini
 
-      colors = {
-        background = "1e1e2eee";
-        text = "cdd6f4ff";
-        match = "89b4faff";
-        selection = "585b70ff";
-        selection-text = "cdd6f4ff";
-        selection-match = "89b4faff";
-        border = "cba6f7ff";
-      };
+    [main]
+    terminal=${pkgs.foot}/bin/foot
+    font=JetBrainsMono Nerd Font:size=11
+    icon-theme=Papirus-Dark
+    layer=overlay
+    prompt="> "
+    width=40
+    lines=12
+    horizontal-pad=18
+    vertical-pad=14
+    inner-pad=10
 
-      border = {
-        width = 2;
-        radius = 12;
-      };
-    };
-  };
+    [border]
+    width=2
+    radius=12
+  '';
 }

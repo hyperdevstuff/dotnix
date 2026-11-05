@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en" data-theme="vercel">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>niri — capability map · dotnix</title>
+<script>/* pre-paint theme to avoid flash */
+(function(){try{var q=new URLSearchParams(location.search).get('theme');var t=q||localStorage.getItem('niri-theme');if(t && (t==='gruvbox'||t==='eink'||t==='vercel'))document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
+<style>
+:root{
+  --bg:#000000; --surface:#111111; --surface2:#1a1a1a; --fg:#ededed; --muted:#8f8f8f;
+  --accent:#ffffff; --accent-dim:#5e6ad2; --border:#1f1f1f; --hairline:#1f1f1f;
+  --ok:#23e69b; --danger:#ff6b6b; --info:#5e6ad2; --code-bg:#0a0a0a; --radius:14px;
+  --shadow:0 24px 60px rgba(0,0,0,.55);
+}
+[data-theme="gruvbox"]{
+  --bg:#282828; --surface:#3c3836; --surface2:#504945; --fg:#ebdbb2; --muted:#a89984;
+  --accent:#fabd2f; --accent-dim:#d79921; --border:#504945; --hairline:#504945;
+  --ok:#b8bb26; --danger:#fb4934; --info:#83a598; --code-bg:#1d2021; --shadow:0 24px 60px rgba(0,0,0,.45);
+}
+[data-theme="eink"]{
+  --bg:#f4f4ef; --surface:#ffffff; --surface2:#e9e9e2; --fg:#171717; --muted:#6b6b6b;
+  --accent:#171717; --accent-dim:#3a3a3a; --border:#d4d4cf; --hairline:#d4d4cf;
+  --ok:#2f6f4e; --danger:#a33a3a; --info:#3a5a7a; --code-bg:#eef0ea; --shadow:0 24px 60px rgba(23,23,23,.16);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Noto Sans,sans-serif;
+  background-image:radial-gradient(circle at 85% -10%, color-mix(in srgb, var(--accent-dim) 18%, transparent) 0, transparent 55%),linear-gradient(var(--hairline) 1px, transparent 1px),linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+  background-size:100% 100%, 56px 56px, 56px 56px; background-attachment:fixed;
+}
+::selection{background:var(--accent); color:var(--bg)}
+:focus-visible{outline:2px solid var(--accent-dim); outline-offset:2px; border-radius:4px}
+code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"JetBrains Mono",monospace; font-size:.86em}
+.topbar{
+  position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:.75rem;
+  padding:.55rem 1rem; background:color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--border);
+}
+.wordmark{display:flex;align-items:baseline;gap:.5rem;font-weight:800;letter-spacing:-.04em;font-size:1.15rem;white-space:nowrap}
+.wordmark span{color:var(--muted); font-weight:500; letter-spacing:0; font-size:.75rem}
+.badge{font:600 .62rem/1 ui-monospace,monospace; border:1px solid var(--border); border-radius:999px; padding:.28rem .5rem; color:var(--muted); white-space:nowrap}
+.search{flex:1; display:flex; align-items:center; gap:.5rem; max-width:34rem; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:.35rem .35rem .35rem .7rem}
+.search kbd{margin:0}
+.search input{flex:1; background:transparent; border:0; color:var(--fg); outline:0; font:inherit; min-width:0}
+.search input::placeholder{color:var(--muted)}
+.search .count{color:var(--muted); font:600 .7rem ui-monospace,monospace; padding-right:.35rem}
+.themes{display:flex; gap:.25rem; border:1px solid var(--border); border-radius:999px; padding:.22rem; background:var(--surface)}
+.themes button{background:transparent; color:var(--muted); border:0; border-radius:999px; padding:.32rem .7rem; font:600 .68rem ui-monospace,monospace; cursor:pointer}
+.themes button[aria-checked="true"]{background:var(--accent); color:var(--bg)}
+.rail{position:fixed; top:57px; left:0; bottom:0; width:212px; padding:1.2rem .9rem; border-right:1px solid var(--border); background:color-mix(in srgb, var(--bg) 88%, transparent); z-index:20; overflow:auto}
+.rail a{display:flex; justify-content:space-between; gap:.4rem; color:var(--muted); text-decoration:none; padding:.42rem .55rem; border-radius:9px; font-size:.82rem; border:1px solid transparent}
+.rail a:hover{color:var(--fg); background:var(--surface)}
+.rail a.active{color:var(--fg); background:var(--surface); border-color:var(--border)}
+.rail a span{font:600 .68rem ui-monospace,monospace; opacity:.75}
+.main{margin-left:212px; max-width:1180px; padding:1.3rem 1.5rem 4rem}
+section{scroll-margin-top:70px; margin-bottom:3.2rem}
+h1{font-size:clamp(2.1rem,4.4vw,3.4rem); line-height:1.05; letter-spacing:-.05em; margin:.4rem 0 .6rem}
+h1 .dim{color:var(--muted)}
+h2{font-size:1.45rem; letter-spacing:-.03em; margin:0 0 1rem; display:flex; align-items:center; gap:.6rem}
+h2 .n{font:700 .7rem ui-monospace,monospace; color:var(--accent-dim); border:1px solid var(--border); padding:.18rem .4rem; border-radius:6px}
+.lede{color:var(--muted); max-width:52ch; margin:0 0 1.1rem}
+kbd{font:600 .78em ui-monospace,monospace; border:1px solid var(--border); border-bottom-width:2px; background:var(--surface2); border-radius:6px; padding:.14em .42em; white-space:nowrap; color:var(--fg)}
+.hero{border:1px solid var(--border); border-radius:var(--radius); padding:1.4rem 1.5rem; background:linear-gradient(160deg, var(--surface), color-mix(in srgb, var(--surface2) 45%, var(--surface))); box-shadow:var(--shadow)}
+.hero-stats{display:flex; gap:1.6rem; margin-top:1.1rem; flex-wrap:wrap}
+.stat b{display:block; font-size:1.7rem; letter-spacing:-.03em}
+.stat span{color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.09em}
+.chips{display:flex; flex-wrap:wrap; gap:.4rem; margin:0 0 .8rem}
+.chip{border:1px solid var(--border); background:var(--surface); color:var(--muted); border-radius:999px; padding:.28rem .7rem; font:600 .72rem ui-monospace,monospace; cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent); color:var(--bg); border-color:var(--accent)}
+table{width:100%; border-collapse:collapse; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface)}
+th,td{padding:.5rem .65rem; text-align:left; border-bottom:1px solid var(--border); vertical-align:middle}
+th{background:var(--surface2); color:var(--muted); font:600 .68rem ui-monospace,monospace; text-transform:uppercase; letter-spacing:.09em}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:color-mix(in srgb, var(--accent-dim) 10%, transparent)}
+td.act{color:var(--muted); font-size:.86rem}
+.status{font:600 .65rem ui-monospace,monospace; border-radius:999px; padding:.14rem .45rem; white-space:nowrap}
+.status.bound{color:var(--ok); border:1px solid color-mix(in srgb, var(--ok) 45%, transparent); background:color-mix(in srgb, var(--ok) 12%, transparent)}
+.status.avail{color:var(--muted); border:1px solid var(--border)}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(255px,1fr)); gap:.7rem}
+.card{border:1px solid var(--border); background:var(--surface); border-radius:var(--radius); padding:.85rem .95rem; display:flex; flex-direction:column; gap:.35rem; transition:transform .16s ease, border-color .16s ease}
+.card:hover{transform:translateY(-2px); border-color:var(--accent-dim)}
+.card h3{margin:0; font-size:.93rem; letter-spacing:-.01em; display:flex; justify-content:space-between; gap:.5rem; align-items:baseline}
+.card p{margin:0; color:var(--muted); font-size:.8rem}
+.card .tag{font:600 .62rem ui-monospace,monospace; color:var(--accent-dim)}
+.cheat{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:.6rem}
+.cheatdiv{border:1px solid var(--border); background:var(--surface); border-radius:12px; padding:.65rem .75rem}
+.cheatdiv div{color:var(--muted); font-size:.72rem; margin-top:.3rem; min-height:2.1em}
+.recipe{border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); padding:.9rem 1rem; margin-bottom:.7rem}
+.recipe h3{margin:0 0 .3rem; font-size:.95rem}
+.recipe p{margin:.2rem 0 .55rem; color:var(--muted); font-size:.82rem}
+.codebox{position:relative; background:var(--code-bg); border:1px solid var(--border); border-radius:10px; overflow:auto}
+.codebox pre{margin:0; padding:.7rem .8rem; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.75rem; line-height:1.55; white-space:pre}
+.copy{position:absolute; top:.4rem; right:.4rem; border:1px solid var(--border); background:var(--surface); color:var(--muted); border-radius:6px; padding:.22rem .5rem; font:600 .65rem ui-monospace,monospace; cursor:pointer}
+.copy:hover{color:var(--fg); border-color:var(--accent-dim)}
+.details-box summary{cursor:pointer; color:var(--muted); font-weight:700; padding:.6rem 0}
+.details-box pre{background:var(--code-bg); border:1px solid var(--border); border-radius:12px; padding:1rem; max-height:420px; overflow:auto; font-size:.74rem}
+.ref-filter{width:100%; background:var(--surface); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:.5rem .7rem; margin-bottom:.5rem; outline:0}
+.audit{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:.6rem}
+.audit article{border:1px dashed var(--border); border-radius:12px; padding:.75rem .85rem; color:var(--muted); font-size:.8rem}
+.audit b{color:var(--fg)}
+.foot{border-top:1px solid var(--border); padding:1rem 1.5rem 2rem; color:var(--muted); font-size:.75rem; display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-left:212px}
+@media (max-width: 980px){ .rail{display:none} .main{margin-left:0} .foot{margin-left:0} }
+@media print{ .topbar,.rail,.themes,.search,.chips{display:none!important} .main{margin:0;max-width:none} body{background:none} }
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} .card{transition:none} }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wordmark">niri <span>capability map</span></div>
+  <span class="badge">26.04 · dotnix</span>
+  <label class="search"><span aria-hidden="true">⌘</span><input id="q" placeholder="Filter binds &amp; capabilities…  ( / )" aria-label="Filter keybinds and capabilities"><span class="count" id="count"></span></label>
+  <nav class="themes" role="radiogroup" aria-label="Theme">
+    <button role="radio" data-set-theme="gruvbox">gruvbox</button>
+    <button role="radio" data-set-theme="eink">eink</button>
+    <button role="radio" data-set-theme="vercel" aria-checked="true">vercel</button>
+  </nav>
+</header>
+
+<nav class="rail" aria-label="Sections">
+  <a href="#overview" class="active">Overview <span>01</span></a>
+  <a href="#cheatsheet">Cheatsheet <span>02</span></a>
+  <a href="#keybinds">Keybinds <span>03</span></a>
+  <a href="#capabilities">Capabilities <span>04</span></a>
+  <a href="#recipes">Recipes <span>05</span></a>
+  <a href="#audit">Unbound, worth it <span>06</span></a>
+  <a href="#reference">Full action reference <span>07</span></a>
+</nav>
+
+<main class="main">
+
+<section id="overview">
+  <div class="hero">
+    <h1>A compositor that<br><span class="dim">actually keeps up.</span></h1>
+    <p class="lede">niri 26.04 on NixOS/Home Manager, wired into dotnix. Scrollable columns, tabbed stacks, overview, dynamic cast, IPC, Wayland-native everything. This page is the map: every bind in <code>config.kdl</code>, every capability niri ships, and the recipes that make it feel native.</p>
+    <div class="hero-stats">
+      <div class="stat"><b>120+</b><span>actions exposed</span></div>
+      <div class="stat"><b>9</b><span>workspaces, dynamic</span></div>
+      <div class="stat"><b>3</b><span>first-class themes</span></div>
+      <div class="stat"><b>1</b><span>scrollable strip</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="cheatsheet">
+  <h2><span class="n">02</span>Cheatsheet</h2>
+  <div class="cheat" id="cheat"></div>
+</section>
+
+<section id="keybinds">
+  <h2><span class="n">03</span>Every bind</h2>
+  <div class="chips" id="chips" role="group" aria-label="Filter by category"></div>
+  <table>
+    <thead><tr><th>Keys</th><th>Action</th><th>Category</th><th>Status</th></tr></thead>
+    <tbody id="keybind-rows"></tbody>
+  </table>
+</section>
+
+<section id="capabilities">
+  <h2><span class="n">04</span>Capabilities</h2>
+  <p class="lede">Grouped by domain. “configured” means dotnix uses it today; “available” ships in niri 26.04 and only waits for a bind or rule.</p>
+  <div class="grid" id="capability-grid"></div>
+</section>
+
+<section id="recipes">
+  <h2><span class="n">05</span>Recipes</h2>
+
+  <article class="recipe">
+    <h3>Dynamic cast window into OBS</h3>
+    <p>Point an OBS “Window” source at niri dynamic cast; then flip which window it shows without touching OBS.</p>
+    <div class="codebox"><button class="copy" data-copy="obs">Copy</button><pre id="obs">Mod+Shift+D        # cast the focused window
+Mod+Ctrl+D         # cast the focused monitor
+Mod+Ctrl+Shift+D   # clear the cast target
+
+# In OBS: Window Capture → pick "niri dynamic cast target"</pre></div>
+  </article>
+
+  <article class="recipe">
+    <h3>Named workspaces, apps open where they belong</h3>
+    <p>Dynamic by default; name them when you want muscle memory.</p>
+    <div class="codebox"><button class="copy" data-copy="named">Copy</button><pre id="named">workspace "web"
+workspace "chat"
+window-rule { match app-id="firefox$" open-on-workspace "web" }
+window-rule { match app-id=r#"signal-desktop$"# open-on-workspace "chat" }
+Mod+Shift+1 { focus-workspace "web"; }
+Mod+Shift+2 { focus-workspace "chat"; }</pre></div>
+  </article>
+
+  <article class="recipe">
+    <h3>Lock, then suspend, on lid close</h3>
+    <p>niri flips the internal panel off and runs <code>switch-events</code>; logind suspends (<code>HandleLidSwitch=suspend</code>).</p>
+    <div class="codebox"><button class="copy" data-copy="lid">Copy</button><pre id="lid">switch-events {
+    lid-close { spawn "swaylock" "-f"; }
+}
+# NixOS side:
+services.logind.settings.Login.HandleLidSwitch = "suspend";</pre></div>
+  </article>
+
+  <article class="recipe">
+    <h3>Clipboard that actually works</h3>
+    <p>cliphist stores text and images; the fuzzel picker searches and restores.</p>
+    <div class="codebox"><button class="copy" data-copy="clip">Copy</button><pre id="clip">Mod+V  → clipmenu  # fuzzel --dmenu, cliphist decode | wl-copy
+# systemd user watchers store text + image entries
+cliphist list | fuzzel --dmenu --no-sort --with-nth 2 --accept-nth 1</pre></div>
+  </article>
+
+  <article class="recipe">
+    <h3>Screenshot to clipboard only, nothing on disk</h3>
+    <div class="codebox"><button class="copy" data-copy="shot">Copy</button><pre id="shot">Mod+Shift+Print { screenshot-window write-to-disk=false; }
+# Ctrl+Print / Alt+Print / Print save to ~/Pictures/Screenshots</pre></div>
+  </article>
+
+  <article class="recipe">
+    <h3>Secrets never hit the screen recorder</h3>
+    <div class="codebox"><button class="copy" data-copy="secret">Copy</button><pre id="secret">window-rule { match app-id=r#"^org\.keepassxc\.KeePassXC$"# block-out-from "screencast" }
+window-rule { match app-id="org.pulseaudio.pavucontrol" open-floating true }</pre></div>
+  </article>
+</section>
+
+<section id="audit">
+  <h2><span class="n">06</span>Available, not (yet) bound</h2>
+  <div class="audit">
+    <article><b>Recent windows switcher</b> — Alt+Tab / Alt+grave with window previews, in niri ≥25.11. <code>Mod+Tab</code> stays workspace bounce-back in dotnix.</article>
+    <article><b>Focus follows mouse</b> — <code>input { focus-follows-mouse max-scroll-amount="0%" }</code>. Off on purpose: keyboard-first, less scroll jump.</article>
+    <article><b>Workspace auto back-and-forth</b> — <code>input { workspace-auto-back-and-forth }</code>. Press the same workspace twice to bounce.</article>
+    <article><b>Wrapping column focus</b> — bound here: <code>Mod+Ctrl+BracketLeft/Right</code> (<code>focus-column-left-or-last</code>).</article>
+    <article><b>Overview zoom &amp; backdrop</b> — <code>overview { zoom 0.4; backdrop-color "#000000"; }</code>. Unbound by taste; the hot corner is already live.</article>
+    <article><b>Global blur</b> — <code>blur {}</code> + per-window <code>background-effect { blur true; }</code>. Shipped in 26.04, opt-in only; still experimental.</article>
+    <article><b>Hot corners</b> — top-left screen corner opens overview (25.05+). Configure <code>gestures { hot-corners { off } }</code> or per-corner.</article>
+    <article><b>xwayland-satellite</b> — auto-spawns X11 clients (e.g. legacy apps). Enabled by default; usually nothing to do.</article>
+    <article><b>Named workspaces</b> — <code>workspace "main"</code> + <code>open-on-workspace</code>. Unbound in dotnix; add when a workflow demands it.</article>
+    <article><b>Minute swallow</b> — <code>niri msg action do-screen-transition</code> around theme toggles for a smooth cross-fade.</article>
+    <article><b>gamma / night light</b> — niri has none; use wlsunset or gammastep. Deliberately external, not a WM concern.</article>
+    <article><b>idle lock</b> — niri has no built-in idle. Use swayidle/swaylock; dotnix binds the lock manually + on lid close.</article>
+  </div>
+</section>
+
+<section id="reference">
+  <h2><span class="n">07</span>Full <code>niri msg action</code> reference</h2>
+  <details class="details-box" id="ref-box">
+    <summary>292 lines · searchable · generated from niri 26.04</summary>
+    <input class="ref-filter" id="ref-filter" placeholder="Filter actions (e.g. cast, column, workspace)…" aria-label="Filter action list">
+    <pre id="ref-pre"></pre>
+  </details>
+</section>
+
+</main>
+<footer class="foot"><span>niri 26.04 · dotnix · generated from config.kdl</span><span><kbd>/</kbd> search · <kbd>t</kbd> theme · <kbd>Esc</kbd> clear · <kbd>?</kbd> help</span></footer>
+
+<script>
+const KEYBINDS = [
+{keys:"Mod+Return",title:"Open foot",cat:"launch",bound:1},
+{keys:"Mod+T",title:"Open foot",cat:"launch",bound:1},
+{keys:"Mod+Q",title:"Open kitty",cat:"launch",bound:1},
+{keys:"Mod+B",title:"Open Helium",cat:"launch",bound:1},
+{keys:"Mod+D",title:"Run an application",cat:"launch",bound:1},
+{keys:"Mod+Space",title:"Run an application",cat:"launch",bound:1},
+{keys:"Mod+N",title:"Show notchD pill",cat:"launch",bound:1},
+{keys:"Mod+Shift+Space",title:"Toggle notchD pill",cat:"launch",bound:1},
+{keys:"Mod+Shift+N",title:"Toggle notchD pill",cat:"launch",bound:1},
+{keys:"Super+Alt+L",title:"Lock the screen",cat:"system",bound:1},
+{keys:"Mod+O",title:"Overview",cat:"layout",bound:1},
+{keys:"Mod+Left / Mod+Right / Mod+Up / Mod+Down",title:"Focus left/right/up/down",cat:"focus",bound:1},
+{keys:"Mod+H / Mod+J / Mod+K / Mod+L",title:"Focus left/down/up/right",cat:"focus",bound:1},
+{keys:"Mod+G",title:"Focus previous window",cat:"focus",bound:1},
+{keys:"Mod+Home / Mod+End",title:"Focus first/last column",cat:"focus",bound:1},
+{keys:"Mod+Ctrl+BracketLeft / Mod+Ctrl+BracketRight",title:"Wrapping column focus",cat:"focus",bound:1},
+{keys:"Mod+Shift+Left / Mod+Shift+Right",title:"Focus monitor left/right",cat:"focus",bound:1},
+{keys:"Mod+Shift+H / Mod+Shift+L",title:"Focus monitor left/right",cat:"focus",bound:1},
+{keys:"Mod+Shift+Down / Mod+Shift+Up",title:"Focus monitor down/up",cat:"focus",bound:1},
+{keys:"Mod+Ctrl+Left / Mod+Ctrl+Right",title:"Move column",cat:"move",bound:1},
+{keys:"Mod+Ctrl+H / Mod+Ctrl+L",title:"Move column",cat:"move",bound:1},
+{keys:"Mod+Ctrl+Down / Mod+Ctrl+Up",title:"Move window down/up",cat:"move",bound:1},
+{keys:"Mod+Ctrl+J / Mod+Ctrl+K",title:"Move window down/up",cat:"move",bound:1},
+{keys:"Mod+Ctrl+Home / Mod+Ctrl+End",title:"Move column to first/last",cat:"move",bound:1},
+{keys:"Mod+Shift+Ctrl+Left/Right/Up/Down",title:"Move column to monitor",cat:"move",bound:1},
+{keys:"Mod+BracketLeft / Mod+BracketRight",title:"Consume or expel window",cat:"columns",bound:1},
+{keys:"Mod+Comma / Mod+Period",title:"Consume into / expel from column",cat:"columns",bound:1},
+{keys:"Mod+Ctrl+Comma / Mod+Ctrl+Period",title:"Swap window left/right",cat:"columns",bound:1},
+{keys:"Mod+W",title:"Tabbed column display",cat:"columns",bound:1},
+{keys:"Mod+R / Mod+Shift+R",title:"Column width preset fwd/back",cat:"columns",bound:1},
+{keys:"Mod+Ctrl+Shift+R",title:"Window height preset cycle",cat:"columns",bound:1},
+{keys:"Mod+Ctrl+R",title:"Reset window height",cat:"columns",bound:1},
+{keys:"Mod+Minus / Mod+Equal",title:"Column width −10% / +10%",cat:"columns",bound:1},
+{keys:"Mod+Shift+Minus / Mod+Shift+Equal",title:"Window height −10% / +10%",cat:"columns",bound:1},
+{keys:"Mod+1…Mod+9",title:"Focus workspace 1–9",cat:"workspaces",bound:1},
+{keys:"Mod+Ctrl+1…Mod+Ctrl+9",title:"Move column to workspace 1–9",cat:"workspaces",bound:1},
+{keys:"Mod+U / Mod+I",title:"Workspace down/up",cat:"workspaces",bound:1},
+{keys:"Mod+Ctrl+U / Mod+Ctrl+I",title:"Move column to workspace down/up",cat:"workspaces",bound:1},
+{keys:"Mod+Page_Down / Mod+Page_Up",title:"Workspace down/up",cat:"workspaces",bound:1},
+{keys:"Mod+Tab",title:"Previous workspace",cat:"workspaces",bound:1},
+{keys:"Mod+Shift+Page_Down / Mod+Shift+Page_Up",title:"Move workspace down/up",cat:"workspaces",bound:1},
+{keys:"Mod+WheelScrollUp/Down",title:"Workspace up/down",cat:"workspaces",bound:1},
+{keys:"Mod+WheelScrollLeft/Right",title:"Column left/right",cat:"workspaces",bound:1},
+{keys:"Mod+F",title:"Maximize column",cat:"layout",bound:1},
+{keys:"Mod+Shift+F",title:"Fullscreen",cat:"layout",bound:1},
+{keys:"Mod+Ctrl+Shift+F",title:"Windowed fullscreen (fake)",cat:"layout",bound:1},
+{keys:"Mod+M",title:"Maximize window to edges",cat:"layout",bound:1},
+{keys:"Mod+Ctrl+F",title:"Expand column to available width",cat:"layout",bound:1},
+{keys:"Mod+Shift+C",title:"Center column",cat:"layout",bound:1},
+{keys:"Mod+Ctrl+C",title:"Center visible columns",cat:"layout",bound:1},
+{keys:"Mod+Shift+M",title:"Center window",cat:"layout",bound:1},
+{keys:"Mod+V",title:"Clipboard history",cat:"system",bound:1},
+{keys:"Mod+Alt+V",title:"Toggle floating",cat:"floating",bound:1},
+{keys:"Mod+Shift+V",title:"Focus floating/tiling",cat:"floating",bound:1},
+{keys:"Print",title:"Screenshot UI",cat:"capture",bound:1},
+{keys:"Ctrl+Print",title:"Screenshot screen",cat:"capture",bound:1},
+{keys:"Alt+Print",title:"Screenshot window",cat:"capture",bound:1},
+{keys:"Mod+Shift+Print",title:"Screenshot window to clipboard only",cat:"capture",bound:1},
+{keys:"XF86AudioRaiseVolume / LowerVolume",title:"Volume ±10%",cat:"media",bound:1},
+{keys:"XF86AudioMute",title:"Mute output",cat:"media",bound:1},
+{keys:"XF86AudioMicMute",title:"Mute mic",cat:"media",bound:1},
+{keys:"XF86AudioPlay / Pause / Stop",title:"Play-pause / stop",cat:"media",bound:1},
+{keys:"XF86AudioPrev / XF86AudioNext",title:"Previous / next track",cat:"media",bound:1},
+{keys:"XF86MonBrightnessUp / Down",title:"Brightness ±10%",cat:"media",bound:1},
+{keys:"Mod+Shift+B",title:"Brightness 60%",cat:"media",bound:1},
+{keys:"Mod+Shift+A",title:"Audio settings (pavucontrol)",cat:"system",bound:1},
+{keys:"Mod+Alt+N",title:"Wi-Fi / Ethernet settings",cat:"system",bound:1},
+{keys:"Mod+Shift+Slash",title:"Hotkey overlay",cat:"system",bound:1},
+{keys:"Mod+Escape",title:"Toggle keyboard-shortcuts-inhibit",cat:"system",bound:1},
+{keys:"Mod+C / Alt+F4",title:"Close window",cat:"system",bound:1},
+{keys:"Mod+Shift+P",title:"Power off monitors (DPMS)",cat:"system",bound:1},
+{keys:"Mod+Shift+E / Ctrl+Alt+Delete",title:"Quit niri",cat:"system",bound:1},
+];
+const CATEGORIES = ["launch","focus","move","columns","workspaces","layout","floating","capture","media","system"];
+
+const CAPABILITIES = [
+{t:"Scrollable columns",d:"Windows live on an infinite horizontal strip. Nothing shuffles; nothing reflows behind your back.",tag:"layout",used:1},
+{t:"Tabbed columns",d:"Stack windows as tabs in one column. Mod+W toggles; dotnix hides the indicator on single-window columns.",tag:"layout",used:1},
+{t:"Consume / expel",d:"Pull the neighbor into the column, push the bottom one out — spatial, not tab soup.",tag:"layout",used:1},
+{t:"Dynamic cast targets",d:"Set window or monitor as the PipeWire cast source; OBS follows without re-picking.",tag:"screencast",used:1},
+{t:"Overview",d:"Zoom out for the all-workspaces map. Top-left hot corner already toggles it; Mod+O forces it.",tag:"layout",used:1},
+{t:"Named workspaces",d:"Give a workspace a name and auto-open apps on it. Unbound in dotnix; zero config cost when you need it.",tag:"workspaces",used:0},
+{t:"Recent-windows switcher",d:"Alt+Tab with real previews and scope filters. Mod+Tab stays workspace bounce-back in dotnix.",tag:"layout",used:0},
+{t:"Window rules",d:"Regex match app-id/title; float popups, block secrets from screencasts, set output. dotnix pins pavucontrol + Firefox PiP.",tag:"rules",used:1},
+{t:"Layer rules",d:"Opacity/shadow/backdrop for layer-shell surfaces (wallpaper, bars, notifications).",tag:"rules",used:0},
+{t:"Windowed fullscreen",d:"Fake fullscreen for screencasts — the app believes it fills the screen, the WM keeps your layout.",tag:"layout",used:1},
+{t:"Fullscreen to edges",d:"Maximize-within-gaps vs true fullscreen; Mod+M vs Mod+Shift+F.",tag:"layout",used:1},
+{t:"Screen transitions",d:"niri msg action do-screen-transition — a shader sweep between theme or workspace switches.",tag:"graphics",used:0},
+{t:"VRR / 144 Hz",d:"1920×1080@144.001 + variable-refresh-rate on eDP-1. Enabled in output block.",tag:"output",used:1},
+{t:"Fractional scale 1.1",d:"Density without full 2× redraw cost. Whole output, whole session.",tag:"output",used:1},
+{t:"xwayland-satellite",d:"Legacy X11 clients via auto-spawned Xwayland. Nothing to configure.",tag:"output",used:1},
+{t:"IPC: niri msg",d:"outputs, workspaces, windows, pick-window/color, event-stream, --json for scripting.",tag:"ipc",used:1},
+{t:"event-stream",d:"Live NDJSON stream of compositor state — the building block for bars and Quickshell.",tag:"ipc",used:0},
+{t:"Urgency pulse",d:"Focus an urgent window from anywhere; urgent-color on rings is unbound in dotnix.",tag:"focus",used:0},
+{t:"Hot corners",d:"Screen-corner gestures for overview. Configurable per output (25.11+).",tag:"gestures",used:1},
+{t:"Pinch zoom overview",d:"Four-finger touchpad pinch zooms the overview; swipe up/down switches workspaces.",tag:"input",used:1},
+{t:"Keyboard layout chase",d:"track-layout with Mod switching; dotnix uses one US layout on purpose.",tag:"input",used:0},
+{t:"CAPS→Escape",d:"caps:swapescape xkb option — the whole session, zero daemon.",tag:"input",used:1},
+{t:"Blur &amp; xray",d:"Global dual-kawase blur (26.04) + per-window background-effect, opt-in.",tag:"graphics",used:0},
+{t:"Animations",d:"Spring/duration+bezier per animation; dotnix uses defaults. Empty animations {} = sane.",tag:"graphics",used:1},
+{t:"Idle inhibition",d:"allow-inhibiting=false on media keys so lock/inhibit can’t trap screenshots/video.",tag:"session",used:1},
+{t:"Keyboard-shortcuts-inhibit",d:"Mod+Escape lets a focused surface steal the keys (and gives them back).",tag:"session",used:1},
+];
+
+const CHEAT = [
+["Super+B","Browser — Helium"],["Super+V","Clipboard history"],["Super+T / Return","foot"],
+["Super+Q","kitty"],["Super+D / Space","fuzzel"],["Super+1…9","Workspace"],
+["Super+H J K L","Focus"],["Super+Ctrl+H J K L","Move column"],["Super+C","Close window"],
+["Super+Shift+F","Fullscreen"],["Print / Ctrl+Print","Screenshot UI / screen"],["Super+Alt+L","Lock"]
+];
+
+const REF = `power-off-monitors          Power off all monitors via DPMS
+power-on-monitors           Power on all monitors via DPMS
+spawn                       Spawn a command
+spawn-sh                    Spawn a command through the shell
+do-screen-transition        Do a screen transition
+screenshot                  Open the screenshot UI
+screenshot-screen           Screenshot the focused screen
+screenshot-window           Screenshot the focused window
+toggle-keyboard-shortcuts-inhibit  Toggle shortcuts inhibitor for focused surface
+close-window                Close the focused window
+fullscreen-window           Toggle fullscreen on the focused window
+toggle-windowed-fullscreen  Toggle windowed (fake) fullscreen
+focus-window                Focus a window by id
+focus-window-in-column      Focus a window in the focused column by index
+focus-window-previous       Focus the previously focused window
+focus-column-left           Focus the column to the left
+focus-column-right          Focus the column to the right
+focus-column-first          Focus the first column
+focus-column-last           Focus the last column
+focus-column-right-or-first Focus the next column right, looping
+focus-column-left-or-last   Focus the next column left, looping
+focus-column                  Focus a column by index
+focus-window-or-monitor-up    Focus window or monitor above
+focus-window-or-monitor-down  Focus window or monitor below
+focus-column-or-monitor-left  Focus column or monitor left
+focus-column-or-monitor-right Focus column or monitor right
+focus-window-down           Focus the window below
+focus-window-up             Focus the window above
+focus-window-down-or-column-left   Focus window below or column left
+focus-window-down-or-column-right  Focus window below or column right
+focus-window-up-or-column-left     Focus window above or column left
+focus-window-up-or-column-right    Focus window above or column right
+focus-window-or-workspace-down     Focus window or workspace below
+focus-window-or-workspace-up       Focus window or workspace above
+focus-window-top            Focus the topmost window
+focus-window-bottom         Focus the bottommost window
+focus-window-down-or-top    Focus window below or topmost
+focus-window-up-or-bottom   Focus window above or bottommost
+move-column-left            Move column left
+move-column-right           Move column right
+move-column-to-first        Move column to start of workspace
+move-column-to-last         Move column to end of workspace
+move-column-left-or-to-monitor-left   Move column left or to monitor
+move-column-right-or-to-monitor-right Move column right or to monitor
+move-column-to-index        Move column to a specific index
+move-window-down            Move window down in a column
+move-window-up              Move window up in a column
+move-window-down-or-to-workspace-down  Move window down / workspace below
+move-window-up-or-to-workspace-up      Move window up / workspace above
+consume-or-expel-window-left   Consume or expel window left
+consume-or-expel-window-right  Consume or expel window right
+consume-window-into-column  Consume the window to the right
+expel-window-from-column    Expel the bottom window from column
+swap-window-right           Swap focused window with the right
+swap-window-left            Swap focused window with the left
+toggle-column-tabbed-display Toggle normal ↔ tabbed display
+set-column-display          Set display mode of the focused column
+center-column               Center the focused column
+center-window               Center the focused window
+center-visible-columns      Center all fully visible columns
+focus-workspace-down        Focus workspace below
+focus-workspace-up          Focus workspace above
+focus-workspace             Focus workspace by index or name
+focus-workspace-previous    Focus the previous workspace
+move-window-to-workspace-down   Move window to workspace below
+move-window-to-workspace-up     Move window to workspace above
+move-window-to-workspace        Move window by index or name
+move-column-to-workspace-down   Move column to workspace below
+move-column-to-workspace-up     Move column to workspace above
+move-column-to-workspace        Move column by index or name
+move-workspace-down         Move focused workspace down
+move-workspace-up           Move focused workspace up
+move-workspace-to-index     Move workspace to specific index
+set-workspace-name          Set name of focused workspace
+unset-workspace-name        Unset name of focused workspace
+focus-monitor-left          Focus monitor left
+focus-monitor-right         Focus monitor right
+focus-monitor-down          Focus monitor down
+focus-monitor-up            Focus monitor up
+focus-monitor-previous      Focus previous monitor
+focus-monitor-next          Focus next monitor
+focus-monitor               Focus monitor by name
+move-window-to-monitor-left   Move window to monitor left
+move-window-to-monitor-right  Move window to monitor right
+move-window-to-monitor-down   Move window to monitor down
+move-window-to-monitor-up     Move window to monitor up
+move-window-to-monitor-previous  Move window to previous monitor
+move-window-to-monitor-next      Move window to next monitor
+move-window-to-monitor      Move window to a specific monitor
+move-column-to-monitor-left   Move column to monitor left
+move-column-to-monitor-right  Move column to monitor right
+move-column-to-monitor-down   Move column to monitor down
+move-column-to-monitor-up     Move column to monitor up
+move-column-to-monitor-previous  Move column to previous monitor
+move-column-to-monitor-next      Move column to next monitor
+move-column-to-monitor      Move column to a specific monitor
+set-window-width          Change width of the focused window
+set-window-height         Change height of the focused window
+reset-window-height       Reset window height to automatic
+switch-preset-column-width    Switch preset column widths forward
+switch-preset-column-width-back  Switch preset column widths back
+switch-preset-window-width    Switch preset window widths
+switch-preset-window-width-back  Switch preset window widths back
+switch-preset-window-height   Switch preset window heights
+switch-preset-window-height-back Switch preset window heights back
+maximize-column           Toggle maximized state of column
+maximize-window-to-edges  Toggle maximized-to-edges
+set-column-width          Change width of the focused column
+expand-column-to-available-width  Expand to unused space
+switch-layout             Switch keyboard layouts
+load-config-file          Reload the config file
+move-workspace-to-monitor-left  Move workspace to monitor left
+move-workspace-to-monitor-right Move workspace to monitor right
+move-workspace-to-monitor-down  Move workspace to monitor down
+move-workspace-to-monitor-up    Move workspace to monitor up
+move-workspace-to-monitor-previous Move workspace to previous monitor
+move-workspace-to-monitor-next      Move workspace to next monitor
+move-workspace-to-monitor  Move workspace to a specific monitor
+toggle-debug-tint         Toggle debug tint on windows
+debug-toggle-opaque-regions  Visualize opaque regions
+debug-toggle-damage       Visualize output damage
+toggle-window-floating    Toggle floating ↔ tiling
+move-window-to-floating   Move window to floating layout
+move-window-to-tiling     Move window to tiling layout
+focus-floating            Switch focus to floating layout
+focus-tiling              Switch focus to tiling layout
+switch-focus-between-floating-and-tiling  Toggle floating focus
+move-floating-window      Move the floating window on screen
+toggle-window-rule-opacity  Toggle window opacity
+set-dynamic-cast-window   Dynamic cast target ← focused window
+set-dynamic-cast-monitor  Dynamic cast target ← focused monitor
+clear-dynamic-cast-target Clear the cast target
+stop-cast                 Stop a PipeWire screencast
+toggle-overview           Toggle the Overview
+open-overview             Open the Overview
+close-overview            Close the Overview
+toggle-window-urgent      Toggle urgent status
+set-window-urgent         Set urgent status
+unset-window-urgent       Unset urgent status`;
+document.getElementById('ref-pre').textContent = REF;
+
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+
+function setTheme(name){
+  document.documentElement.setAttribute('data-theme', name);
+  try{ localStorage.setItem('niri-theme', name); }catch(e){}
+  $$('.themes button').forEach(b => b.setAttribute('aria-checked', String(b.dataset.setTheme === name)));
+}
+$$('.themes button').forEach(b => b.addEventListener('click', () => setTheme(b.dataset.setTheme)));
+
+function renderCheat(){
+  $('#cheat').innerHTML = CHEAT.map(([k,d]) => `<div class="cheatdiv"><kbd>${k}</kbd><div>${d}</div></div>`).join('');
+}
+renderCheat();
+
+let activeCat = null;
+function renderChips(){
+  $('#chips').innerHTML = CATEGORIES.map(c => `<button class="chip" data-cat="${c}" aria-pressed="false">${c}</button>`).join('');
+  $('#chips').addEventListener('click', e => {
+    const btn = e.target.closest('.chip'); if(!btn) return;
+    activeCat = activeCat === btn.dataset.cat ? null : btn.dataset.cat;
+    $$('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === btn && activeCat !== null)));
+    renderKeys();
+  });
+}
+renderChips();
+
+const q = $('#q');
+function renderKeys(){
+  const query = q.value.trim().toLowerCase();
+  const rows = KEYBINDS.filter(k =>
+    (!activeCat || k.cat === activeCat) &&
+    (!query || (k.keys + ' ' + k.title + ' ' + k.cat).toLowerCase().includes(query))
+  );
+  $('#keybind-rows').innerHTML = rows.map(k => `<tr><td><kbd>${k.keys}</kbd></td><td class="act">${k.title}</td><td>${k.cat}</td><td><span class="status bound">bound</span></td></tr>`).join('');
+  $('#count').textContent = `${rows.length} / ${KEYBINDS.length}`;
+}
+q.addEventListener('input', renderKeys);
+renderKeys();
+
+function matchesCapability(c, query){
+  return (c.t + ' ' + c.d + ' ' + c.tag).toLowerCase().includes(query);
+}
+function renderCaps(){
+  const query = q.value.trim().toLowerCase();
+  const cards = CAPABILITIES.filter(c => !query || matchesCapability(c, query));
+  $('#capability-grid').innerHTML = cards.map(c => `<article class="card"><h3>${c.t}<span class="tag">${c.used ? 'configured' : 'available'}</span></h3><p>${c.d}</p></article>`).join('');
+}
+q.addEventListener('input', renderCaps);
+renderCaps();
+
+$$('.copy').forEach(btn => btn.addEventListener('click', async () => {
+  const text = document.getElementById(btn.dataset.copy).textContent;
+  try{ await navigator.clipboard.writeText(text); btn.textContent = 'Copied!'; }
+  catch(e){ btn.textContent = 'Failed'; }
+  setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+}));
+
+$('#ref-filter').addEventListener('input', e => {
+  const needle = e.target.value.trim().toLowerCase();
+  $('#ref-pre').textContent = REF.split('\n').filter(l => !needle || l.toLowerCase().includes(needle)).join('\n');
+});
+
+const themeNames = ['vercel','gruvbox','eink'];
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, textarea')) { if (e.key === 'Escape') { e.target.blur(); q.value=''; renderKeys(); renderCaps(); } return; }
+  if (e.key === '/') { e.preventDefault(); q.focus(); }
+  else if (e.key === 't') { const cur = document.documentElement.getAttribute('data-theme'); setTheme(themeNames[(themeNames.indexOf(cur)+1)%3]); }
+  else if (e.key === 'Escape') { q.value=''; renderKeys(); renderCaps(); }
+});
+
+setTheme(document.documentElement.getAttribute('data-theme') || 'vercel');
+
+/* scroll spy */
+const links = $$('.rail a');
+const sections = links.map(a => $(a.getAttribute('href')));
+if ('IntersectionObserver' in window) {
+  const spy = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + entry.target.id));
+      }
+    });
+  }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+  sections.forEach(s => s && spy.observe(s));
+}
+</script>
+</body>
+</html>

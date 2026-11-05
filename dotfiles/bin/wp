@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# wp — set wallpaper and regenerate the desktop theme from it.
+# Usage:
+#   wp              random wallpaper from ~/Pictures/walls (recursive)
+#   wp random       same
+#   wp gruvbox      random from walls/gruvbox  (warm, manga, sepia)
+#   wp bw           random from walls/bw       (black-and-white / e-ink)
+#   wp <path>       explicit image
+#
+# Scheme mapping: walls/bw -> SchemeMonochrome (paper/e-ink), everything
+# else -> SchemeContent (keeps the wall's dominant hue).
+set -euo pipefail
+
+WALLS="$HOME/Pictures/walls"
+
+pick() {
+  find "$1" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | shuf -n 1
+}
+
+case "${1:-random}" in
+  random)  wall="$(pick "$WALLS")" ;;
+  gruvbox) wall="$(pick "$WALLS/gruvbox")" ;;
+  bw)      wall="$(pick "$WALLS/bw")" ;;
+  *)       wall="$1" ;;
+esac
+
+if [ -z "$wall" ] || [ ! -f "$wall" ]; then
+  echo "wp: no such wallpaper: ${wall:-<empty>}" >&2
+  exit 1
+fi
+
+awww img --transition-type center --transition-duration 0.6 "$wall"
+
+case "$wall" in
+  "$WALLS/bw/"*) scheme=scheme-monochrome ;;
+  *)             scheme=scheme-content ;;
+esac
+
+matugen image "$wall" --type "$scheme"
+echo "wp: $wall ($scheme)"

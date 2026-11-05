@@ -1,3 +1,5 @@
+{ ... }:
+
 {
   services.mako = {
     enable = true;
@@ -12,14 +14,17 @@
       border-size = 2;
       border-radius = 10;
       font = "JetBrainsMono Nerd Font 10";
-      background-color = "#1e1e2e";
-      text-color = "#cdd6f4";
-      border-color = "#cba6f7";
       progress-color = "over #89b4fa";
       icons = true;
       max-icon-size = 48;
       layer = "overlay";
       group-by = "app-name";
     };
+
+    # Colors come from matugen (wallpaper-first theming); appended last so
+    # they win over anything above.
+    extraConfig = ''
+      include=/home/hyper/.config/matugen/generated/mako-colors
+    '';
   };
 }

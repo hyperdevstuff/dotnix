@@ -1,0 +1,8 @@
+#!/bin/sh
+# clipmenu — searchable cliphist picker via fuzzel.
+# Stores are kept by the cliphist watchers (text + image); this only picks.
+sel=$(cliphist list | fuzzel --dmenu --no-sort --no-run-if-empty \
+        --placeholder "Clipboard" --counter \
+        --with-nth 2 --accept-nth 1) || exit 0
+[ -n "$sel" ] || exit 0
+cliphist decode "$sel" | wl-copy

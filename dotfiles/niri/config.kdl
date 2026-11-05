@@ -59,14 +59,22 @@ layout {
         offset x=0 y=4
         color "#00000066"
     }
+
+    // Show tabs only when a column stacks more than one window.
+    tab-indicator {
+        hide-when-single-tab
+        place-within-column
+    }
 }
 
-// Solid Catppuccin Mocha background. Replace with an image if preferred:
-// spawn-at-startup "swaybg" "-i" "/path/to/wallpaper.png" "-m" "fill"
-spawn-at-startup "swaybg" "-c" "#1e1e2e"
+// Wallpaper-first theming: wp-boot starts awww-daemon and applies a random
+// wall (regenerating kitty/foot/fuzzel/mako via matugen). swaybg stays
+// installed as a fallback but is intentionally not spawned.
+spawn-at-startup "/home/hyper/.local/bin/wp-boot"
 
 hotkey-overlay {
     skip-at-startup
+    hide-not-bound
 }
 
 prefer-no-csd
@@ -74,6 +82,11 @@ prefer-no-csd
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
 animations {
+}
+
+// Lock before logind suspends on lid close (logind HandleLidSwitch=suspend).
+switch-events {
+    lid-close { spawn "swaylock" "-f"; }
 }
 
 // Firefox picture-in-picture should float.
@@ -95,12 +108,13 @@ binds {
     Mod+Return hotkey-overlay-title="Open foot" { spawn "foot"; }
     Mod+T hotkey-overlay-title="Open foot" { spawn "foot"; }
     Mod+Q hotkey-overlay-title="Open kitty" { spawn "kitty"; }
+    Mod+B hotkey-overlay-title="Open Helium" { spawn "helium"; }
     Mod+D hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
     Mod+Space hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
-    Super+Alt+L hotkey-overlay-title="Lock the screen" { spawn "swaylock" "-f"; }
+    Super+Alt+L allow-when-locked=true hotkey-overlay-title="Lock the screen" { spawn "swaylock" "-f"; }
 
     // Quickshell NotchD pill (expand/show) and toggle (hide/show).
-    Mod+N hotkey-overlay-title="Expand NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "show"; }
+    Mod+N hotkey-overlay-title="Expand NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "--" "show"; }
     Mod+Shift+N hotkey-overlay-title="Toggle NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
     Mod+Shift+Space hotkey-overlay-title="Toggle NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
 
@@ -125,6 +139,12 @@ binds {
     Mod+Shift+B hotkey-overlay-title="Set brightness to 60%" { spawn "brightnessctl" "set" "60%"; }
     Mod+Shift+A hotkey-overlay-title="Audio settings" { spawn "pavucontrol"; }
     Mod+Alt+N hotkey-overlay-title="Wi-Fi / Ethernet settings" { spawn "nm-connection-editor"; }
+
+    // Focus jump and dynamic cast (OBS/browser screen share).
+    Mod+G              hotkey-overlay-title="Focus previous window" { focus-window-previous; }
+    Mod+Shift+D        hotkey-overlay-title=null { set-dynamic-cast-window; }
+    Mod+Ctrl+D         hotkey-overlay-title=null { set-dynamic-cast-monitor; }
+    Mod+Ctrl+Shift+D   hotkey-overlay-title=null { clear-dynamic-cast-target; }
 
     // Overview.
     Mod+O repeat=false { toggle-overview; }
@@ -226,6 +246,10 @@ binds {
     Mod+BracketRight { consume-or-expel-window-right; }
     Mod+Comma        { consume-window-into-column; }
     Mod+Period       { expel-window-from-column; }
+    Mod+Ctrl+Comma   { swap-window-left; }
+    Mod+Ctrl+Period  { swap-window-right; }
+    Mod+Ctrl+BracketLeft  { focus-column-left-or-last; }
+    Mod+Ctrl+BracketRight { focus-column-right-or-first; }
 
     Mod+R       { switch-preset-column-width; }
     Mod+Shift+R { switch-preset-column-width-back; }
@@ -235,11 +259,13 @@ binds {
 
     Mod+F       { maximize-column; }
     Mod+Shift+F { fullscreen-window; }
+    Mod+Ctrl+Shift+F hotkey-overlay-title="Windowed fullscreen" { toggle-windowed-fullscreen; }
     Mod+M       { maximize-window-to-edges; }
     Mod+Ctrl+F  { expand-column-to-available-width; }
 
     Mod+Shift+C { center-column; }
     Mod+Ctrl+C  { center-visible-columns; }
+    Mod+Shift+M { center-window; }
 
     Mod+Minus { set-column-width "-10%"; }
     Mod+Equal { set-column-width "+10%"; }
@@ -247,7 +273,8 @@ binds {
     Mod+Shift+Minus { set-window-height "-10%"; }
     Mod+Shift+Equal { set-window-height "+10%"; }
 
-    Mod+V       { toggle-window-floating; }
+    Mod+V       hotkey-overlay-title="Clipboard history" { spawn "/home/hyper/.local/bin/clipmenu"; }
+    Mod+Alt+V   hotkey-overlay-title="Toggle window floating" { toggle-window-floating; }
     Mod+Shift+V { switch-focus-between-floating-and-tiling; }
 
     Mod+W { toggle-column-tabbed-display; }
@@ -255,6 +282,7 @@ binds {
     Print      { screenshot; }
     Ctrl+Print { screenshot-screen; }
     Alt+Print  { screenshot-window; }
+    Mod+Shift+Print hotkey-overlay-title="Screenshot window to clipboard" { screenshot-window write-to-disk=false; }
 
     Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
 

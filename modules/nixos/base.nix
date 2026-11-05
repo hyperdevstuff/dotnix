@@ -64,6 +64,12 @@
     enable = true;
   };
 
+  # Lid close suspends; niri's `switch-events` locks first (see config.kdl).
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";
+    HandleLidSwitchExternalPower = "suspend";
+  };
+
   services = {
     fstrim.enable = true;
     fwupd.enable = true;

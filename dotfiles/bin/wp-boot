@@ -1,25 +1,19 @@
 #!/usr/bin/env bash
-# Start awww-daemon and set a random wallpaper from ~/Pictures/walls.
-# Used as niri's only wallpaper spawn entry.
+# wp-boot — niri startup entry: start awww-daemon, then set a random
+# wallpaper (and regenerate the theme) via `wp`.
 set -u
 
 awww-daemon &
-daemon_pid=$!
 
-wall="$(find "$HOME/Pictures/walls" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | shuf -n 1)"
-if [ -z "$wall" ]; then
-  echo "wp-boot: no wallpapers in ~/Pictures/walls, leaving daemon running with no image" >&2
-  exit 0
-fi
+wp_bin="$HOME/.local/bin/wp"
 
-# Wait for the daemon to accept connections (max ~5s).
+# Wait for the daemon (max ~5s), then theme the session.
 for _ in $(seq 1 50); do
-  if awww img --transition-type fade --transition-duration 1 "$wall" 2>/dev/null; then
-    echo "wp-boot: wallpaper set to $wall"
+  if "$wp_bin" "${1:-random}"; then
     exit 0
   fi
   sleep 0.1
 done
 
-echo "wp-boot: awww-daemon did not respond in time" >&2
+echo "wp-boot: awww-daemon did not come up in time" >&2
 exit 1

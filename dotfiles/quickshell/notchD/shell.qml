@@ -1,78 +1,118 @@
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Io
 import QtQuick
 
 ShellRoot {
     id: shell
 
-    // notchD is a minimal Dynamic Island-style pill: only the time, no other info.
     PersistentProperties {
         id: persisted
         reloadableId: "notchD-settings"
-        property string theme: "vercel"
+        property string style: "notch"   // pill | notch
+        property bool hidden: false
     }
 
     readonly property var primaryScreen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
 
+    IslandState {
+        id: islandState
+        hidden: persisted.hidden
+        onHiddenChanged: persisted.hidden = hidden
+    }
+
+    // Overlay window (full width, fixed height)
     PanelWindow {
-        id: panel
-
+        id: win
         screen: shell.primaryScreen
-        anchors.top: true
-        anchors.left: true
-        margins.top: 0
-        margins.left: panel.screen && panel.screen.width
-            ? Math.round((panel.screen.width - notch.targetWidth) / 2)
-            : 0
-
-        implicitWidth: notch.targetWidth
-        implicitHeight: notch.targetHeight
+        anchors { top: true; left: true; right: true }
+        implicitHeight: 400
         color: "transparent"
         aboveWindows: true
         focusable: false
         exclusiveZone: 0
+        visible: !islandState.hidden
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "notchD"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-        visible: !notch.hidden
+        mask: Region {
+            x: notch.x
+            y: notch.y
+            width: notch.width
+            height: notch.height
+        }
 
         NotchD {
             id: notch
+            state: islandState
+            notchMode: persisted.style === "notch"
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+    }
+
+    // Dismiss layer
+    PanelWindow {
+        id: dismissWin
+        screen: shell.primaryScreen
+        anchors { top: true; left: true; right: true; bottom: true }
+        color: "transparent"
+        aboveWindows: true
+        focusable: true
+        exclusiveZone: 0
+        visible: islandState.active
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "notchD-dismiss"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+        mask: Region {
+            width: dismissWin.width
+            height: dismissWin.height
+            Region {
+                x: notch.x
+                y: notch.y
+                width: notch.width
+                height: notch.height
+                intersection: Intersection.Subtract
+            }
+        }
+
+        MouseArea {
             anchors.fill: parent
-            themeName: persisted.theme
-            onThemeChangeRequested: themeName => persisted.theme = themeName
+            onClicked: islandState.collapse()
+        }
+
+        Item {
+            anchors.fill: parent
+            focus: true
+            Keys.onEscapePressed: islandState.collapse()
         }
     }
 
     IpcHandler {
         target: "notchD"
-
-        // toggle() is a total hide/show; nothing remains on screen while hidden.
-        function toggle(): void {
-            notch.toggle();
+        function toggle() { islandState.hidden = !islandState.hidden; }
+        function hide()   { islandState.hidden = true; }
+        function show()   { islandState.hidden = false; }
+        function expand() { islandState.expanded = true; }
+        function collapse() { islandState.collapse(); }
+        function peek(s: string) { islandState.peek(s, 0); }
+        function showVolume() { islandState.peek("osd", 2000); }
+        function showBrightness() { islandState.peek("osd", 2000); }
+        function toggleStyle() {
+            persisted.style = (persisted.style === "notch") ? "pill" : "notch";
         }
-
-        function hide(): void {
-            notch.hide();
+        function setStyle(s: string) {
+            if (s === "pill" || s === "notch") persisted.style = s;
         }
-
-        function show(): void {
-            notch.show();
-        }
-
-        function setTheme(theme: string): bool {
-            return notch.setTheme(theme);
-        }
-
-        function cycleTheme(): string {
-            notch.cycleTheme();
-            return notch.themeName;
-        }
-
-        function currentTheme(): string {
-            return notch.themeName;
-        }
-
-        function reload(): void {
-            Quickshell.reload(true);
+        function status(): string {
+            return JSON.stringify({
+                style: persisted.style,
+                hidden: islandState.hidden,
+                expanded: islandState.expanded,
+                surface: islandState.surface
+            });
         }
     }
 }

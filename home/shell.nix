@@ -110,7 +110,6 @@ in
     zoxide = {
       enable = true;
       enableFishIntegration = true;
-      # Make `cd` use zoxide's frecency database.
       options = [ "--cmd" "cd" ];
     };
 

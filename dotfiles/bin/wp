@@ -11,6 +11,7 @@
 #   wp fav rm [path]      unfavorite a wallpaper (default: the current one)
 #   wp fav toggle [path]  toggle favorite (default: the current one)
 #   wp fav list           list favorites
+#   wp theme [mode]       global light/dark: auto (follow wallpaper) | light | dark
 #   wp refresh            regenerate the theme from the current wallpaper
 #   wp <path>             explicit image
 #
@@ -18,11 +19,15 @@
 # Scheme mapping: walls/bw -> SchemeMonochrome (paper/e-ink), everything
 # else -> SchemeTonalSpot (material default: keeps a usable, colorful accent
 # instead of scheme-content's often-white primary/secondary).
-# Mode is `smart`, so light wallpapers get light chrome and dark ones dark.
+# Mode defaults to auto (matugen "smart"): light wallpapers get light chrome,
+# dark ones dark. `wp theme light|dark` forces it globally.
 set -euo pipefail
 
 WALLS="$HOME/Pictures/walls"
-FAVS="${XDG_CONFIG_HOME:-$HOME/.config}/wallpapers/favorites"
+CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"
+FAVS="$CONFIG/wallpapers/favorites"
+THEME_FILE="$CONFIG/wallpapers/theme"
+GEN_DIR="$CONFIG/matugen/generated"
 
 pick() {
   find "$1" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) | shuf -n 1
@@ -86,6 +91,43 @@ fav_toggle() {
   fi
 }
 
+# Global light/dark preference: auto (follow wallpaper) | light | dark.
+theme_mode() {
+  local m
+  m="$(cat "$THEME_FILE" 2>/dev/null || true)"
+  case "$m" in
+    light|dark) printf '%s\n' "$m" ;;
+    *)          echo auto ;;
+  esac
+}
+
+# matugen's name for "follow the wallpaper" is smart.
+matugen_mode() {
+  case "$(theme_mode)" in
+    light|dark) theme_mode ;;
+    *)          echo smart ;;
+  esac
+}
+
+# notchD reads this file to pick its palette (and other tools can too).
+write_effective_mode() {
+  local bg r g b
+  bg="$(awk '$1 == "background" { print $2; exit }' "$GEN_DIR/kitty-colors.conf" 2>/dev/null || true)"
+  mkdir -p "$GEN_DIR"
+  if [[ "$bg" =~ ^#[0-9a-fA-F]{6}$ ]]; then
+    r=$((16#${bg:1:2})); g=$((16#${bg:3:2})); b=$((16#${bg:5:2}))
+    if (( r * 299 + g * 587 + b * 114 > 127000 )); then
+      echo light > "$GEN_DIR/mode"
+    else
+      echo dark > "$GEN_DIR/mode"
+    fi
+  elif [ "$(theme_mode)" = light ]; then
+    echo light > "$GEN_DIR/mode"
+  else
+    echo dark > "$GEN_DIR/mode"
+  fi
+}
+
 usage() {
   cat <<'EOF'
 wp — set wallpaper and regenerate the desktop theme from it.
@@ -101,11 +143,14 @@ Usage:
   wp fav rm [path]          unfavorite a wallpaper (default: the current one)
   wp fav toggle [path]      toggle favorite (default: the current one)
   wp fav list               list favorites
+  wp theme                  show the global theme mode
+  wp theme auto|light|dark  set global mode and re-theme the current wallpaper
   wp refresh                regenerate the theme from the current wallpaper
   wp <path>                 apply an explicit image
   wp -h | --help | help     show this help
 
 Favorites are stored in ~/.config/wallpapers/favorites.
+Theme mode is stored in ~/.config/wallpapers/theme (auto follows wallpaper).
 EOF
 }
 
@@ -128,6 +173,28 @@ case "${1:-random}" in
       exit 1
     fi
     ;;
+  theme)
+    case "${2:-show}" in
+      light|dark|auto)
+        mkdir -p "$(dirname "$THEME_FILE")"
+        printf '%s\n' "$2" > "$THEME_FILE"
+        echo "wp: theme mode: $2"
+        ;;
+      show|"")
+        theme_mode
+        exit 0
+        ;;
+      *)
+        echo "wp: theme must be auto, light or dark" >&2
+        exit 1
+        ;;
+    esac
+    cur="$(current_wall)"
+    if [ -n "$cur" ] && [ -f "$cur" ]; then
+      exec "$0" refresh
+    fi
+    exit 0
+    ;;
   refresh) wall="$(current_wall)" ;;
   *)       wall="$1" ;;
 esac
@@ -148,5 +215,6 @@ esac
 # pulls in. The directory must exist before matugen writes it.
 mkdir -p "$HOME/.config/niri/generated"
 
-matugen image "$wall" --type "$scheme" --mode smart
-echo "wp: $wall ($scheme)"
+matugen image "$wall" --type "$scheme" --mode "$(matugen_mode)"
+write_effective_mode
+echo "wp: $wall ($scheme, mode $(theme_mode))"

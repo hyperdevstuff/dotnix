@@ -12,19 +12,20 @@
 
     [main]
     terminal=${pkgs.foot}/bin/foot
-    font=JetBrainsMono Nerd Font:size=11
+    font=JetBrainsMono Nerd Font:size=14
     icon-theme=Papirus-Dark
     layer=overlay
     prompt="> "
-    width=40
-    lines=12
-    horizontal-pad=18
-    vertical-pad=14
-    inner-pad=10
+    width=56
+    lines=14
+    line-height=26
+    horizontal-pad=26
+    vertical-pad=20
+    inner-pad=14
 
     [border]
     width=1
-    radius=14
-    selection-radius=8
+    radius=16
+    selection-radius=10
   '';
 }

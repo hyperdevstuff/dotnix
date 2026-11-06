@@ -40,7 +40,9 @@
     polkit.enable = true;
     rtkit.enable = true;
 
-    # swaylock needs a PAM service to be able to unlock the session.
+    # Native Quickshell lock screen uses a dedicated PAM service. swaylock is
+    # still installed as a recovery fallback and keeps its own service.
+    pam.services.quickshell = { };
     pam.services.swaylock = { };
   };
 
@@ -79,6 +81,8 @@
     slurp
     swappy
     brightnessctl
+    gammastep
+    overskride
     playerctl
     pavucontrol
     networkmanagerapplet

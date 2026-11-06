@@ -165,8 +165,9 @@ animations {
 }
 
 // Lock before logind suspends on lid close (logind HandleLidSwitch=suspend).
+// The lock is the native Quickshell lock screen; swaylock remains a fallback.
 switch-events {
-    lid-close { spawn "swaylock" "-f"; }
+    lid-close { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "lock"; }
 }
 
 // Firefox picture-in-picture should float.
@@ -214,7 +215,7 @@ binds {
     Mod+E hotkey-overlay-title="Open Dolphin" { spawn "dolphin"; }
     Mod+D hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
     Mod+Space hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
-    Super+Alt+L allow-when-locked=true hotkey-overlay-title="Lock the screen" { spawn "swaylock" "-f"; }
+    Super+Alt+L allow-when-locked=true hotkey-overlay-title="Lock the screen" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "lock"; }
 
     // Quickshell NotchD pill (expand/show) and toggle (hide/show).
     Mod+N hotkey-overlay-title="Expand NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "--" "expand"; }
@@ -235,27 +236,33 @@ binds {
     // replays Esc to the focused window with wtype.
     Escape { spawn "/home/hyper/.local/bin/hex-escape"; }
 
-    // Volume keys.
-    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+ -l 1.0"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1-"; }
-    XF86AudioMute        allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
-    XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+    // Volume keys. wpctl is the fast path; the IPC call only adds the notchD
+    // OSD, so audio still works if the shell is restarting.
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ -l 1.0; quickshell ipc -c notchD call notchD showVolume"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-; quickshell ipc -c notchD call notchD showVolume"; }
+    XF86AudioMute        allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; quickshell ipc -c notchD call notchD showVolume"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle; quickshell ipc -c notchD call notchD showMic"; }
 
-    // Media keys.
-    XF86AudioPlay  allow-when-locked=true { spawn-sh "playerctl play-pause"; }
-    XF86AudioPause allow-when-locked=true { spawn-sh "playerctl play-pause"; }
-    XF86AudioStop  allow-when-locked=true { spawn-sh "playerctl stop"; }
-    XF86AudioPrev  allow-when-locked=true { spawn-sh "playerctl previous"; }
-    XF86AudioNext  allow-when-locked=true { spawn-sh "playerctl next"; }
+    // Media keys. playerctl keeps working without notchD; the IPC opens the
+    // downward now-playing card when it is available.
+    XF86AudioPlay  allow-when-locked=true { spawn-sh "playerctl play-pause; quickshell ipc -c notchD call notchD mediaPeek"; }
+    XF86AudioPause allow-when-locked=true { spawn-sh "playerctl play-pause; quickshell ipc -c notchD call notchD mediaPeek"; }
+    XF86AudioStop  allow-when-locked=true { spawn-sh "playerctl stop; quickshell ipc -c notchD call notchD mediaPeek"; }
+    XF86AudioPrev  allow-when-locked=true { spawn-sh "playerctl previous; quickshell ipc -c notchD call notchD mediaPeek"; }
+    XF86AudioNext  allow-when-locked=true { spawn-sh "playerctl next; quickshell ipc -c notchD call notchD mediaPeek"; }
 
-    // Brightness keys.
-    XF86MonBrightnessUp   allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "+10%"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "10%-"; }
+    // Brightness keys use brightnessctl for the action and notchD for Feedback.
+    XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "brightnessctl --class=backlight set +5%; quickshell ipc -c notchD call notchD showBrightness"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "brightnessctl --class=backlight set 5%-; quickshell ipc -c notchD call notchD showBrightness"; }
 
-    // Brightness preset + audio/network panels.
-    Mod+Shift+B hotkey-overlay-title="Set brightness to 60%" { spawn "brightnessctl" "set" "60%"; }
-    Mod+Shift+A hotkey-overlay-title="Audio settings" { spawn "pavucontrol"; }
-    Mod+Alt+N hotkey-overlay-title="Wi-Fi / Ethernet settings" { spawn "nm-connection-editor"; }
+    // notchD-first shortcuts. External GUIs stay as advanced fallbacks.
+    Mod+Shift+B hotkey-overlay-title="Set brightness to 60%" { spawn-sh "brightnessctl set 60%; quickshell ipc -c notchD call notchD showBrightness"; }
+    Mod+Shift+A hotkey-overlay-title="Audio controls" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openAudio"; }
+    Mod+Alt+A hotkey-overlay-title="Advanced audio (pavucontrol)" { spawn "pavucontrol"; }
+    Mod+Alt+N hotkey-overlay-title="Wi-Fi controls" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openWifi"; }
+    Mod+Alt+Shift+N hotkey-overlay-title="Advanced networks (nm-connection-editor)" { spawn "nm-connection-editor"; }
+    Mod+Alt+S hotkey-overlay-title="Session and power" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openSession"; }
+    Mod+Alt+M hotkey-overlay-title="Now playing" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openMedia"; }
 
     // Focus jump and dynamic cast (OBS/browser screen share).
     Mod+G              hotkey-overlay-title="Focus previous window" { focus-window-previous; }

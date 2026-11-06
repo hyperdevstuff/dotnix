@@ -39,6 +39,27 @@
     };
   };
 
+  # The store and $HOME live on a 5400 rpm USB HDD, so Chromium's first window
+  # spends ~12 s on random reads (296 MB binary + profile DBs). Warm the page
+  # cache in the background once the session is up; later opens are sub-second.
+  home.file.".local/bin/warm-helium".source = ../dotfiles/bin/warm-helium;
+  home.file.".local/bin/warm-helium".executable = true;
+
+  systemd.user.services.helium-warm = {
+    Unit = {
+      Description = "Warm the page cache for Helium";
+      PartOf = [ "niri.service" ];
+      After = [ "niri.service" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash ${config.home.homeDirectory}/.local/bin/warm-helium 15";
+      Nice = 19;
+      IOSchedulingClass = "idle";
+    };
+    Install.WantedBy = [ "niri.service" ];
+  };
+
   programs.hex = {
     enable = true;
     package = inputs.hex.packages.${pkgs.stdenv.hostPlatform.system}.default;
@@ -90,6 +111,8 @@
       "x-scheme-handler/https" = [ "helium.desktop" ];
       "application/pdf" = [ "helium.desktop" ];
       "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.desktop" ];
+      "x-scheme-handler/paper" = [ "paper-desktop.desktop" ];
+      "x-scheme-handler/paper-dev" = [ "paper-desktop.desktop" ];
       # Neovim is the default editor for text and source files.
       "text/plain" = [ "nvim.desktop" ];
       "text/markdown" = [ "nvim.desktop" ];
@@ -103,6 +126,8 @@
     };
     associations.added = {
       "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.desktop" ];
+      "x-scheme-handler/paper" = [ "paper-desktop.desktop" ];
+      "x-scheme-handler/paper-dev" = [ "paper-desktop.desktop" ];
     };
   };
 
@@ -132,25 +157,25 @@
   home.packages = with pkgs; [
     brave-origin
     firefox
+    zen-browser
     mpv
     imv
     zathura
     yazi
     nixfmt
-    t3code
+    (pkgs.callPackage ../pkgs/t3code-nightly.nix { })
+    # pkgs.opencode-desktop
+    (pkgs.callPackage ../pkgs/paper-desktop.nix { })
     obsidian
     papirus-icon-theme
     adwaita-icon-theme
     fsearch
     lazygit
     wtype
-    # Typst authoring: compiler, LSP/preview, formatter.
     typst
     tinymist
     typstyle
-    # snacks.nvim explorer uses `trash` for safe deletes.
     trash-cli
-    # nvim-treesitter needs a C compiler at runtime to build parsers.
     gcc
   ];
 

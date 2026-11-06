@@ -53,11 +53,38 @@ Singleton {
             root.workspacesData = ev.WorkspacesChanged.workspaces;
         } else if (ev.WindowsChanged && ev.WindowsChanged.windows) {
             root.windowsData = ev.WindowsChanged.windows;
+        } else if (ev.WorkspaceActivated) {
+            root.applyWorkspaceActivated(ev.WorkspaceActivated);
         } else if (ev.OverviewOpenedOrClosed) {
             root.overviewOpen = !!ev.OverviewOpenedOrClosed.is_open;
         }
         // KeyboardLayoutsChanged / ConfigLoaded / CastsChanged are acknowledged
         // but not consumed by this seam.
+    }
+
+    // niri only sends a full WorkspacesChanged snapshot at startup; afterwards
+    // focus moves arrive as small WorkspaceActivated events.
+    function applyWorkspaceActivated(event) {
+        const id = event.id;
+        const focused = !!event.focused;
+        const target = root.workspaceById(id);
+        const output = target ? String(target.output || "") : "";
+        const list = [];
+        const source = root.workspacesData || [];
+        for (let i = 0; i < source.length; i++) {
+            const w = source[i];
+            if (!w) continue;
+            const copy = Object.assign({}, w);
+            if (w.id === id) {
+                copy.is_active = true;
+                copy.is_focused = focused;
+            } else if (focused && output.length > 0 && String(w.output || "") === output) {
+                copy.is_active = false;
+                copy.is_focused = false;
+            }
+            list.push(copy);
+        }
+        root.workspacesData = list;
     }
 
     function workspaceById(id) {
@@ -164,6 +191,17 @@ Singleton {
         for (let i = 0; i < list.length; i++)
             if (list[i].raw && list[i].raw.active) return list[i].name;
         return "";
+    }
+
+    function focusedWorkspaceName() {
+        const list = root.workspacesData || [];
+        for (let i = 0; i < list.length; i++) {
+            const w = list[i];
+            if (w && w.is_focused)
+                return w.name ? String(w.name) : String(w.idx);
+        }
+        const output = root.focusedScreen();
+        return output ? root.activeWorkspaceName(output) : "";
     }
 
     function fullscreenOn(output) {

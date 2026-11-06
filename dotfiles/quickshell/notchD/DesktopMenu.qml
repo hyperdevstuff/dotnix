@@ -32,7 +32,10 @@ Item {
         { label: root.favoriteCurrent ? "★ Unfavorite current" : "☆ Favorite current",
           cmd: ["wp", "fav", "toggle"], separatorBefore: true },
         { label: "Choose wallpaper…", cmd: ["wp-pick"], separatorBefore: true },
-        { label: "Reload theme",      cmd: ["wp", "refresh"] }
+        { label: "Reload theme",      cmd: ["wp", "refresh"] },
+        { label: "Light theme",       cmd: ["wp", "theme", "light"], separatorBefore: true },
+        { label: "Dark theme",        cmd: ["wp", "theme", "dark"] },
+        { label: "Auto theme",        cmd: ["wp", "theme", "auto"] }
     ]
 
     readonly property int menuW: cardWidth

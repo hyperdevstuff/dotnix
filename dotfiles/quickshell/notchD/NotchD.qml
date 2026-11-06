@@ -2,176 +2,197 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
 import Quickshell
+import "components" as Components
+import "flyouts"
 import "services" as Services
 
+// The island. One morphing main surface (pill / OSD / hub / auth), a side
+// flyout that opens to the right of the centered hub, and a media card that
+// is the only surface allowed to grow downward.
 Item {
     id: root
 
-    SystemClock {
-        id: clock
-        precision: SystemClock.Minutes
-    }
-
     // Injected
     property var state: null
+    property var polkitFlow: null
 
     // Style
     property bool notchMode: Theme.notchMode
-    property real targetRadius: Theme.radius
 
-    // Sizes
-    readonly property int pillW: Theme.pillW
-    readonly property int pillH: Theme.pillH
-    readonly property int expandedW: Theme.expandedW
-    readonly property int expandedH: Theme.expandedH
+    readonly property string mode: state ? state.mode : "idle"
+    readonly property bool interactive: state ? state.interactive : false
+    readonly property bool flyoutOpen: mode === "flyout"
+    readonly property bool mediaOpen: mode === "media"
+    readonly property bool authOpen: mode === "auth"
+    readonly property bool pillLike: mode === "idle" || mode === "osd"
 
-    // Current geometry (animated)
-    property real displayedW: pillW
-    property real displayedH: pillH
+    // Geometry. The item is always hub-centred; shell.qml positions it with
+    // x = (screenWidth - Theme.hubW) / 2 so the hub does not move when a
+    // flyout opens.
+    readonly property int hubW: Theme.hubW
+    readonly property int hubH: Theme.hubH
+    readonly property int flyoutW: Theme.flyoutW
+    readonly property int flyoutH: Theme.flyoutH
+    readonly property int mediaW: Theme.mediaW
+    readonly property int mediaH: Theme.mediaH
+    readonly property int flyoutGap: Theme.gap
 
-    // Report geometry to IslandWindow for input mask
-    function pushGeom() {
-        if (parent) {
-            parent.capsuleX = x;
-            parent.capsuleY = y;
-            parent.capsuleW = width;
-            parent.capsuleH = height;
-            parent.notchMode = notchMode;
-        }
-    }
-    onXChanged: pushGeom()
-    onYChanged: pushGeom()
-    onWidthChanged: pushGeom()
-    onHeightChanged: pushGeom()
-    Component.onCompleted: pushGeom()
-
-    // Width/height targets based on state
-    readonly property bool expanded: state ? state.active : false
-
-    width: displayedW
-    height: displayedH
-
-    Behavior on displayedW { NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
-    Behavior on displayedH { NumberAnimation { duration: Motion.morph; easing.type: Motion.easeMorph; easing.bezierCurve: Motion.morphCurve } }
-
-    onExpandedChanged: {
-        if (expanded) { displayedW = expandedW; displayedH = expandedH; }
-        else { displayedW = pillW; displayedH = pillH; }
+    width: hubW + (flyoutOpen ? flyoutGap + flyoutW : 0)
+    height: {
+        const mediaHeight = mediaOpen ? hubH + flyoutGap + mediaH : hubH;
+        const flyoutHeight = flyoutOpen ? flyoutH : hubH;
+        const authHeight = mode === "auth" ? Theme.authH : hubH;
+        return Math.max(hubH, mediaHeight, flyoutHeight, authHeight);
     }
 
-    // Top radii: 0 in notch mode
-    readonly property real tr: notchMode ? 0 : targetRadius
-    readonly property real br: targetRadius
+    Behavior on width { NumberAnimation { duration: Motion.glide; easing.type: Easing.OutCubic } }
+    Behavior on height { NumberAnimation { duration: Motion.glide; easing.type: Easing.OutCubic } }
 
-    Rectangle {
-        id: capsule
-        anchors.fill: parent
-        color: Theme.bg
-        border.width: notchMode ? 0 : 1
-        border.color: Theme.hairline
-        topLeftRadius: root.tr
-        topRightRadius: root.tr
-        bottomLeftRadius: root.br
-        bottomRightRadius: root.br
-        antialiasing: true
+    // ----------------------------------------------------------- main surface
+    readonly property real targetW: {
+        if (mode === "idle") return Theme.pillW;
+        if (mode === "osd") return Theme.osdW;
+        if (mode === "auth") return Theme.authW;
+        return hubW;
+    }
+    readonly property real targetH: {
+        if (mode === "idle") return Theme.pillH;
+        if (mode === "osd") return Theme.osdH;
+        if (mode === "auth") return Theme.authH;
+        return hubH;
+    }
+    readonly property real targetX: (hubW - targetW) / 2
 
-        Behavior on topLeftRadius { NumberAnimation { duration: Motion.morph; easing.type: Easing.OutQuint } }
-        Behavior on topRightRadius { NumberAnimation { duration: Motion.morph; easing.type: Easing.OutQuint } }
-        Behavior on bottomLeftRadius { NumberAnimation { duration: Motion.morph; easing.type: Easing.OutQuint } }
-        Behavior on bottomRightRadius { NumberAnimation { duration: Motion.morph; easing.type: Easing.OutQuint } }
-        Behavior on color { ColorAnimation { duration: 200 } }
+    property real surfaceW: targetW
+    property real surfaceH: targetH
+    property real surfaceX: targetX
 
-        // Inner highlight border (pill mode only)
-        Rectangle {
+    Behavior on surfaceW { NumberAnimation { duration: Motion.glide; easing.type: Easing.OutCubic } }
+    Behavior on surfaceH { NumberAnimation { duration: Motion.glide; easing.type: Easing.OutCubic } }
+    Behavior on surfaceX { NumberAnimation { duration: Motion.glide; easing.type: Easing.OutCubic } }
+
+    onTargetWChanged: surfaceW = targetW
+    onTargetHChanged: surfaceH = targetH
+    onTargetXChanged: surfaceX = targetX
+    Component.onCompleted: { surfaceW = targetW; surfaceH = targetH; surfaceX = targetX; }
+
+    // ---------------------------------------------------------- mask geometry
+    readonly property bool flyoutMaskOn: flyoutItem.visible && flyoutItem.opacity > 0.08
+    readonly property bool mediaMaskOn: mediaItem.visible && mediaItem.opacity > 0.08
+
+    readonly property real maskX: surface.x
+    readonly property real maskY: surface.y
+    readonly property real maskW: surface.width
+    readonly property real maskH: surface.height
+
+    readonly property bool panel2On: flyoutMaskOn || mediaMaskOn
+    readonly property real mask2X: flyoutMaskOn ? flyoutItem.x : (mediaMaskOn ? mediaItem.x : 0)
+    readonly property real mask2Y: flyoutMaskOn ? flyoutItem.y : (mediaMaskOn ? mediaItem.y : 0)
+    readonly property real mask2W: flyoutMaskOn ? flyoutItem.width : (mediaMaskOn ? mediaItem.width : 0)
+    readonly property real mask2H: flyoutMaskOn ? flyoutItem.height : (mediaMaskOn ? mediaItem.height : 0)
+
+    readonly property bool blurOn: mode === "hub" || mode === "flyout"
+        || mode === "media" || mode === "auth"
+    readonly property real blurX: maskX
+    readonly property real blurY: maskY
+    readonly property real blurW: maskW
+    readonly property real blurH: maskH
+    readonly property bool blur2On: panel2On
+    readonly property real blur2X: mask2X
+    readonly property real blur2Y: mask2Y
+    readonly property real blur2W: mask2W
+    readonly property real blur2H: mask2H
+
+    // ---------------------------------------------------------------- surface
+    Item {
+        id: surface
+        x: root.surfaceX
+        y: 0
+        width: root.surfaceW
+        height: root.surfaceH
+        clip: false
+
+        Components.Panel {
             anchors.fill: parent
-            anchors.margins: 1
-            color: "transparent"
-            border.width: notchMode ? 0 : 1
-            border.color: Theme.hairline
-            topLeftRadius: Math.max(parent.topLeftRadius - 1, 0)
-            topRightRadius: Math.max(parent.topRightRadius - 1, 0)
-            bottomLeftRadius: Math.max(parent.bottomLeftRadius - 1, 0)
-            bottomRightRadius: Math.max(parent.bottomRightRadius - 1, 0)
-            visible: !notchMode
+            visible: root.mode !== "auth"
+            attachTop: root.notchMode && root.mode !== "auth"
+            panelRadius: root.pillLike ? Theme.radiusPill : Theme.radius
         }
 
-        // Content
         Item {
-            id: content
+            id: surfaceContent
             anchors.fill: parent
-            anchors.margins: notchMode ? 8 : 10
+            clip: true
 
-            // Idle surface: time
-            Text {
-                anchors.centerIn: parent
-                visible: !root.expanded
-                text: Qt.formatTime(clock.date, "HH:mm")
-                color: Theme.fg
-                font.family: "Roboto"
-                font.pixelSize: 13
-                font.weight: Font.Medium
-            }
-
-            // Expanded surface
-            ColumnLayout {
+            // Idle / OSD share the same compact surface.
+            Item {
                 anchors.fill: parent
-                visible: root.expanded
-                spacing: 6
+                opacity: root.mode === "idle" ? 1 : 0
+                visible: opacity > 0.001
+                Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
                 Text {
+                    anchors.centerIn: parent
                     text: Qt.formatTime(clock.date, "HH:mm")
                     color: Theme.fg
-                    font.family: "Roboto"
-                    font.pixelSize: 22
-                    font.weight: Font.Bold
+                    font.family: Theme.fontFamily
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
                 }
-                Text {
-                    text: Qt.formatDate(clock.date, "ddd, MMM d")
-                    color: Theme.muted
-                    font.pixelSize: 11
-                }
-                RowLayout {
-                    spacing: 10
-                    Text { text: Services.System.batteryReady ? ("BAT " + Services.System.batteryPercent + "%" + (Services.System.batteryCharging ? " ⚡" : "")) : "BAT --%"; color: Theme.muted; font.pixelSize: 11 }
-                    Text { text: Services.System.volumeMuted ? "VOL MUTED" : ("VOL " + Math.round(Services.System.volume * 100) + "%"); color: Theme.muted; font.pixelSize: 11 }
-                    Text { text: "BRI " + Math.round(Services.System.brightness * 100) + "%"; color: Theme.muted; font.pixelSize: 11 }
-                }
-                Text {
-                    text: Services.Media.hasPlayer ? (Services.Media.title + " — " + Services.Media.artist) : "No media"
-                    color: Theme.muted
-                    font.pixelSize: 11
-                    elide: Text.ElideRight
-                    Layout.fillWidth: true
-                }
-                RowLayout {
-                    spacing: 8
-                    Repeater {
-                        model: Services.Compositor.workspacesFor(Quickshell.screens[0] ? Quickshell.screens[0].name : "")
-                        delegate: Rectangle {
-                            required property var modelData
-                            width: 14; height: 6; radius: 3
-                            color: modelData.raw && modelData.raw.active ? Theme.fg : Theme.hairline
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: Services.Compositor.activateWorkspace(modelData)
-                            }
-                        }
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: if (root.state && root.state.mode === "idle") root.state.openHub()
+                    onWheel: (wheel) => {
+                        const step = wheel.angleDelta.y > 0 ? 0.05 : -0.05;
+                        Services.System.setVolume(Services.System.volume + step);
+                        if (root.state) root.state.showOsd("volume");
                     }
                 }
             }
+
+            Components.OsdSurface {
+                anchors.fill: parent
+                state: root.state
+                opacity: root.mode === "osd" ? 1 : 0
+                visible: opacity > 0.001
+                Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+            }
+
+            Components.HubSurface {
+                anchors.fill: parent
+                state: root.state
+                opacity: (root.mode === "hub" || root.mode === "flyout" || root.mode === "media") ? 1 : 0
+                visible: opacity > 0.001
+                Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+            }
+
+            Item {
+                anchors.fill: parent
+                opacity: root.mode === "auth" ? 1 : 0
+                visible: opacity > 0.001
+                Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+
+                Components.AuthCard {
+                    anchors.fill: parent
+                    flow: root.polkitFlow
+                }
+            }
         }
     }
 
-    // Concave ears (notch mode only)
+    // Concave ears for the notch style. They sit outside the surface, so they
+    // are drawn without affecting the mask.
     Shape {
-        id: leftEar
-        visible: root.notchMode
-        x: -Theme.earSize
+        visible: root.notchMode && root.mode !== "auth"
+        x: surface.x - Theme.earSize
         y: 0
         width: Theme.earSize
         height: Theme.earSize
         ShapePath {
-            fillColor: Theme.bg
+            fillColor: Theme.panel
             strokeColor: "transparent"
             startX: 0; startY: 0
             PathLine { x: Theme.earSize; y: 0 }
@@ -183,15 +204,15 @@ Item {
             }
         }
     }
+
     Shape {
-        id: rightEar
-        visible: root.notchMode
-        x: root.width
+        visible: root.notchMode && root.mode !== "auth"
+        x: surface.x + surface.width
         y: 0
         width: Theme.earSize
         height: Theme.earSize
         ShapePath {
-            fillColor: Theme.bg
+            fillColor: Theme.panel
             strokeColor: "transparent"
             startX: 0; startY: 0
             PathLine { x: Theme.earSize; y: 0 }
@@ -204,21 +225,157 @@ Item {
         }
     }
 
-    // Clock tick
-    Timer {
-        interval: 60000
-        running: true
-        repeat: true
-        onTriggered: { /* force re-eval by touching a property */ root.displayedW = root.displayedW; }
+    // ----------------------------------------------------------------- flyout
+    property string lastFlyoutKind: "wifi"
+
+    function rememberFlyout() {
+        if (root.state && root.state.mode === "flyout" && root.state.flyoutKind.length > 0)
+            lastFlyoutKind = root.state.flyoutKind;
+    }
+    onModeChanged: rememberFlyout()
+    Connections {
+        target: root.state
+        function onFlyoutKindChanged() { root.rememberFlyout(); }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        onClicked: {
-            if (root.state && !root.state.expanded) root.state.expanded = true;
+    Item {
+        id: flyoutItem
+        x: root.hubW + root.flyoutGap + (root.flyoutOpen ? 0 : -8)
+        y: 0
+        width: root.flyoutW
+        height: root.flyoutH
+        opacity: root.flyoutOpen ? 1 : 0
+        visible: opacity > 0.001
+        scale: root.flyoutOpen ? 1 : 0.985
+        transformOrigin: Item.Left
+
+        Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+        Behavior on x { NumberAnimation { duration: 210; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 210; easing.type: Easing.OutCubic } }
+
+        Loader {
+            id: flyoutLoader
+            anchors.fill: parent
+            active: root.flyoutOpen || flyoutItem.opacity > 0.02
+            sourceComponent: {
+                switch (root.lastFlyoutKind) {
+                case "bluetooth": return bluetoothComponent;
+                case "audio": return audioComponent;
+                case "battery": return batteryComponent;
+                case "display": return displayComponent;
+                case "session": return sessionComponent;
+                case "settings": return settingsComponent;
+                default: return wifiComponent;
+                }
+            }
+            onLoaded: {
+                if (item && item.back)
+                    item.back.connect(function () { if (root.state) root.state.back(); });
+            }
         }
-        hoverEnabled: true
-        onEntered: { if (root.state && !root.state.expanded) root.state.hoverExpanded = true; }
-        onExited:  { if (root.state && !root.state.expanded) root.state.hoverExpanded = false; }
+    }
+
+    Component { id: wifiComponent; WifiFlyout {} }
+    Component { id: bluetoothComponent; BluetoothFlyout {} }
+    Component { id: audioComponent; AudioFlyout {} }
+    Component { id: batteryComponent; BatteryFlyout {} }
+    Component { id: displayComponent; DisplayFlyout {} }
+    Component { id: sessionComponent; SessionFlyout {} }
+    Component { id: settingsComponent; SettingsFlyout {} }
+
+    // ------------------------------------------------------------------ media
+    Item {
+        id: mediaItem
+        x: Math.round((root.hubW - root.mediaW) / 2)
+        y: root.hubH + root.flyoutGap
+        width: root.mediaW
+        height: root.mediaH
+        opacity: root.mediaOpen ? 1 : 0
+        visible: opacity > 0.001
+        scale: root.mediaOpen ? 1 : 0.985
+        transformOrigin: Item.Top
+
+        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+        Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+
+        Components.MediaSurface {
+            anchors.fill: parent
+            state: root.state
+        }
+    }
+
+    // ---------------------------------------------------------------- clock
+    SystemClock {
+        id: clock
+        precision: SystemClock.Minutes
+    }
+
+    // --------------------------------------------------------------- keyboard
+    focus: root.interactive
+
+    Keys.onEscapePressed: (event) => {
+        if (!root.state) return;
+        if (root.state.mode === "auth") {
+            if (root.polkitFlow) root.polkitFlow.cancelAuthenticationRequest();
+            else root.state.back();
+        } else {
+            root.state.back();
+        }
+        event.accepted = true;
+    }
+
+    Keys.onLeftPressed: (event) => {
+        if (!root.state) return;
+        if (root.state.mode === "hub") { root.state.moveHubFocus(-1, 0); event.accepted = true; }
+        else if (root.state.mode === "media") { Services.Media.previous(); event.accepted = true; }
+    }
+    Keys.onRightPressed: (event) => {
+        if (!root.state) return;
+        if (root.state.mode === "hub") { root.state.moveHubFocus(1, 0); event.accepted = true; }
+        else if (root.state.mode === "media") { Services.Media.next(); event.accepted = true; }
+    }
+    Keys.onUpPressed: (event) => {
+        if (root.state && root.state.mode === "hub") { event.accepted = true; }
+    }
+    Keys.onDownPressed: (event) => {
+        if (root.state && root.state.mode === "hub") { event.accepted = true; }
+    }
+    Keys.onReturnPressed: (event) => {
+        if (!root.state) return;
+        if (root.state.mode === "hub") { root.state.activateHubIndex(root.state.hubIndex); event.accepted = true; }
+        else if (root.state.mode === "media") { Services.Media.playPause(); event.accepted = true; }
+    }
+    Keys.onEnterPressed: (event) => {
+        if (!root.state) return;
+        if (root.state.mode === "hub") { root.state.activateHubIndex(root.state.hubIndex); event.accepted = true; }
+        else if (root.state.mode === "media") { Services.Media.playPause(); event.accepted = true; }
+    }
+    Keys.onSpacePressed: (event) => {
+        if (root.state && root.state.mode === "media") {
+            Services.Media.playPause();
+            event.accepted = true;
+        }
+    }
+    Keys.onPressed: (event) => {
+        if (!root.state) return;
+        if (root.state.mode === "hub") {
+            const n = parseInt(event.text);
+            if (!isNaN(n) && n >= 1 && n <= root.state.hubCount) {
+                root.state.activateHubIndex(n - 1);
+                event.accepted = true;
+                return;
+            }
+            if (event.text === "m" && Services.Media.hasPlayer) {
+                root.state.openMedia();
+                event.accepted = true;
+            } else if (event.text === "s") {
+                root.state.openFlyout("settings");
+                event.accepted = true;
+            }
+        } else if (root.state.mode === "media" && event.text === "m") {
+            root.state.back();
+            event.accepted = true;
+        }
     }
 }

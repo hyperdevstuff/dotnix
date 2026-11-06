@@ -6,38 +6,198 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 import Quickshell.Services.Pipewire
 
+// System seam: battery, audio, brightness, power profiles, night light.
+// Native Quickshell services are preferred; small CLI fallbacks only cover
+// values the services do not expose (brightness, night light).
 Singleton {
     id: root
 
-    // Battery (UPower). percentage is a 0..1 fraction in Quickshell 0.3.2.
+    // ---------------------------------------------------------------- battery
     readonly property var battery: UPower.displayDevice
     readonly property bool batteryReady: !!battery && !!battery.isPresent
+    readonly property bool batteryPresent: !!battery && !!battery.isPresent
     readonly property int batteryPercent: batteryReady ? Math.round(battery.percentage * 100) : 0
     readonly property bool batteryCharging: batteryReady && (battery.state === 1 || battery.state === 5)
-    readonly property bool batteryPresent: battery ? !!battery.isPresent : false
+    readonly property bool batteryFull: batteryReady && battery.state === 4
+    readonly property real batteryHealth: (batteryReady && battery.healthSupported) ? Number(battery.healthPercentage) : -1
+    readonly property bool batteryHealthSupported: batteryReady && !!battery.healthSupported
+    readonly property real batteryWatts: batteryReady ? Math.abs(Number(battery.changeRate) || 0) : 0
+    readonly property real batteryEnergy: batteryReady ? Number(battery.energy) || 0 : 0
+    readonly property real batteryCapacity: batteryReady ? Number(battery.energyCapacity) || 0 : 0
 
-    // Volume: prefer PipeWire service, fall back to wpctl polling.
-    readonly property var _pipewireSink: Pipewire.ready ? Pipewire.defaultAudioSink : null
+    readonly property string batteryStateText: {
+        if (!batteryReady) return "No battery";
+        switch (battery.state) {
+        case 1: return "Charging";
+        case 2: return "Discharging";
+        case 3: return "Empty";
+        case 4: return "Fully charged";
+        case 5: return "Charging";
+        case 6: return "Discharging";
+        default: return "On battery";
+        }
+    }
+
+    readonly property string batteryTimeText: {
+        if (!batteryReady) return "";
+        if (batteryCharging && battery.timeToFull > 0) return formatDuration(battery.timeToFull) + " to full";
+        if (!batteryCharging && battery.timeToEmpty > 0) return formatDuration(battery.timeToEmpty) + " left";
+        return batteryStateText;
+    }
+
+    readonly property string batteryIcon: {
+        if (!batteryReady) return "\uf244";
+        if (batteryCharging) return "\uf0e7";
+        const p = batteryPercent;
+        if (p >= 88) return "\uf240";
+        if (p >= 63) return "\uf241";
+        if (p >= 38) return "\uf242";
+        if (p >= 13) return "\uf243";
+        return "\uf244";
+    }
+
+    // ---------------------------------------------------------------- power
+    readonly property int powerProfile: PowerProfiles.profile        // 0 saver, 1 balanced, 2 performance
+    readonly property bool hasPerformanceProfile: !!PowerProfiles.hasPerformanceProfile
+    readonly property string powerProfileText: {
+        if (powerProfile === 0) return "Power saver";
+        if (powerProfile === 2) return "Performance";
+        return "Balanced";
+    }
+    function setPowerProfile(profile) {
+        PowerProfiles.profile = profile;
+    }
+
+    // ---------------------------------------------------------------- audio
+    // Bind the default nodes so their audio properties become valid.
+    PwObjectTracker {
+        objects: [Pipewire.defaultAudioSink, Pipewire.defaultAudioSource]
+    }
+
+    readonly property var sink: Pipewire.ready ? Pipewire.defaultAudioSink : null
+    readonly property var source: Pipewire.ready ? Pipewire.defaultAudioSource : null
+    readonly property bool audioReady: !!sink && !!sink.audio
+
     property real _wpctlVolume: 0.5
     property bool _wpctlMuted: false
 
-    readonly property real volume: (_pipewireSink && _pipewireSink.audio)
-        ? _pipewireSink.audio.volume
-        : _wpctlVolume
-    readonly property bool volumeMuted: (_pipewireSink && _pipewireSink.audio)
-        ? _pipewireSink.audio.muted
-        : _wpctlMuted
+    readonly property real volume: audioReady ? Number(sink.audio.volume) : _wpctlVolume
+    readonly property bool volumeMuted: audioReady ? !!sink.audio.muted : _wpctlMuted
 
-    // Brightness (polled)
+    readonly property real micVolume: (source && source.audio) ? Number(source.audio.volume) : 0.5
+    readonly property bool micMuted: (source && source.audio) ? !!source.audio.muted : false
+
+    readonly property string sinkName: nodeLabel(sink)
+    readonly property string sourceName: nodeLabel(source)
+
+    readonly property var sinks: {
+        const all = Pipewire.nodes ? Pipewire.nodes.values : [];
+        const out = [];
+        for (let i = 0; i < all.length; i++) {
+            const n = all[i];
+            if (!n || !n.audio) continue;
+            if (!n.isSink || n.isStream || n.isMonitor) continue;
+            out.push(n);
+        }
+        return out;
+    }
+
+    readonly property var sources: {
+        const all = Pipewire.nodes ? Pipewire.nodes.values : [];
+        const out = [];
+        for (let i = 0; i < all.length; i++) {
+            const n = all[i];
+            if (!n || !n.audio) continue;
+            if (n.isSink || n.isStream || n.isMonitor) continue;
+            out.push(n);
+        }
+        return out;
+    }
+
+    function nodeLabel(node) {
+        if (!node) return "";
+        if (node.description) return String(node.description);
+        if (node.nickname) return String(node.nickname);
+        if (node.name) return String(node.name);
+        return "Audio device";
+    }
+
+    function setVolume(value) {
+        const v = Math.max(0, Math.min(1, Number(value) || 0));
+        if (audioReady) sink.audio.volume = v;
+        else { _wpctlVolume = v; Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", String(Math.round(v * 100)) + "%"]); }
+    }
+
+    function toggleMute() {
+        if (audioReady) sink.audio.muted = !sink.audio.muted;
+        else { _wpctlMuted = !_wpctlMuted; Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]); }
+    }
+
+    function setMicVolume(value) {
+        const v = Math.max(0, Math.min(1, Number(value) || 0));
+        if (source && source.audio) source.audio.volume = v;
+        else Quickshell.execDetached(["wpctl", "set-volume", "@DEFAULT_AUDIO_SOURCE@", String(Math.round(v * 100)) + "%"]);
+    }
+
+    function toggleMicMute() {
+        if (source && source.audio) source.audio.muted = !source.audio.muted;
+        else Quickshell.execDetached(["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"]);
+    }
+
+    function setDefaultSink(node) {
+        if (node) Pipewire.preferredDefaultAudioSink = node;
+    }
+
+    function setDefaultSource(node) {
+        if (node) Pipewire.preferredDefaultAudioSource = node;
+    }
+
+    // ------------------------------------------------------------ brightness
     property real brightness: 0.5
 
+    readonly property string brightnessText: Math.round(brightness * 100) + "%"
+
+    function setBrightness(value) {
+        const v = Math.max(0.01, Math.min(1, Number(value) || 0));
+        brightness = v;
+        Quickshell.execDetached(["brightnessctl", "--class=backlight", "set", String(Math.round(v * 100)) + "%"]);
+    }
+
+    function stepBrightness(delta) {
+        setBrightness(brightness + Number(delta || 0));
+    }
+
+    // Hardware keys change brightness through brightnessctl directly. Let the
+    // OSD pull the new value instead of showing the last polled one.
+    function refreshBrightness() { brightProc.running = true; }
+    function refreshVolume() { volProc.running = true; }
+
+    // ------------------------------------------------------------ night light
+    property bool nightLight: false
+    readonly property int nightLightTemp: 3500
+
+    function setNightLight(enabled) {
+        if (enabled === nightLight) return;
+        nightLight = enabled;
+        // gammastep -O applies a one-shot adjustment and exits, so turning the
+        // effect off must reset the gamma ramp rather than kill a process.
+        if (enabled) Quickshell.execDetached(["gammastep", "-O", String(nightLightTemp), "-b", "1.0"]);
+        else Quickshell.execDetached(["gammastep", "-x"]);
+    }
+
+    function toggleNightLight() { setNightLight(!nightLight); }
+
+    // ---------------------------------------------------------------- polling
+    // Brightness has no native Quickshell service; poll it slowly so hardware
+    // keys and external changes are reflected. PipeWire already pushes volume
+    // changes, so wpctl is only polled while the service is unavailable.
     Timer {
-        interval: 2000
+        interval: 5000
         running: true
         repeat: true
         triggeredOnStart: true
         onTriggered: {
-            volProc.running = true;
+            if (!root.audioReady) volProc.running = true;
             brightProc.running = true;
         }
     }
@@ -61,13 +221,13 @@ Singleton {
 
     Process {
         id: brightProc
-        command: ["brightnessctl", "-m"]
+        command: ["brightnessctl", "-m", "--class=backlight"]
         stdout: SplitParser {
             onRead: (line) => {
                 const l = String(line).trim();
                 if (l.length === 0) return;
                 const parts = l.split(",");
-                // brightnessctl -m: name,class,current,percent,max  (parts[3] is percent)
+                // brightnessctl -m: name,class,current,percent,max
                 if (parts.length >= 4) {
                     const pct = parts[3].trim().replace("%", "");
                     const v = parseFloat(pct);
@@ -75,5 +235,13 @@ Singleton {
                 }
             }
         }
+    }
+
+    function formatDuration(seconds) {
+        const s = Math.max(0, Number(seconds) || 0);
+        const h = Math.floor(s / 3600);
+        const m = Math.round((s % 3600) / 60);
+        if (h > 0) return h + "h " + m + "m";
+        return m + "m";
     }
 }

@@ -6,11 +6,10 @@
 
     font = {
       name = "JetBrainsMono Nerd Font";
-      size = 11;
+      size = 12;
     };
 
     settings = {
-      # Imported from the old dotfiles (asked first):
       cursor_shape = "beam";
       cursor_trail = 1;
       cursor_trail_decay = "0.07 0.28";
@@ -21,8 +20,6 @@
       italic_font = "auto";
       bold_italic_font = "auto";
 
-      # Rice: breathing room, soft transparency, no double border (niri draws
-      # the window border/rounding already), and a cinematic cursor trail.
       window_margin_width = 0;
       window_padding_width = 12;
       background_opacity = 0.94;
@@ -35,11 +32,9 @@
       mouse_hide_wait = 2.0;
       visual_bell_duration = 0.15;
 
-      # Tab bar stays hidden until there are two tabs, then uses the generated
-      # matugen tab colors as a bottom powerline.
       tab_bar_style = "powerline";
       tab_powerline_style = "round";
-      tab_bar_edge = "bottom";
+      tab_bar_edge = "top";
       tab_bar_align = "left";
       tab_bar_min_tabs = 2;
       tab_bar_margin_height = "4 4";
@@ -51,19 +46,17 @@
       include /home/hyper/.config/matugen/generated/kitty-colors.conf
     '';
 
-    # Vim-style scrolling; jump between shell prompts with p/n/o.
-    # kitty_mod+1..0 focuses a split (kitty "window"); tabs get ctrl+alt+1..0.
     keybindings = {
-      "ctrl+alt+1" = "goto_tab 1";
-      "ctrl+alt+2" = "goto_tab 2";
-      "ctrl+alt+3" = "goto_tab 3";
-      "ctrl+alt+4" = "goto_tab 4";
-      "ctrl+alt+5" = "goto_tab 5";
-      "ctrl+alt+6" = "goto_tab 6";
-      "ctrl+alt+7" = "goto_tab 7";
-      "ctrl+alt+8" = "goto_tab 8";
-      "ctrl+alt+9" = "goto_tab 9";
-      "ctrl+alt+0" = "goto_tab 10";
+      "kitty_mod+1" = "goto_tab 1";
+      "kitty_mod+2" = "goto_tab 2";
+      "kitty_mod+3" = "goto_tab 3";
+      "kitty_mod+4" = "goto_tab 4";
+      "kitty_mod+5" = "goto_tab 5";
+      "kitty_mod+6" = "goto_tab 6";
+      "kitty_mod+7" = "goto_tab 7";
+      "kitty_mod+8" = "goto_tab 8";
+      "kitty_mod+9" = "goto_tab 9";
+      "kitty_mod+0" = "goto_tab 10";
       "kitty_mod+k" = "scroll_line_up";
       "kitty_mod+j" = "scroll_line_down";
       "kitty_mod+d" = "scroll_page_down";

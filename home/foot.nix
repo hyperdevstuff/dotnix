@@ -8,7 +8,7 @@
     include=/home/hyper/.config/matugen/generated/foot-colors.ini
 
     [main]
-    font=JetBrainsMono Nerd Font:size=11
+    font=JetBrainsMono Nerd Font:size=14
     pad=10x10
   '';
 }

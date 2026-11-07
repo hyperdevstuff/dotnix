@@ -80,8 +80,8 @@
     grim
     slurp
     swappy
+    wl-mirror
     brightnessctl
-    gammastep
     overskride
     playerctl
     pavucontrol

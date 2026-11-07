@@ -53,8 +53,10 @@ Singleton {
     ]
 
     // Comma-separated so the settings JsonAdapter can store them directly.
-    property string orderCsv: "wifi,bluetooth,audio,battery,display,session"
-    property string enabledCsv: "wifi,bluetooth,audio,battery,display,session"
+    // Default grouping: Wi-Fi, Bluetooth and Battery on the left of the clock;
+    // Audio, Display and Session plus the Modules gear on the right.
+    property string orderCsv: "wifi,bluetooth,battery,audio,display,session"
+    property string enabledCsv: "wifi,bluetooth,battery,audio,display,session"
 
     function splitCsv(value) {
         const parts = String(value || "").split(",");

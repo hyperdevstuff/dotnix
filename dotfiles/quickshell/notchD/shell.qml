@@ -5,6 +5,7 @@ import Quickshell.Services.Polkit
 import Quickshell.Services.UPower
 import QtQuick
 import "services" as Services
+import "components" as Components
 
 ShellRoot {
     id: shell
@@ -39,8 +40,10 @@ ShellRoot {
             id: settings
             property string style: "pill"   // pill | notch
             property bool hidden: false
-            property string modulesOrder: "wifi,bluetooth,audio,battery,display,session"
-            property string modulesEnabled: "wifi,bluetooth,audio,battery,display,session"
+            property string modulesOrder: "wifi,bluetooth,battery,audio,display,session"
+            property string modulesEnabled: "wifi,bluetooth,battery,audio,display,session"
+            property bool nightLight: false
+            property int nightLightTemp: 3500
         }
     }
 
@@ -80,7 +83,26 @@ ShellRoot {
         if (settingsFile.loaded) {
             if (settings.modulesOrder.length > 0) Modules.orderCsv = settings.modulesOrder;
             if (settings.modulesEnabled.length > 0) Modules.enabledCsv = settings.modulesEnabled;
+            Theme.notchMode = settings.style === "notch";
+            Services.System.nightLightTemp = Math.max(Services.System.nightLightMin,
+                Math.min(Services.System.nightLightMax, settings.nightLightTemp));
+            Services.System.setNightLight(settings.nightLight);
         }
+    }
+
+    // Keep Theme's shape flag in sync with the persisted style so panels and
+    // the flyout inner corners can react without every file reading settings.
+    Connections {
+        target: settings
+        function onStyleChanged() { Theme.notchMode = settings.style === "notch"; }
+    }
+
+    // Night light is a tint, not a gamma ramp, so it is plain state. Persist
+    // both the enabled flag and the Kelvin value.
+    Connections {
+        target: Services.System
+        function onNightLightChanged() { settings.nightLight = Services.System.nightLight; }
+        function onNightLightTempChanged() { settings.nightLightTemp = Services.System.nightLightTemp; }
     }
 
     // Persist registry changes as they happen.
@@ -194,11 +216,34 @@ ShellRoot {
     }
 
     // --------------------------------------------------------------- overlay
+    // Night light tint. Full screen, click-through, overlay layer. An empty
+    // mask keeps all pointer input, and keyboard focus stays off, so this is
+    // purely a visual filter. It sits below the island window.
+    PanelWindow {
+        id: nightLightWin
+        screen: shell.primaryScreen
+        anchors { top: true; left: true; right: true; bottom: true }
+        color: "transparent"
+        aboveWindows: true
+        focusable: false
+        exclusiveZone: 0
+        visible: Services.System.nightLightAlpha > 0.001
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "notchD-nightlight"
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+        mask: Region {}
+
+        Components.NightLight {
+            anchors.fill: parent
+        }
+    }
+
     PanelWindow {
         id: win
         screen: shell.primaryScreen
         anchors { top: true; left: true; right: true }
-        implicitHeight: 470
+        implicitHeight: 560
         color: "transparent"
         aboveWindows: true
         focusable: true
@@ -214,9 +259,11 @@ ShellRoot {
                 y: notch.y + notch.maskY
                 width: notch.maskW
                 height: notch.maskH
-                radius: Math.round(notch.pillLike ? Theme.radiusPill : Theme.radius)
-                topLeftRadius: (notch.notchMode && notch.mode !== "auth") ? 0 : Math.round(notch.pillLike ? Theme.radiusPill : Theme.radius)
-                topRightRadius: (notch.notchMode && notch.mode !== "auth") ? 0 : Math.round(notch.pillLike ? Theme.radiusPill : Theme.radius)
+                radius: Math.round(notch.surfaceRadius)
+                topLeftRadius: Math.round(notch.maskTopLeft)
+                topRightRadius: Math.round(notch.maskTopRight)
+                bottomLeftRadius: Math.round(notch.maskBottomLeft)
+                bottomRightRadius: Math.round(notch.maskBottomRight)
             }
             Region {
                 x: notch.x + notch.mask2X
@@ -224,36 +271,20 @@ ShellRoot {
                 width: notch.mask2W
                 height: notch.mask2H
                 radius: Math.round(Theme.radius)
-            }
-        }
-
-        // Blur only behind expanded surfaces. niri implements
-        // ext-background-effect-v1; the radius matches the panel.
-        BackgroundEffect.blurRegion: Region {
-            Region {
-                x: notch.x + notch.blurX
-                y: notch.y + notch.blurY
-                width: notch.blurOn ? notch.blurW : 0
-                height: notch.blurOn ? notch.blurH : 0
-                radius: Math.round(Theme.radius)
-                topLeftRadius: (notch.notchMode && notch.mode !== "auth") ? 0 : Math.round(Theme.radius)
-                topRightRadius: (notch.notchMode && notch.mode !== "auth") ? 0 : Math.round(Theme.radius)
-            }
-            Region {
-                x: notch.x + notch.blur2X
-                y: notch.y + notch.blur2Y
-                width: notch.blur2On ? notch.blur2W : 0
-                height: notch.blur2On ? notch.blur2H : 0
-                radius: Math.round(Theme.radius)
+                topLeftRadius: Math.round(notch.mask2TopLeft)
+                topRightRadius: Math.round(notch.mask2TopRight)
+                bottomLeftRadius: Math.round(notch.mask2BottomLeft)
+                bottomRightRadius: Math.round(notch.mask2BottomRight)
             }
         }
 
         NotchD {
             id: notch
-            x: Math.round((win.width - Theme.hubW) / 2)
+            x: Math.round((win.width - notch.hubW) / 2)
+            y: Theme.topGap
             state: islandState
             polkitFlow: polkitAgent.flow
-            notchMode: settings.style === "notch"
+            notchMode: Theme.notchMode
         }
     }
 
@@ -280,9 +311,11 @@ ShellRoot {
                 y: notch.y + notch.maskY
                 width: notch.maskW
                 height: notch.maskH
-                radius: Math.round(notch.pillLike ? Theme.radiusPill : Theme.radius)
-                topLeftRadius: (notch.notchMode && notch.mode !== "auth") ? 0 : Math.round(notch.pillLike ? Theme.radiusPill : Theme.radius)
-                topRightRadius: (notch.notchMode && notch.mode !== "auth") ? 0 : Math.round(notch.pillLike ? Theme.radiusPill : Theme.radius)
+                radius: Math.round(notch.surfaceRadius)
+                topLeftRadius: Math.round(notch.maskTopLeft)
+                topRightRadius: Math.round(notch.maskTopRight)
+                bottomLeftRadius: Math.round(notch.maskBottomLeft)
+                bottomRightRadius: Math.round(notch.maskBottomRight)
                 intersection: Intersection.Subtract
             }
             Region {
@@ -291,6 +324,10 @@ ShellRoot {
                 width: notch.mask2W
                 height: notch.mask2H
                 radius: Math.round(Theme.radius)
+                topLeftRadius: Math.round(notch.mask2TopLeft)
+                topRightRadius: Math.round(notch.mask2TopRight)
+                bottomLeftRadius: Math.round(notch.mask2BottomLeft)
+                bottomRightRadius: Math.round(notch.mask2BottomRight)
                 intersection: Intersection.Subtract
             }
         }
@@ -356,6 +393,18 @@ ShellRoot {
         function showBattery() { islandState.showOsd("battery"); }
         function showWorkspace() { islandState.showOsd("workspace"); }
         function showNightLight() { islandState.showOsd("nightlight"); }
+        function setNightLightTemp(k: int) {
+            Services.System.setNightLightTemp(k);
+            islandState.showOsd("nightlight");
+        }
+        function nightLightWarmer() {
+            Services.System.stepNightLightTemp(-100);
+            islandState.showOsd("nightlight");
+        }
+        function nightLightCooler() {
+            Services.System.stepNightLightTemp(100);
+            islandState.showOsd("nightlight");
+        }
         function showOsd(kind: string, title: string, text: string) {
             islandState.showOsd(kind, { title: title, text: text });
         }
@@ -422,6 +471,8 @@ ShellRoot {
                 hidden: islandState.hidden,
                 locked: lockScreen.locked,
                 mode: islandState.mode,
+                hubWidth: notch.hubW,
+                hubMin: Math.round(notch.minHubW),
                 flyout: islandState.flyoutKind,
                 hubIndex: islandState.hubIndex,
                 hubKinds: islandState.hubKinds,
@@ -432,6 +483,9 @@ ShellRoot {
                 mediaMode: islandState.mode === "media",
                 modules: Modules.enabledIds,
                 moduleOrder: Modules.order,
+                nightLight: Services.System.nightLight,
+                nightLightTemp: Services.System.nightLightTemp,
+                nightLightAlpha: Math.round(Services.System.nightLightAlpha * 1000) / 1000,
                 polkitActive: polkitAgent.isActive,
                 polkitRegistered: polkitAgent.isRegistered
             });

@@ -34,7 +34,7 @@
 
       tab_bar_style = "powerline";
       tab_powerline_style = "round";
-      tab_bar_edge = "top";
+      tab_bar_edge = "bottom";
       tab_bar_align = "left";
       tab_bar_min_tabs = 2;
       tab_bar_margin_height = "4 4";

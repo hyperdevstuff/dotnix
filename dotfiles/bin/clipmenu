@@ -1,8 +1,35 @@
 #!/bin/sh
-# clipmenu — searchable cliphist picker via fuzzel.
-# Stores are kept by the cliphist watchers (text + image); this only picks.
-sel=$(cliphist list | fuzzel --dmenu --no-sort --no-run-if-empty \
-        --placeholder "Clipboard" --counter \
-        --with-nth 2 --accept-nth 1) || exit 0
-[ -n "$sel" ] || exit 0
-cliphist decode "$sel" | wl-copy
+# clipmenu — searchable cliphist picker.
+#
+# Runs inside a floating kitty window (see the Mod+V bind in niri/config.kdl),
+# because fzf can wrap text and show a full preview, which fuzzel's dmenu mode
+# cannot. Fuzzel stays the app launcher; this is only the clipboard UI.
+
+set -eu
+
+command -v cliphist >/dev/null 2>&1 || exit 0
+command -v fzf >/dev/null 2>&1 || exit 1
+
+selection=$(
+    cliphist list |
+        fzf \
+            --delimiter='\t' \
+            --with-nth=2.. \
+            --accept-nth=1 \
+            --no-sort \
+            --exact \
+            --no-multi \
+            --height=100% \
+            --layout=reverse \
+            --border=rounded \
+            --border-label=' clipboard ' \
+            --prompt='> ' \
+            --info=inline \
+            --color=16 \
+            --preview="$HOME/.local/bin/clipmenu-preview {1}" \
+            --preview-window='right:60%:wrap' \
+            --bind='ctrl-d:execute-silent(cliphist delete {1})+reload(cliphist list)'
+) || exit 0
+
+[ -n "$selection" ] || exit 0
+cliphist decode "$selection" | wl-copy

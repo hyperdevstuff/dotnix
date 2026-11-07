@@ -1,22 +1,30 @@
 import QtQuick
 import ".."
 
-// Translucent panel background. niri blurs whatever is behind the window;
-// this rectangle supplies the tint, hairline and top highlight.
+// Opaque panel background. The pill and the expanded hub share this exact
+// colour, so the morph never changes tone. The old top highlight is off by
+// default: it caught the light at the rounded left edge and leaked white.
 Rectangle {
     id: root
 
     property real panelRadius: Theme.radius
     property bool attachTop: false
-    property bool showHighlight: true
+    property bool showHighlight: false
+
+    // Per-corner control so the hub and its flyout can share one continuous
+    // edge (square inner corners) without a second panel component.
+    property real cornerTopLeft: attachTop ? 0 : panelRadius
+    property real cornerTopRight: attachTop ? 0 : panelRadius
+    property real cornerBottomLeft: panelRadius
+    property real cornerBottomRight: panelRadius
 
     color: Theme.panel
     border.width: 1
     border.color: Theme.hairline
-    topLeftRadius: attachTop ? 0 : panelRadius
-    topRightRadius: attachTop ? 0 : panelRadius
-    bottomLeftRadius: panelRadius
-    bottomRightRadius: panelRadius
+    topLeftRadius: root.cornerTopLeft
+    topRightRadius: root.cornerTopRight
+    bottomLeftRadius: root.cornerBottomLeft
+    bottomRightRadius: root.cornerBottomRight
     antialiasing: true
 
     Behavior on color { ColorAnimation { duration: 180 } }

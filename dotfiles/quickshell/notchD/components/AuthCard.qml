@@ -28,8 +28,8 @@ Item {
 
             Rectangle {
                 width: 28
-                height: 28
-                radius: 9
+                height: 32
+                radius: Theme.radiusControl
                 color: Theme.surface
                 border.width: 1
                 border.color: Theme.hairlineSoft
@@ -48,7 +48,7 @@ Item {
                     text: "Authentication required"
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 13
+                    font.pixelSize: Theme.fontTitle
                     font.weight: Font.DemiBold
                 }
                 Text {
@@ -56,7 +56,7 @@ Item {
                     text: root.flow ? String(root.flow.actionId || "") : ""
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 8
+                    font.pixelSize: 11
                     elide: Text.ElideRight
                 }
             }
@@ -85,7 +85,7 @@ Item {
             text: root.flow ? String(root.flow.supplementaryMessage || "") : ""
             color: root.flow && root.flow.supplementaryIsError ? Theme.danger : Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 9
+            font.pixelSize: 11
             wrapMode: Text.WordWrap
             maximumLineCount: 2
             elide: Text.ElideRight
@@ -93,8 +93,8 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            height: 34
-            radius: 9
+            height: 38
+            radius: Theme.radiusControl
             color: Theme.surface
             border.width: 1
             border.color: pwd.activeFocus ? Theme.fg : Theme.hairline
@@ -145,8 +145,8 @@ Item {
 
             Rectangle {
                 width: 74
-                height: 28
-                radius: 8
+                height: 32
+                radius: Theme.radiusControl
                 color: cancelMouse.containsMouse ? Theme.surfaceHover : "transparent"
                 border.width: 1
                 border.color: Theme.hairline
@@ -155,7 +155,7 @@ Item {
                     text: "Cancel"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                 }
                 MouseArea {
                     id: cancelMouse
@@ -170,15 +170,15 @@ Item {
 
             Rectangle {
                 width: 84
-                height: 28
-                radius: 8
+                height: 32
+                radius: Theme.radiusControl
                 color: Theme.fg
                 Text {
                     anchors.centerIn: parent
                     text: "Authenticate"
                     color: Theme.accentInk
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     font.weight: Font.DemiBold
                 }
                 MouseArea {

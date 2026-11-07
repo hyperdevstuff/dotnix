@@ -5,10 +5,11 @@ NixOS + Home Manager configuration for `hyper`, built around:
 - **NixOS unstable** (`nixos-unstable`) and **Home Manager master**
 - **Niri** scrollable-tiling Wayland compositor
 - **Fuzzel** application launcher
-- **Quickshell** `notchD` — a minimal Dynamic-Island-style pill with the current time only
+- **Quickshell** `notchD` — Dynamic-Island-style pill and hub (media, audio, network, session)
 - **greetd + tuigreet** text login
 - **NVIDIA open kernel modules** for the RTX 4050 Max-Q
-- **PipeWire + WirePlumber**, **mako**, **swaybg**, **swaylock**
+- **PipeWire + WirePlumber**, **mako**, **awww**, **native Quickshell lock**
+- **MPD + rmpc** for the music library, **Yazi** for files
 
 ## Layout
 
@@ -25,14 +26,21 @@ NixOS + Home Manager configuration for `hyper`, built around:
 │   └── packages.nix                   # system tools
 ├── home/
 │   ├── default.nix                    # Home Manager entry point
-│   ├── shell.nix                      # fish, starship, fzf, zoxide, git
+│   ├── shell.nix                      # fish (vi mode), hydro, fzf, zoxide, git
 │   ├── foot.nix                       # terminal
+│   ├── kitty.nix                      # terminal + single-instance server
 │   ├── niri.nix                       # installs config.kdl
 │   ├── quickshell.nix                 # bar + systemd service
-│   ├── fuzzel.nix
+│   ├── fuzzel.nix                     # app launcher
+│   ├── clipboard.nix                  # cliphist watchers + fzf picker
+│   ├── music.nix                      # MPD + mpc + rmpc + MPRIS bridge
+│   ├── yazi.nix                       # Yazi config and plugins
 │   ├── mako.nix
 │   └── opencode.nix                   # phase 2, not imported yet
 └── dotfiles/
+    ├── bin/                           # clipmenu, music-shuffle, helpers
+    ├── music/ignore                   # score/soundtrack exclusions
+    ├── rmpc/config.ron
     ├── niri/config.kdl
     └── quickshell/
         ├── shell.qml                  # fallback bar
@@ -74,18 +82,24 @@ sudo nixos-rebuild switch --rollback
 | `Mod+Return` / `Mod+T` | terminal (foot) |
 | `Mod+Q` | terminal (kitty) |
 | `Mod+B` | browser (Helium) |
-| `Mod+V` | clipboard history (cliphist + fuzzel) |
+| `Mod+E` | file manager (Dolphin) |
+| `Mod+Shift+E` | file manager (Yazi, in kitty) |
+| `Mod+V` | clipboard history (cliphist + fzf in a floating kitty) |
 | `Mod+Alt+V` | toggle floating |
 | `Mod+Shift+V` | focus floating/tiling |
 | `Mod+D` / `Mod+Space` | app launcher (fuzzel) |
 | `Mod+C` | close window |
 | `Mod+Shift+C` | center column |
-| `Mod+Shift+Space` / `Mod+Shift+N` | toggle the NotchD pill |
-| `Mod+N` | show the NotchD pill |
+| `Mod+Shift+Space` / `Mod+Shift+N` | show/hide the NotchD pill |
+| `Mod+N` | open/close the NotchD hub |
 | `Mod+Shift+B` | set brightness to 60% |
-| `Mod+Shift+A` | audio settings (pavucontrol) |
-| `Mod+Alt+N` | Wi-Fi / Ethernet settings |
-| `Mod+Shift+E` | quit Niri |
+| `Mod+Shift+A` | audio controls (notchD) |
+| `Mod+Alt+A` | advanced audio (pavucontrol) |
+| `Mod+Alt+N` | Wi-Fi / Ethernet controls (notchD) |
+| `Mod+Alt+Shift+N` | advanced networks (nm-connection-editor) |
+| `Mod+Alt+S` | session and power (notchD) |
+| `Mod+Alt+M` | now playing (notchD) |
+| `Mod+Shift+Q` | quit Niri |
 | `Mod+Shift+Slash` | hotkey overlay |
 | `Mod+O` | overview |
 | `Mod+Left/Right/Up/Down`, `Mod+H/J/K/L` | focus |
@@ -105,7 +119,7 @@ sudo nixos-rebuild switch --rollback
 | `Mod+Ctrl+Shift+D` | clear dynamic cast target |
 | `Mod+Shift+Print` | screenshot window to clipboard |
 | `Print` | screenshot |
-| `Super+Alt+L` | lock (swaylock) |
+| `Super+Alt+L` | lock (native Quickshell lock) |
 | `CapsLock` / `Escape` | swapped (`caps:swapescape`) |
 
 `Mod` is **Super**.
@@ -130,7 +144,7 @@ An interactive niri keybind/capability reference lives at `docs/niri.html` — o
   wpctl set-volume @DEFAULT_AUDIO_SINK@ 10%+     # raise 10%
   wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.5      # set 50%
   wpctl set-mute   @DEFAULT_AUDIO_SINK@ toggle
-  pavucontrol                                    # GUI (Mod+Shift+A)
+  pavucontrol                                    # GUI (Mod+Alt+A)
   ```
 
 - **Wi-Fi / Ethernet:** NetworkManager is enabled. Use the tray applet or:
@@ -144,13 +158,50 @@ An interactive niri keybind/capability reference lives at `docs/niri.html` — o
   nmcli connection show
   ```
 
+## Music library
+
+The slow NTFS data disk is mounted by UUID at **`/mnt/library`** (systemd
+automount, released after 15 idle minutes), so scripts do not depend on the
+`New Volume` label or its spaces:
+
+```bash
+ls /mnt/library
+cd /mnt/library            # `lib` alias
+mpc update                 # scan after copying new files
+shuffle                    # or press S in rmpc
+music                      # rmpc TUI
+```
+
+`music-shuffle` clears the MPD queue and re-adds the whole library with a
+filter expression, excluding film/TV scores and soundtracks listed in
+`~/.config/music/ignore` (installed from `dotfiles/music/ignore`). It then
+turns random mode on and plays. MPD, `mpc` and `rmpc` are already about as
+light as a music player gets: MPD is a small daemon, `mpc` is a CLI, and rmpc
+is a TUI capped at 30 fps. No Electron player or browser tab is involved.
+
+Renaming the NTFS label is optional now (the mount uses the UUID). If you
+still want to:
+
+```bash
+# unmount first; the drive is not mounted while idle most of the time
+sudo ntfslabel /dev/sda2 library
+```
+
+## Clipboard
+
+`Mod+V` opens `cliphist` history in a floating kitty window running `fzf`.
+Unlike fuzzel's one-line dmenu mode, fzf wraps long clips and shows a preview:
+text is rendered by `bat`, images by `chafa`, and binary clips get a short
+placeholder. `Ctrl+D` in the picker deletes the highlighted entry.
+`wl-clip-persist` keeps the current clipboard alive after the owning app exits.
+
 ## Quickshell themes
 
 `notchD` ships with three themes: **gruvbox** (Gruvbox Dark), **eink**
-(paper-like light), and **vercel** (Black, the default). The pill is a
-minimal clock and can be hidden completely; nothing remains on screen while
-hidden. See `dotfiles/quickshell/notchD/README.md` for IPC commands and
-theme switching.
+(paper-like light), and **vercel** (Black, the default). It is now a small
+Dynamic-Island hub (media, audio, network, session, lock) rather than only a
+clock; hide it completely with `Mod+Shift+N`. See
+`dotfiles/quickshell/notchD/README.md` for IPC commands and theme switching.
 
 ## Troubleshooting
 
@@ -193,8 +244,10 @@ nixos-rebuild build --flake ~/dotnix#LOQ
 - **Shell:** `ls`, `ll`, `la`, `lla`, `lt`, `lS`, `lm`, `lG` are eza aliases with
   icons, Git status, and headers. zoxide is initialised with `--cmd cd`, so plain
   `cd` uses the frecency database and `cdi` opens the interactive picker. The
-  prompt is **hydro** (fish-native, async Git). See `docs/fish-aliases.md` for
-  the full alias reference, including the aliases adapted from the old dotfiles.
+  prompt is **hydro** (fish-native, async Git). Fish uses vi key bindings:
+  `Ctrl+E` opens Yazi and returns to the directory it exited in, `Ctrl+Y`
+  accepts an autosuggestion, and `Escape` enters normal mode. See
+  `docs/fish-aliases.md` for the full alias and keybinding reference.
 
 - **Neovim:** LazyVim config imported into `dotfiles/nvim` (2026-11-05), symlinked
   to `~/.config/nvim`. Lazy.nvim clones its plugins on first launch (needs network).

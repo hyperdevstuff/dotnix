@@ -24,13 +24,13 @@ FlyoutFrame {
                 text: Services.System.powerProfileText + " profile"
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 10
+                font.pixelSize: 11
             }
             Text {
                 text: Services.Session.sessionId.length > 0 ? ("session " + Services.Session.sessionId) : ""
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 11
                 elide: Text.ElideRight
             }
         }
@@ -108,7 +108,7 @@ FlyoutFrame {
             text: "Lock uses the native Quickshell lock screen. Suspend, reboot and shutdown use logind; polkit prompts appear in notchD."
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 8
+            font.pixelSize: 11
             wrapMode: Text.WordWrap
             opacity: 0.8
         }
@@ -126,7 +126,7 @@ FlyoutFrame {
 
         signal activated()
 
-        height: 64
+        height: 70
         radius: Theme.radiusSmall
         color: button.armed ? (Theme.dark ? Qt.rgba(0.97, 0.44, 0.44, 0.16) : Qt.rgba(0.86, 0.15, 0.15, 0.08))
             : (buttonMouse.containsMouse ? Theme.surfaceHover : Theme.surface)
@@ -163,7 +163,7 @@ FlyoutFrame {
                 text: button.armed ? "tap again" : button.hint
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 11
                 elide: Text.ElideRight
             }
         }

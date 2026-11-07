@@ -18,6 +18,40 @@ in
       set -gx EDITOR nvim
       set -gx VISUAL nvim
 
+      # Vi-style editing everywhere, with a shape-changing cursor.
+      # Escape leaves insert mode; normal/visual motions are the usual vim ones.
+      fish_vi_key_bindings
+      fish_vi_cursor
+
+      function open_yazi --description 'Open Yazi and return to its last directory'
+          # `y` is the wrapper Home Manager generates for programs.yazi.
+          y
+          commandline -f repaint
+      end
+
+      # Ctrl+E in insert mode: edit the current directory in Yazi, then come
+      # back to a usable prompt in whatever directory Yazi exited from.
+      bind -M insert \ce open_yazi
+      # Ctrl+Y accepts the inline autosuggestion; Ctrl+P/N stay history search.
+      bind -M insert \cy accept-autosuggestion
+      bind -M insert \cp up-or-search
+      bind -M insert \cn down-or-search
+
+      # Keep fzf's widgets usable in vi insert mode; sourcing its bindings
+      # happens before fish_vi_key_bindings, which would otherwise shadow them.
+      bind -M insert \cr fzf-history-widget
+      bind -M insert \ct fzf-file-widget
+      bind -M insert \ec fzf-cd-widget
+
+      # Visual-mode conveniences carried over from the old dotfiles.
+      bind -M visual V beginning-of-line begin-selection end-of-line force-repaint
+      bind -M visual u end-selection force-repaint
+      bind -M visual \x24 end-of-line
+      bind -M visual \x5e beginning-of-line
+      bind -M visual 0 beginning-of-line
+      bind -M visual gg beginning-of-buffer
+      bind -M visual G end-of-buffer
+
       # TEMPORARY: keep the existing npm OpenCode v2 usable until the Nix
       # package is enabled in phase 2.
       if test -x /home/hyper/.opencode/bin/opencode
@@ -51,7 +85,7 @@ in
       rebuild-boot = "sudo nixos-rebuild boot --flake ${config.home.homeDirectory}/dotnix#LOQ";
       flake-update = "nix flake update --flake ${config.home.homeDirectory}/dotnix";
       gc = "sudo nix-collect-garbage -d";
-
+      reup = "nix flake update && sudo nixos-rebuild switch --flake ~/dotnix#LOQ";
       # --- basics ---
       n = "nvim";
       x = "exit";
@@ -101,6 +135,11 @@ in
       wtf3000 = "fuser -v 3000/tcp";
       psg = "ps aux | rg";
       size = "du -sh --block-size=MB";
+
+      # --- music (MPD on the NTFS library) ---
+      music = "rmpc";
+      shuffle = "music-shuffle";
+      lib = "cd /mnt/library";
     };
   };
 

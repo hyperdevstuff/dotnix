@@ -228,7 +228,7 @@ Item {
                                             text: lockRoot.authenticating ? "Authenticating…" : "Locked"
                                             color: Theme.muted
                                             font.family: Theme.fontFamily
-                                            font.pixelSize: 9
+                                            font.pixelSize: 11
                                         }
                                     }
                                 }
@@ -236,8 +236,8 @@ Item {
                                 // --------------------------------- password
                                 Rectangle {
                                     Layout.fillWidth: true
-                                    height: 36
-                                    radius: 9
+                                    height: 40
+                                    radius: Theme.radiusControl
                                     color: Theme.dark ? Qt.rgba(1, 1, 1, 0.04) : Qt.rgba(0, 0, 0, 0.03)
                                     border.width: 1
                                     border.color: passwordInput.activeFocus ? Theme.fg : Theme.hairlineSoft
@@ -300,8 +300,8 @@ Item {
                                 // ----------------------------------- action
                                 Rectangle {
                                     Layout.fillWidth: true
-                                    height: 34
-                                    radius: 9
+                                    height: 38
+                                    radius: Theme.radiusControl
                                     color: unlockMouse.containsMouse ? Qt.lighter(Theme.fg, 1.15) : Theme.fg
                                     opacity: lockRoot.authenticating || lockRoot.password.length === 0 ? 0.55 : 1.0
 
@@ -330,7 +330,7 @@ Item {
                                     text: lockRoot.errorText
                                     color: Theme.danger
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 9
+                                    font.pixelSize: 11
                                     horizontalAlignment: Text.AlignHCenter
                                     wrapMode: Text.WordWrap
                                 }
@@ -343,7 +343,7 @@ Item {
                         text: "Press Enter to unlock · Esc clears"
                         color: Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 8
+                        font.pixelSize: 11
                         horizontalAlignment: Text.AlignHCenter
                         opacity: 0.75
                     }

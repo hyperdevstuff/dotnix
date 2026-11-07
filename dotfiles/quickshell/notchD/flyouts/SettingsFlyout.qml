@@ -19,7 +19,7 @@ FlyoutFrame {
             text: "Enabled modules appear in this order. Use the arrows to reorder; changes apply immediately and persist."
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 9
+            font.pixelSize: 11
             wrapMode: Text.WordWrap
         }
 
@@ -48,7 +48,7 @@ FlyoutFrame {
                         readonly property var info: Modules.manifest(modelData)
 
                         width: list.width
-                        height: 46
+                        height: 50
                         radius: Theme.radiusSmall
                         color: rowMouse.containsMouse ? Theme.surfaceHover : Theme.surface
                         border.width: 1
@@ -73,7 +73,7 @@ FlyoutFrame {
                             Rectangle {
                                 Layout.preferredWidth: 28
                                 Layout.preferredHeight: 28
-                                radius: 9
+                                radius: Theme.radiusControl
                                 color: Theme.dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
                                 Icon {
                                     anchors.centerIn: parent
@@ -100,7 +100,7 @@ FlyoutFrame {
                                     text: row.info ? String(row.info.description) : ""
                                     color: Theme.muted
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 8
+                                    font.pixelSize: 11
                                     elide: Text.ElideRight
                                 }
                             }
@@ -110,15 +110,15 @@ FlyoutFrame {
                                 spacing: 1
 
                                 Rectangle {
-                                    width: 20
-                                    height: 13
+                                    width: 22
+                                    height: 15
                                     radius: 4
                                     color: upMouse.containsMouse ? Theme.surfacePress : "transparent"
                                     opacity: row.index > 0 ? 1.0 : 0.25
                                     Icon {
                                         anchors.centerIn: parent
                                         glyph: "\uf077"
-                                        size: 8
+                                        size: 9
                                         tint: Theme.muted
                                     }
                                     MouseArea {
@@ -132,15 +132,15 @@ FlyoutFrame {
                                 }
 
                                 Rectangle {
-                                    width: 20
-                                    height: 13
+                                    width: 22
+                                    height: 15
                                     radius: 4
                                     color: downMouse.containsMouse ? Theme.surfacePress : "transparent"
                                     opacity: row.index < Modules.order.length - 1 ? 1.0 : 0.25
                                     Icon {
                                         anchors.centerIn: parent
                                         glyph: "\uf078"
-                                        size: 8
+                                        size: 9
                                         tint: Theme.muted
                                     }
                                     MouseArea {
@@ -180,7 +180,7 @@ FlyoutFrame {
                 text: "Disabled modules unload their flyout. Services stay native Quickshell singletons and are shared."
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 8
+                font.pixelSize: 11
                 wrapMode: Text.WordWrap
             }
         }

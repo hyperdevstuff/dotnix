@@ -1,0 +1,18 @@
+# Patterns excluded from `music-shuffle`, one PCRE2 regex per line.
+#
+# MPD matches these case-insensitively against every tag (`any`) and against
+# the file path relative to the music directory (`file`), so a line covers
+# both album tags and directory names. Keep patterns specific enough not to
+# swallow normal songs: `\bost\b` does not match "Ghost", for example.
+#
+# The library lives at /mnt/library/Music. Add one pattern per line, then run
+# `music-shuffle` again (or press S in rmpc).
+
+soundtrack
+original motion picture
+motion picture score
+\bscore\b
+\bost\b
+music from the
+\bF1\b
+Project Hail Mary

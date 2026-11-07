@@ -40,7 +40,7 @@ Item {
 
         Item {
             width: 24
-            height: 24
+            height: 26
             Layout.alignment: Qt.AlignVCenter
 
             Icon {
@@ -85,7 +85,7 @@ Item {
                 text: root.subtitle
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 10
+                font.pixelSize: 11
                 elide: Text.ElideRight
                 visible: root.subtitle.length > 0
             }
@@ -101,8 +101,8 @@ Item {
         Rectangle {
             visible: root.actionVisible
             width: actionLabel.implicitWidth + 14
-            height: 24
-            radius: 7
+            height: 26
+            radius: Theme.radiusControl
             color: actionMouse.containsMouse ? Theme.surfaceHover : "transparent"
 
             Text {
@@ -111,7 +111,7 @@ Item {
                 text: root.actionGlyph.length > 0 ? root.actionGlyph : root.actionText
                 color: root.actionDanger ? Theme.danger : Theme.muted
                 font.family: root.actionGlyph.length > 0 ? Theme.iconFont : Theme.fontFamily
-                font.pixelSize: root.actionGlyph.length > 0 ? 11 : 10
+                font.pixelSize: root.actionGlyph.length > 0 ? 12 : 11
             }
 
             MouseArea {

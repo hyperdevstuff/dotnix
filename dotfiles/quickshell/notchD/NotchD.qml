@@ -26,20 +26,39 @@ Item {
     readonly property bool authOpen: mode === "auth"
     readonly property bool pillLike: mode === "idle" || mode === "osd"
 
+    // Corner system. The hub and flyout share one continuous edge: when the
+    // flyout is open the hub's right corners and the flyout's left corners are
+    // square, so the pair reads as a single surface instead of two cards.
+    readonly property real surfaceRadius: pillLike ? Theme.radiusPill : Theme.radius
+    readonly property bool squareTop: notchMode && mode !== "auth"
+    readonly property real maskTopLeft: squareTop ? 0 : surfaceRadius
+    readonly property real maskTopRight: squareTop ? 0 : (flyoutOpen ? 0 : surfaceRadius)
+    readonly property real maskBottomLeft: surfaceRadius
+    readonly property real maskBottomRight: flyoutOpen ? 0 : surfaceRadius
+    readonly property real mask2TopLeft: flyoutOpen ? 0 : Theme.radius
+    readonly property real mask2TopRight: flyoutOpen ? (notchMode ? 0 : Theme.radius) : Theme.radius
+    readonly property real mask2BottomLeft: flyoutOpen ? 0 : Theme.radius
+    readonly property real mask2BottomRight: Theme.radius
+
     // Geometry. The item is always hub-centred; shell.qml positions it with
-    // x = (screenWidth - Theme.hubW) / 2 so the hub does not move when a
-    // flyout opens.
-    readonly property int hubW: Theme.hubW
+    // x = (screenWidth - hubW) / 2 so the hub does not move when a flyout
+    // opens. Theme.hubW is a floor: the surface grows when the chip values or
+    // a visible now-playing chip need more room, so nothing ever clips.
+    readonly property real minHubW: hubSurface ? hubSurface.requiredWidth : Theme.hubW
+    readonly property int hubW: Math.ceil(Math.max(Theme.hubW, minHubW))
     readonly property int hubH: Theme.hubH
     readonly property int flyoutW: Theme.flyoutW
     readonly property int flyoutH: Theme.flyoutH
     readonly property int mediaW: Theme.mediaW
     readonly property int mediaH: Theme.mediaH
-    readonly property int flyoutGap: Theme.gap
 
-    width: hubW + (flyoutOpen ? flyoutGap + flyoutW : 0)
+    // The flyout is flush with the hub's right edge; media is the only surface
+    // that grows downward, with a small gap.
+    readonly property int mediaGap: Theme.gap
+
+    width: hubW + (flyoutOpen ? flyoutW : 0)
     height: {
-        const mediaHeight = mediaOpen ? hubH + flyoutGap + mediaH : hubH;
+        const mediaHeight = mediaOpen ? hubH + mediaGap + mediaH : hubH;
         const flyoutHeight = flyoutOpen ? flyoutH : hubH;
         const authHeight = mode === "auth" ? Theme.authH : hubH;
         return Math.max(hubH, mediaHeight, flyoutHeight, authHeight);
@@ -85,23 +104,10 @@ Item {
     readonly property real maskW: surface.width
     readonly property real maskH: surface.height
 
-    readonly property bool panel2On: flyoutMaskOn || mediaMaskOn
     readonly property real mask2X: flyoutMaskOn ? flyoutItem.x : (mediaMaskOn ? mediaItem.x : 0)
     readonly property real mask2Y: flyoutMaskOn ? flyoutItem.y : (mediaMaskOn ? mediaItem.y : 0)
     readonly property real mask2W: flyoutMaskOn ? flyoutItem.width : (mediaMaskOn ? mediaItem.width : 0)
     readonly property real mask2H: flyoutMaskOn ? flyoutItem.height : (mediaMaskOn ? mediaItem.height : 0)
-
-    readonly property bool blurOn: mode === "hub" || mode === "flyout"
-        || mode === "media" || mode === "auth"
-    readonly property real blurX: maskX
-    readonly property real blurY: maskY
-    readonly property real blurW: maskW
-    readonly property real blurH: maskH
-    readonly property bool blur2On: panel2On
-    readonly property real blur2X: mask2X
-    readonly property real blur2Y: mask2Y
-    readonly property real blur2W: mask2W
-    readonly property real blur2H: mask2H
 
     // ---------------------------------------------------------------- surface
     Item {
@@ -115,8 +121,11 @@ Item {
         Components.Panel {
             anchors.fill: parent
             visible: root.mode !== "auth"
-            attachTop: root.notchMode && root.mode !== "auth"
-            panelRadius: root.pillLike ? Theme.radiusPill : Theme.radius
+            panelRadius: root.surfaceRadius
+            cornerTopLeft: root.maskTopLeft
+            cornerTopRight: root.maskTopRight
+            cornerBottomLeft: root.maskBottomLeft
+            cornerBottomRight: root.maskBottomRight
         }
 
         Item {
@@ -130,15 +139,6 @@ Item {
                 opacity: root.mode === "idle" ? 1 : 0
                 visible: opacity > 0.001
                 Behavior on opacity { NumberAnimation { duration: Motion.fast } }
-
-                Text {
-                    anchors.centerIn: parent
-                    text: Qt.formatTime(clock.date, "HH:mm")
-                    color: Theme.fg
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 13
-                    font.weight: Font.Medium
-                }
 
                 MouseArea {
                     anchors.fill: parent
@@ -162,6 +162,7 @@ Item {
             }
 
             Components.HubSurface {
+                id: hubSurface
                 anchors.fill: parent
                 state: root.state
                 opacity: (root.mode === "hub" || root.mode === "flyout" || root.mode === "media") ? 1 : 0
@@ -179,6 +180,51 @@ Item {
                     anchors.fill: parent
                     flow: root.polkitFlow
                 }
+            }
+        }
+
+        // Persistent centred clock. This lives on the surface, not inside any
+        // mode, so the time keeps the exact same x from the pill through the
+        // hub and into a side flyout. The date fades in only when there is
+        // room for it; the time itself never shifts.
+        Item {
+            id: clockLayer
+            anchors.centerIn: parent
+            width: Math.max(timeText.implicitWidth, dateText.implicitWidth)
+            height: timeText.implicitHeight
+            // In the pill only the time exists, so centre it. Once the date is
+            // shown, centre the whole time+date block instead of centring the
+            // time and hanging the date below it (which left a large top gap).
+            property real lift: root.mode === "idle" ? 0 : -dateText.implicitHeight / 2
+            anchors.verticalCenterOffset: lift
+            Behavior on lift { NumberAnimation { duration: Motion.glide; easing.type: Easing.OutCubic } }
+            visible: root.mode !== "auth" && root.mode !== "osd"
+            opacity: visible ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+
+            Text {
+                id: timeText
+                anchors.centerIn: parent
+                text: Qt.formatTime(clock.date, "HH:mm")
+                color: Theme.fg
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontDisplay
+                font.weight: Font.Medium
+            }
+
+            Text {
+                id: dateText
+                anchors.top: timeText.bottom
+                anchors.topMargin: -1
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: Qt.formatDate(clock.date, "ddd d MMM")
+                color: Theme.muted
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontLabel
+                font.weight: Font.Medium
+                opacity: root.mode === "idle" ? 0 : 1
+                visible: opacity > 0.001
+                Behavior on opacity { NumberAnimation { duration: Motion.fast } }
             }
         }
     }
@@ -240,18 +286,17 @@ Item {
 
     Item {
         id: flyoutItem
-        x: root.hubW + root.flyoutGap + (root.flyoutOpen ? 0 : -8)
+        x: root.hubW
         y: 0
         width: root.flyoutW
         height: root.flyoutH
         opacity: root.flyoutOpen ? 1 : 0
         visible: opacity > 0.001
-        scale: root.flyoutOpen ? 1 : 0.985
+        scale: root.flyoutOpen ? 1 : 0.99
         transformOrigin: Item.Left
 
         Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-        Behavior on x { NumberAnimation { duration: 210; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: 210; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
         Loader {
             id: flyoutLoader
@@ -287,7 +332,7 @@ Item {
     Item {
         id: mediaItem
         x: Math.round((root.hubW - root.mediaW) / 2)
-        y: root.hubH + root.flyoutGap
+        y: root.hubH + root.mediaGap
         width: root.mediaW
         height: root.mediaH
         opacity: root.mediaOpen ? 1 : 0

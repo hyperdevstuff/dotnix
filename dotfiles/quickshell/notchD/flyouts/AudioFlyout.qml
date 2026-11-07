@@ -13,8 +13,8 @@ FlyoutFrame {
 
     rightContent: Rectangle {
         width: mixerLabel.implicitWidth + 14
-        height: 24
-        radius: 7
+        height: 26
+        radius: Theme.radiusControl
         color: mixerMouse.containsMouse ? Theme.surfaceHover : "transparent"
         Row {
             id: mixerLabel
@@ -25,7 +25,7 @@ FlyoutFrame {
                 text: "Mixer"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 11
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
@@ -47,7 +47,7 @@ FlyoutFrame {
             text: "OUTPUT"
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 8
+            font.pixelSize: 11
             font.letterSpacing: 0.8
         }
 
@@ -81,7 +81,7 @@ FlyoutFrame {
             text: "INPUT"
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 8
+            font.pixelSize: 11
             font.letterSpacing: 0.8
         }
 
@@ -137,7 +137,7 @@ FlyoutFrame {
                     text: Services.Media.artist
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 11
                     elide: Text.ElideRight
                 }
             }
@@ -157,7 +157,7 @@ FlyoutFrame {
             Rectangle {
                 width: 28
                 height: 28
-                radius: 9
+                radius: Theme.radiusControl
                 color: Theme.surface
                 Icon {
                     anchors.centerIn: parent
@@ -195,7 +195,7 @@ FlyoutFrame {
         signal picked(var node)
 
         Layout.fillWidth: true
-        height: 26
+        height: 28
         contentWidth: chipRow.width
         contentHeight: height
         clip: true
@@ -211,8 +211,8 @@ FlyoutFrame {
                     required property var modelData
                     readonly property bool selected: chips.current === modelData
                     width: chipText.implicitWidth + 16
-                    height: 24
-                    radius: 7
+                    height: 26
+                    radius: Theme.radiusControl
                     color: selected ? Theme.fg : (chipMouse.containsMouse ? Theme.surfaceHover : Theme.surface)
                     border.width: 1
                     border.color: selected ? Theme.fg : Theme.hairlineSoft
@@ -222,7 +222,7 @@ FlyoutFrame {
                         text: Services.System.nodeLabel(modelData)
                         color: selected ? Theme.accentInk : Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 9
+                        font.pixelSize: 11
                         elide: Text.ElideRight
                         width: Math.min(implicitWidth, 150)
                     }

@@ -54,12 +54,12 @@ FlyoutFrame {
                 text: "Scanning…"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 11
             }
             Rectangle {
                 width: 24
-                height: 24
-                radius: 7
+                height: 30
+                radius: Theme.radiusControl
                 color: scanMouse.containsMouse ? Theme.surfaceHover : "transparent"
                 Icon {
                     anchors.centerIn: parent
@@ -103,7 +103,7 @@ FlyoutFrame {
                     text: "CONNECTED"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 8
+                    font.pixelSize: 11
                     font.letterSpacing: 0.8
                     visible: Services.Bluetooth.connectedDevices.length > 0
                 }
@@ -128,7 +128,7 @@ FlyoutFrame {
                     text: "PAIRED"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 8
+                    font.pixelSize: 11
                     font.letterSpacing: 0.8
                     visible: Services.Bluetooth.pairedDevices.length > 0
                     topPadding: 4
@@ -158,7 +158,7 @@ FlyoutFrame {
                     text: "AVAILABLE"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 8
+                    font.pixelSize: 11
                     font.letterSpacing: 0.8
                     visible: Services.Bluetooth.availableDevices.length > 0
                     topPadding: 4
@@ -194,7 +194,7 @@ FlyoutFrame {
 
         Item {
             Layout.fillWidth: true
-            height: 24
+            height: 30
 
             RowLayout {
                 anchors.fill: parent
@@ -205,7 +205,7 @@ FlyoutFrame {
                     text: Services.Bluetooth.errorMessage
                     color: Theme.danger
                     font.family: Theme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 11
                     elide: Text.ElideRight
                     visible: Services.Bluetooth.errorMessage.length > 0
                 }
@@ -214,8 +214,8 @@ FlyoutFrame {
 
                 Rectangle {
                     width: advancedLabel.implicitWidth + 16
-                    height: 24
-                    radius: 7
+                    height: 30
+                    radius: Theme.radiusControl
                     color: advMouse.containsMouse ? Theme.surfaceHover : "transparent"
                     Row {
                         id: advancedLabel
@@ -226,7 +226,7 @@ FlyoutFrame {
                             text: "Passkey"
                             color: Theme.muted
                             font.family: Theme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 11
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }

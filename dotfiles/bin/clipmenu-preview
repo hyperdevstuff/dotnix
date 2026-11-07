@@ -1,0 +1,46 @@
+#!/bin/sh
+# clipmenu-preview — render one cliphist entry for fzf's preview pane.
+#
+# Text is wrapped by bat; images are drawn with chafa; everything else gets a
+# short placeholder instead of a screenful of binary.
+
+set -u
+
+id=${1:?usage: clipmenu-preview ID}
+
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+
+cliphist decode "$id" >"$tmp" 2>/dev/null || {
+    printf 'cannot decode clip %s\n' "$id"
+    exit 0
+}
+
+mime=$(file -b --mime-type "$tmp")
+bytes=$(wc -c <"$tmp" | tr -d ' ')
+
+# `file` calls a one-character clip binary because it has no magic. Treat
+# short clips as text; they are almost always a copied word or number.
+if [ "$bytes" -gt 0 ] && [ "$bytes" -le 512 ]; then
+    bat --color=always --style=plain --wrap=character --language=txt -- "$tmp"
+    exit 0
+fi
+
+case $mime in
+    image/*)
+        if command -v chafa >/dev/null 2>&1; then
+            chafa --format=symbols --size=80x40 --animate=off -- "$tmp"
+        else
+            printf '[%s image]\n' "$mime"
+        fi
+        ;;
+    text/* | application/json | application/xml | application/xhtml+xml | application/javascript | application/x-shellscript)
+        bat --color=always --style=plain --wrap=character --language=txt -- "$tmp"
+        ;;
+    inode/x-empty)
+        printf '[empty clip]\n'
+        ;;
+    *)
+        printf '[%s, %s bytes]\n' "$mime" "$(wc -c <"$tmp" | tr -d ' ')"
+        ;;
+esac

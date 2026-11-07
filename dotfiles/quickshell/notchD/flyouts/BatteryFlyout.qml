@@ -22,7 +22,7 @@ FlyoutFrame {
             Rectangle {
                 width: 44
                 height: 44
-                radius: 13
+                radius: Theme.radius
                 color: Theme.surface
                 border.width: 1
                 border.color: Theme.hairlineSoft
@@ -50,7 +50,7 @@ FlyoutFrame {
                     text: Services.System.batteryReady ? Services.System.batteryTimeText : "This device is on AC power"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     elide: Text.ElideRight
                 }
             }
@@ -82,7 +82,7 @@ FlyoutFrame {
             text: Services.System.batteryStateText + " · " + Services.System.powerProfileText
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 10
+            font.pixelSize: 11
         }
 
         Rectangle {
@@ -138,7 +138,7 @@ FlyoutFrame {
             text: "POWER PROFILE"
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 8
+            font.pixelSize: 11
             font.letterSpacing: 0.8
         }
 
@@ -176,7 +176,7 @@ FlyoutFrame {
             text: "Battery health and power draw come from UPower. Profiles come from power-profiles-daemon."
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 8
+            font.pixelSize: 11
             wrapMode: Text.WordWrap
             opacity: 0.8
         }
@@ -188,7 +188,7 @@ FlyoutFrame {
         text: ""
         color: Theme.muted
         font.family: Theme.fontFamily
-        font.pixelSize: 10
+        font.pixelSize: 11
         Layout.fillWidth: true
     }
 
@@ -196,7 +196,7 @@ FlyoutFrame {
         text: ""
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: 10
+        font.pixelSize: 11
         font.weight: Font.Medium
         horizontalAlignment: Text.AlignRight
     }
@@ -208,8 +208,8 @@ FlyoutFrame {
         property bool selected: false
         signal picked()
 
-        height: 34
-        radius: 9
+        height: 44
+        radius: Theme.radiusControl
         color: selected ? Theme.fg : (buttonMouse.containsMouse ? Theme.surfaceHover : Theme.surface)
         border.width: 1
         border.color: selected ? Theme.fg : Theme.hairlineSoft
@@ -221,7 +221,7 @@ FlyoutFrame {
             Icon {
                 anchors.horizontalCenter: parent.horizontalCenter
                 glyph: button.glyph
-                size: 10
+                size: 12
                 tint: button.selected ? Theme.accentInk : Theme.muted
             }
             Text {
@@ -229,7 +229,7 @@ FlyoutFrame {
                 text: button.label
                 color: button.selected ? Theme.accentInk : Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 8
+                font.pixelSize: 11
             }
         }
 

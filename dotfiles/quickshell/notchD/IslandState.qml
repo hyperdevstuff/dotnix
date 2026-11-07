@@ -101,6 +101,12 @@ Item {
 
     function openFlyout(kind) {
         if (!kind) return;
+        // Clicking the active chip (or re-issuing the same IPC) closes it.
+        if (mode === "flyout" && flyoutKind === String(kind)) {
+            mode = "hub";
+            flyoutKind = "";
+            return;
+        }
         hidden = false;
         stopPeeks();
         flyoutKind = String(kind);
@@ -174,6 +180,8 @@ Item {
     }
 
     function toggleExpanded() {
+        // A polkit prompt owns the surface; never dismiss it from a keybind.
+        if (mode === "auth") return;
         if (hidden) { hidden = false; stateIdle(); return; }
         if (interactive) collapse();
         else openHub();

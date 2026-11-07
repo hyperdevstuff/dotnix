@@ -22,7 +22,7 @@ Item {
     signal muteToggled()
     signal cancelled()
 
-    implicitHeight: 62
+    implicitHeight: 68
     implicitWidth: 260
 
     property bool dragging: false
@@ -59,7 +59,7 @@ Item {
                     text: root.subtitle
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: 11
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                     visible: root.subtitle.length > 0

@@ -78,6 +78,35 @@ is the source of truth.
 | `psg` | `ps aux \| rg` | grep processes |
 | `size` | `du -sh --block-size=MB` | |
 
+### Music and the library drive
+| Alias | Expands to | Notes |
+| --- | --- | --- |
+| `music` | `rmpc` | MPD TUI (the `S` key shuffles the filtered library) |
+| `shuffle` | `music-shuffle` | rebuild the queue from the library, minus scores |
+| `lib` | `cd /mnt/library` | NTFS data disk, automounted by UUID |
+
+## Fish vi mode and useful keys
+
+`home/shell.nix` enables `fish_vi_key_bindings` and `fish_vi_cursor`. Escape
+enters normal mode; normal/visual mode use the usual vim motions. Extra
+bindings, all in insert mode unless noted:
+
+| Keys | Action |
+| --- | --- |
+| `Ctrl+E` | open Yazi (`y`) and return to the directory it exited in |
+| `Ctrl+Y` | accept the inline autosuggestion |
+| `Ctrl+P` / `Ctrl+N` | history search up / down |
+| `Ctrl+R` | fzf history picker |
+| `Ctrl+T` | fzf file picker |
+| `Alt+C` | fzf directory picker |
+| `V` (visual) | select the line |
+| `$` / `^` / `0` (visual) | end / start of line |
+| `gg` / `G` (visual) | start / end of buffer |
+| `u` (visual) | end the selection |
+
+`y` is not an alias: Home Manager's `programs.yazi.enableFishIntegration`
+generates it as a fish function so quitting Yazi can `cd` the shell.
+
 ## Deliberately dropped from the old config
 
 | Old alias | Why |

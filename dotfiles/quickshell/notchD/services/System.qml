@@ -173,19 +173,66 @@ Singleton {
     function refreshVolume() { volProc.running = true; }
 
     // ------------------------------------------------------------ night light
+    // This GPU exposes no gamma control: niri advertises
+    // zwlr_gamma_control_manager_v1 but the NVIDIA output answers `failed()`,
+    // and gammastep then hangs forever instead of exiting. Night light is a
+    // click-through tint overlay instead (see components/NightLight.qml).
+    // Kelvin selects the tint colour; opacity scales with warmth. It is a warm
+    // filter, not calibrated gamma, and it does not lift the black point much
+    // at the default 0.34 maximum.
     property bool nightLight: false
-    readonly property int nightLightTemp: 3500
+    property int nightLightTemp: 3500
 
-    function setNightLight(enabled) {
-        if (enabled === nightLight) return;
-        nightLight = enabled;
-        // gammastep -O applies a one-shot adjustment and exits, so turning the
-        // effect off must reset the gamma ramp rather than kill a process.
-        if (enabled) Quickshell.execDetached(["gammastep", "-O", String(nightLightTemp), "-b", "1.0"]);
-        else Quickshell.execDetached(["gammastep", "-x"]);
+    readonly property int nightLightMin: 1700
+    readonly property int nightLightMax: 6500
+    readonly property color nightLightColor: root.kelvinColor(nightLightTemp)
+    readonly property real nightLightAlpha: root.nightLight
+        ? 0.34 * (root.nightLightMax - root.nightLightTemp) / (root.nightLightMax - root.nightLightMin)
+        : 0.0
+    readonly property string nightLightText: root.nightLight
+        ? (root.nightLightTemp + "K · " + root.kelvinName(root.nightLightTemp))
+        : "Off"
+
+    function clamp255(v) { return Math.max(0, Math.min(255, v)); }
+
+    // Tanner Helland's blackbody approximation. Good enough for a tint.
+    function kelvinColor(k) {
+        const t = Math.max(1000, Math.min(40000, Number(k) || 6500)) / 100;
+        let r, g, b;
+        if (t <= 66) {
+            r = 255;
+            g = 99.4708025861 * Math.log(t) - 161.1195681661;
+            b = t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+        } else {
+            r = 329.698727446 * Math.pow(t - 60, -0.1332047592);
+            g = 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+            b = 255;
+        }
+        return Qt.rgba(root.clamp255(r) / 255, root.clamp255(g) / 255, root.clamp255(b) / 255, 1);
     }
 
-    function toggleNightLight() { setNightLight(!nightLight); }
+    function kelvinName(k) {
+        if (k <= 2200) return "candle";
+        if (k <= 3000) return "very warm";
+        if (k <= 4000) return "warm";
+        if (k <= 5000) return "neutral";
+        return "cool";
+    }
+
+    function setNightLight(enabled) { root.nightLight = !!enabled; }
+    function toggleNightLight() { root.nightLight = !root.nightLight; }
+
+    function setNightLightTemp(k) {
+        const t = Math.max(root.nightLightMin, Math.min(root.nightLightMax, Math.round(Number(k) || 3500)));
+        if (t === root.nightLightTemp) return;
+        root.nightLightTemp = t;
+        // Moving the control is intent to enable it.
+        root.nightLight = true;
+    }
+
+    function stepNightLightTemp(delta) {
+        root.setNightLightTemp(root.nightLightTemp + Math.round(Number(delta) || 100));
+    }
 
     // ---------------------------------------------------------------- polling
     // Brightness has no native Quickshell service; poll it slowly so hardware

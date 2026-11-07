@@ -4,109 +4,84 @@ import Quickshell
 import ".."
 import "../services" as Services
 
-// Horizontal hub: clock, one compact chip per enabled module, an optional
-// now-playing chip and the module settings button. All detail opens sideways
-// as a flyout; music is the only surface that grows downward.
+// Horizontal hub. The clock is owned by NotchD.qml and stays at the exact
+// centre of the surface in both the pill and hub shapes. This file only lays
+// out the module chips around that centre gap: enabled modules are split
+// evenly left and right, now-playing sits immediately left of the clock, and
+// the Modules gear sits at the right edge.
 Item {
     id: root
 
     property var state: null
     readonly property string screenName: Quickshell.screens.length > 0 ? Quickshell.screens[0].name : ""
 
-    SystemClock {
-        id: clock
-        precision: SystemClock.Minutes
-    }
+    readonly property int chipH: 44
+    // Space reserved for the centred clock. Must match the clock in NotchD.qml.
+    readonly property int centerGap: 96
+    readonly property int leftCount: Math.ceil(Modules.enabledIds.length / 2)
 
-    RowLayout {
-        anchors.fill: parent
-        anchors.leftMargin: 10
-        anchors.rightMargin: 10
-        anchors.topMargin: 8
-        anchors.bottomMargin: 8
+    // Smallest surface that contains the wider side plus the clock gap. The
+    // clock stays at the centre, so the wider group is the limiting one.
+    // NotchD.qml uses this as a floor for hubW: values such as "Balanced",
+    // "Unavailable" or a visible now-playing chip must never clip the panel.
+    readonly property real requiredWidth: Math.max(leftGroup.width, rightGroup.width) * 2
+        + centerGap + 2 * Theme.hubSidePad
+
+    // ------------------------------------------------------------ left side
+    Row {
+        id: leftGroup
+        anchors.right: parent.horizontalCenter
+        anchors.rightMargin: root.centerGap / 2
+        anchors.verticalCenter: parent.verticalCenter
         spacing: 6
 
-        // ------------------------------------------------------------- clock
-        Item {
-            Layout.preferredWidth: 44
-            Layout.fillHeight: true
-
-            Column {
-                anchors.centerIn: parent
-                spacing: -1
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: Qt.formatTime(clock.date, "HH:mm")
-                    color: Theme.fg
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 16
-                    font.weight: Font.DemiBold
-                }
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: Qt.formatDate(clock.date, "ddd")
-                    color: Theme.muted
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 8
-                }
-            }
-        }
-
-        Rectangle {
-            Layout.preferredWidth: 1
-            Layout.preferredHeight: 24
-            Layout.alignment: Qt.AlignVCenter
-            color: Theme.hairlineSoft
-        }
-
-        // ------------------------------------------------------------- chips
         Repeater {
-            model: Modules.enabledManifests
+            model: root.leftCount
 
             delegate: HubChip {
-                required property var modelData
                 required property int index
-
-                manifest: modelData
+                manifest: Modules.enabledManifests[index]
                 focused: root.state && root.state.mode === "hub"
                     && root.state.hubIndex === index
                 onHoveredChanged: if (hovered && root.state) root.state.hubIndex = index
                 onActivated: if (root.state) {
                     root.state.hubIndex = index;
-                    root.state.openFlyout(modelData.id);
+                    if (manifest) root.state.openFlyout(manifest.id);
                 }
             }
         }
 
-        // Nothing enabled: the hub still has to explain itself.
-        Text {
-            Layout.fillWidth: true
-            visible: Modules.enabledIds.length === 0
-            text: "No modules enabled"
-            color: Theme.muted
-            font.family: Theme.fontFamily
-            font.pixelSize: 10
-            horizontalAlignment: Text.AlignHCenter
-        }
-
-        // ------------------------------------------------------- now playing
+        // Now playing is last so it sits next to the clock, not at the edge.
         Rectangle {
             id: mediaChip
             visible: Services.Media.hasPlayer
-            Layout.preferredWidth: visible ? 32 : 0
-            Layout.fillHeight: true
-            radius: Theme.radiusSmall
+            width: visible ? 108 : 0
+            height: root.chipH
+            radius: Theme.radiusControl
             color: mediaMouse.containsMouse ? Theme.surfaceHover : "transparent"
             border.width: root.state && root.state.mode === "media" ? 1 : 0
             border.color: Theme.fg
 
             Behavior on color { ColorAnimation { duration: 110 } }
 
-            Icon {
+            Row {
                 anchors.centerIn: parent
-                glyph: Services.Media.playing ? "\uf04c" : "\uf04b"
-                size: 11
-                tint: Services.Media.playing ? Theme.ok : Theme.muted
+                spacing: 6
+                Icon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    glyph: Services.Media.playing ? "\uf04c" : "\uf04b"
+                    size: 12
+                    tint: Services.Media.playing ? Theme.ok : Theme.muted
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(implicitWidth, mediaChip.width - 44)
+                    text: Services.Media.title.length > 0 ? Services.Media.title : "Now playing"
+                    color: Theme.muted
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontLabel
+                    elide: Text.ElideRight
+                }
             }
 
             MouseArea {
@@ -117,13 +92,40 @@ Item {
                 onClicked: if (root.state) root.state.openMedia()
             }
         }
+    }
 
-        // -------------------------------------------------------- settings
+    // ----------------------------------------------------------- right side
+    Row {
+        id: rightGroup
+        anchors.left: parent.horizontalCenter
+        anchors.leftMargin: root.centerGap / 2
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 6
+
+        Repeater {
+            model: Modules.enabledIds.length - root.leftCount
+
+            delegate: HubChip {
+                required property int index
+                readonly property int hubPosition: root.leftCount + index
+                manifest: Modules.enabledManifests[hubPosition]
+                focused: root.state && root.state.mode === "hub"
+                    && root.state.hubIndex === hubPosition
+                onHoveredChanged: if (hovered && root.state) root.state.hubIndex = hubPosition
+                onActivated: if (root.state) {
+                    root.state.hubIndex = hubPosition;
+                    if (manifest) root.state.openFlyout(manifest.id);
+                }
+            }
+        }
+
+        // Modules settings. Kept at the outer edge so it never crowds the
+        // state chips next to the clock.
         Rectangle {
             id: settingsChip
-            Layout.preferredWidth: 30
-            Layout.fillHeight: true
-            radius: Theme.radiusSmall
+            width: 34
+            height: root.chipH
+            radius: Theme.radiusControl
             color: settingsMouse.containsMouse ? Theme.surfaceHover : "transparent"
 
             Behavior on color { ColorAnimation { duration: 110 } }
@@ -131,7 +133,7 @@ Item {
             Icon {
                 anchors.centerIn: parent
                 glyph: "\uf013"
-                size: 12
+                size: 14
                 tint: root.state && root.state.flyoutKind === "settings" ? Theme.fg : Theme.muted
             }
 
@@ -145,7 +147,7 @@ Item {
         }
     }
 
-    // ------------------------------------------------------------- chip view
+    // --------------------------------------------------------------- chips
     component HubChip: Rectangle {
         id: chip
 
@@ -157,73 +159,46 @@ Item {
 
         readonly property string id: manifest ? String(manifest.id) : ""
 
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        radius: Theme.radiusSmall
-        color: chip.hovered || chip.focused ? Theme.surfaceHover : Theme.surface
+        width: Math.max(64, chipContent.implicitWidth + 22)
+        height: root.chipH
+        radius: Theme.radiusControl
+        color: chip.hovered || chip.focused ? Theme.surfaceHover : "transparent"
         border.width: chip.focused ? 1 : 0
         border.color: Theme.fg
         antialiasing: true
 
         Behavior on color { ColorAnimation { duration: 110 } }
 
-        RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            spacing: 7
+        Row {
+            id: chipContent
+            anchors.centerIn: parent
+            spacing: 6
 
-            Rectangle {
-                Layout.preferredWidth: 24
-                Layout.preferredHeight: 24
-                Layout.alignment: Qt.AlignVCenter
-                radius: 8
-                color: Theme.dark ? Qt.rgba(1, 1, 1, 0.05) : Qt.rgba(0, 0, 0, 0.035)
-
-                Icon {
-                    anchors.centerIn: parent
-                    glyph: chip.manifest ? String(chip.manifest.icon) : "\uf128"
-                    size: 11
-                    tint: root.iconTint(chip.id)
-                }
-
-                Rectangle {
-                    width: 5
-                    height: 5
-                    radius: 3
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.rightMargin: 2
-                    anchors.topMargin: 2
-                    color: root.statusColor(chip.id)
-                    visible: color.a > 0
-                }
+            Icon {
+                anchors.verticalCenter: parent.verticalCenter
+                glyph: chip.manifest ? String(chip.manifest.icon) : "\uf128"
+                size: 14
+                tint: root.iconTint(chip.id)
             }
 
-            Column {
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                spacing: -1
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, 96)
+                text: root.valueFor(chip.id)
+                color: Theme.fg
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.fontBody
+                font.weight: Font.Medium
+                elide: Text.ElideRight
+            }
 
-                Text {
-                    width: parent.width
-                    text: chip.manifest ? String(chip.manifest.title) : ""
-                    color: Theme.muted
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 8
-                    font.letterSpacing: 0.4
-                    elide: Text.ElideRight
-                }
-
-                Text {
-                    width: parent.width
-                    text: root.valueFor(chip.id)
-                    color: Theme.fg
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 10
-                    font.weight: Font.Medium
-                    elide: Text.ElideRight
-                }
+            Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 5
+                height: 5
+                radius: 3
+                color: root.statusColor(chip.id)
+                visible: color.a > 0
             }
         }
 
@@ -258,11 +233,11 @@ Item {
             return Services.Bluetooth.connectedCount > 0 ? Theme.ok
                 : (Services.Bluetooth.enabled ? Theme.info : Theme.muted);
         case "audio":
-            return Services.System.volumeMuted ? Theme.warn : Theme.ok;
+            return Services.System.volumeMuted ? Theme.warn : "transparent";
         case "battery":
             if (!Services.System.batteryReady) return "transparent";
             return Services.System.batteryCharging ? Theme.ok
-                : (Services.System.batteryPercent <= 15 ? Theme.danger : Theme.muted);
+                : (Services.System.batteryPercent <= 15 ? Theme.danger : "transparent");
         case "display":
             return Services.System.nightLight ? Theme.info : "transparent";
         default:
@@ -273,14 +248,17 @@ Item {
     function valueFor(id) {
         switch (id) {
         case "wifi":
+            // The chip is deliberately short: the status dot carries the
+            // connection state and the flyout shows the SSID. A long SSID here
+            // would elide to something like "Manage…", which says nothing.
             return Services.Network.connected
-                ? (Services.Network.currentSsid || "Connected")
-                : (Services.Network.wifiEnabled ? "Not connected" : "Off");
+                ? "On"
+                : (Services.Network.wifiEnabled ? "No link" : "Off");
         case "bluetooth": {
             if (!Services.Bluetooth.available) return "Unavailable";
             if (!Services.Bluetooth.enabled) return "Off";
             const n = Services.Bluetooth.connectedCount;
-            return n > 0 ? (n + " connected") : "On";
+            return n > 0 ? (n + " on") : "On";
         }
         case "audio":
             return Services.System.volumeMuted
@@ -288,10 +266,9 @@ Item {
         case "battery":
             return Services.System.batteryReady
                 ? (Services.System.batteryPercent + "%")
-                : "AC power";
+                : "AC";
         case "display":
-            return Math.round(Services.System.brightness * 100) + "%"
-                + (Services.System.nightLight ? " · Night" : "");
+            return Math.round(Services.System.brightness * 100) + "%";
         case "session":
             return Services.System.powerProfileText;
         default:

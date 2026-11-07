@@ -2,13 +2,14 @@ import QtQuick
 import ".."
 import QtQuick.Layouts
 
-// Side flyout shell: one full-height panel with a back header, body and
-// optional right header actions. Content is supplied by the flyout pages.
+// Side flyout shell. It docks flush to the right edge of the hub: the inner
+// corners are square so the hub and flyout read as one surface, while the
+// outer corners keep the card radius. Content is supplied by the flyout pages.
 Item {
     id: root
 
     property string title: ""
-    property bool showBack: true
+    property bool showBack: false
     property alias rightContent: rightSlot.data
     default property alias bodyContent: body.data
 
@@ -20,12 +21,16 @@ Item {
     Panel {
         anchors.fill: parent
         panelRadius: Theme.radius
+        cornerTopLeft: 0
+        cornerBottomLeft: 0
+        cornerTopRight: Theme.notchMode ? 0 : Theme.radius
+        cornerBottomRight: Theme.radius
     }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
+        anchors.margins: Theme.pad
+        spacing: 10
 
         Item {
             Layout.fillWidth: true
@@ -33,18 +38,18 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                spacing: 6
+                spacing: 8
 
                 Rectangle {
-                    width: 26
-                    height: 26
-                    radius: 8
+                    width: 28
+                    height: 28
+                    radius: Theme.radiusControl
                     visible: root.showBack
                     color: backMouse.containsMouse ? Theme.surfaceHover : "transparent"
                     Icon {
                         anchors.centerIn: parent
                         glyph: "\uf053"
-                        size: 11
+                        size: 12
                         tint: Theme.fg
                     }
                     MouseArea {
@@ -61,17 +66,23 @@ Item {
                     text: root.title
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 14
+                    font.pixelSize: Theme.fontTitle
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
 
                 RowLayout {
                     id: rightSlot
-                    spacing: 6
+                    spacing: 8
                     Layout.alignment: Qt.AlignVCenter
                 }
             }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: Theme.hairlineSoft
         }
 
         Item {

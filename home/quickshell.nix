@@ -15,6 +15,11 @@
     };
   };
 
+  # The module writes this path as a plain symlink. `force` makes activation
+  # replace whatever is there (for example a development symlink into this
+  # repo) instead of aborting with "Existing file ... would be clobbered".
+  xdg.configFile."quickshell/notchD".force = true;
+
   # Quickshell lives in the niri session; stop it when niri goes away.
   systemd.user.services.quickshell.Unit.PartOf = [ "niri.service" ];
   # The shell is a config symlink: restart it whenever the QML tree changes,

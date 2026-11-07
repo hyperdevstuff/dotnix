@@ -10,6 +10,9 @@
   imports = [
     ./foot.nix
     ./clipboard.nix
+    ./polkit.nix
+    ./udiskie.nix
+    ./idle.nix
     ./kitty.nix
     ./shell.nix
     ./niri.nix
@@ -18,6 +21,8 @@
     ./quickshell.nix
     ./fuzzel.nix
     ./mako.nix
+    ./music.nix
+    ./yazi.nix
     inputs.helium-browser.homeModules.default
     inputs.hex.homeManagerModules.default
 
@@ -110,7 +115,7 @@
       "x-scheme-handler/http" = [ "helium.desktop" ];
       "x-scheme-handler/https" = [ "helium.desktop" ];
       "application/pdf" = [ "helium.desktop" ];
-      "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.desktop" ];
+      "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.Nightly.desktop" ];
       "x-scheme-handler/paper" = [ "paper-desktop.desktop" ];
       "x-scheme-handler/paper-dev" = [ "paper-desktop.desktop" ];
       # Neovim is the default editor for text and source files.
@@ -125,7 +130,7 @@
       "text/x-nix" = [ "nvim.desktop" ];
     };
     associations.added = {
-      "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.desktop" ];
+      "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.Nightly.desktop" ];
       "x-scheme-handler/paper" = [ "paper-desktop.desktop" ];
       "x-scheme-handler/paper-dev" = [ "paper-desktop.desktop" ];
     };
@@ -157,11 +162,10 @@
   home.packages = with pkgs; [
     brave-origin
     firefox
-    zen-browser
+    inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
     mpv
     imv
     zathura
-    yazi
     nixfmt
     (pkgs.callPackage ../pkgs/t3code-nightly.nix { })
     # pkgs.opencode-desktop

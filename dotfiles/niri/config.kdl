@@ -25,6 +25,12 @@ input {
     }
 }
 
+// Hide the pointer while typing and after a couple of seconds of inactivity.
+cursor {
+    hide-when-typing
+    hide-after-inactive-ms 2000
+}
+
 // Pinned to 144 Hz — the panel's true max. VRR is enabled below.
 output "eDP-1" {
     mode "1920x1080@144.001"
@@ -43,9 +49,12 @@ layout {
         proportion 0.33333
         proportion 0.5
         proportion 0.66667
+        proportion 1.0
     }
 
-    default-column-width { proportion 0.5; }
+    // Open every app full-width. Columns can still be resized/cycled with
+    // the presets above; this only changes what new windows start at.
+    default-column-width { proportion 1.0; }
 
     // Minimal look: no focus glow, one hairline border around every window.
     // Colors come from the matugen include above; width/shadows stay here.
@@ -182,6 +191,21 @@ window-rule {
     open-floating true
 }
 
+// The clipboard picker is a kitty window with --class clipmenu; it should
+// float above the layout instead of taking a column. Its size comes from
+// kitty's initial_window_width/height overrides in the Mod+V bind.
+window-rule {
+    match app-id=r#"^clipmenu$"#
+    open-floating true
+}
+
+// Keep password managers out of screencasts and cast targets. Several
+// `match` lines in one rule are ANDed, so the alternatives are one regex.
+window-rule {
+    match app-id=r#"^(org\.keepassxc\.KeePassXC|com\.bitwarden\.Bitwarden|com\.onepassword\.1Password|org\.gnome\.World\.Secrets)$"#
+    block-out-from "screencast"
+}
+
 // Rounded windows that match the hairline border and shadow. This is the
 // classic niri setup: niri rounds the border/shadow, then clips the window
 // (and its client-side shadows) to the same geometry.
@@ -204,6 +228,13 @@ layer-rule {
     }
 }
 
+// Notifications can contain secrets (2FA codes, message previews); keep them
+// out of screencasts as well.
+layer-rule {
+    match namespace="^notifications$"
+    block-out-from "screencast"
+}
+
 binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
@@ -217,10 +248,11 @@ binds {
     Mod+Space hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
     Super+Alt+L allow-when-locked=true hotkey-overlay-title="Lock the screen" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "lock"; }
 
-    // Quickshell NotchD pill (expand/show) and toggle (hide/show).
-    Mod+N hotkey-overlay-title="Expand NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "--" "expand"; }
-    Mod+Shift+N hotkey-overlay-title="Toggle NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
-    Mod+Shift+Space hotkey-overlay-title="Toggle NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
+    // Quickshell NotchD: Mod+N opens the hub and closes it again on the next
+    // press (hub, flyout or media). Mod+Shift+N hides the whole island.
+    Mod+N hotkey-overlay-title="Toggle NotchD hub" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleExpanded"; }
+    Mod+Shift+N hotkey-overlay-title="Show/hide NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
+    Mod+Shift+Space hotkey-overlay-title="Show/hide NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
 
     // Hex dictation. niri has no working GlobalShortcuts portal, so we bind
     // Hex's own control commands (upstream's recommended Wayland setup).
@@ -397,7 +429,7 @@ binds {
     Mod+Shift+Minus { set-window-height "-10%"; }
     Mod+Shift+Equal { set-window-height "+10%"; }
 
-    Mod+V       hotkey-overlay-title="Clipboard history" { spawn "/home/hyper/.local/bin/clipmenu"; }
+    Mod+V       hotkey-overlay-title="Clipboard history" { spawn "kitty" "--single-instance" "--class" "clipmenu" "-o" "initial_window_width=960" "-o" "initial_window_height=640" "-e" "/home/hyper/.local/bin/clipmenu"; }
     Mod+Alt+V   hotkey-overlay-title="Toggle window floating" { toggle-window-floating; }
     Mod+Shift+V { switch-focus-between-floating-and-tiling; }
 
@@ -408,9 +440,18 @@ binds {
     Alt+Print  { screenshot-window; }
     Mod+Shift+Print hotkey-overlay-title="Screenshot window to clipboard" { screenshot-window write-to-disk=false; }
 
+    // Mirror the focused output into a window; move it to the target screen
+    // and fullscreen it with Mod+Shift+F. Needs wl-mirror + jq.
+    Mod+P repeat=false hotkey-overlay-title="Mirror focused output" { spawn-sh "wl-mirror $(niri msg --json focused-output | jq -r .name)"; }
+
+    // Yazi in a fresh kitty window; the old file manager shortcut (Mod+E)
+    // still opens Dolphin for GUI work. Quit moved off Mod+Shift+E to
+    // Mod+Shift+Q to make room.
+    Mod+Shift+E hotkey-overlay-title="Open Yazi" { spawn "kitty" "--single-instance" "--class" "yazi" "-e" "yazi"; }
+
     Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
 
-    Mod+Shift+E { quit; }
+    Mod+Shift+Q { quit; }
     Ctrl+Alt+Delete { quit; }
 
     Mod+Shift+P { power-off-monitors; }

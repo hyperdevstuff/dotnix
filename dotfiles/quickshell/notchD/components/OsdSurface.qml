@@ -44,7 +44,7 @@ Item {
         case "mic": return Services.System.sourceName;
         case "battery": return Services.System.batteryTimeText;
         case "workspace": return Services.Compositor.activeWorkspaceName(Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "");
-        case "nightlight": return Services.System.nightLight ? "On · 3500K" : "Off";
+        case "nightlight": return Services.System.nightLightText;
         case "theme": return Theme.dark ? "Dark" : "Light";
         default: return (state && state.osdText.length > 0) ? state.osdText : "";
         }
@@ -100,7 +100,7 @@ Item {
                     text: root.derivedTitle
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
@@ -109,7 +109,7 @@ Item {
                     text: root.derivedValue
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 12
                     font.weight: Font.DemiBold
                 }
             }
@@ -149,7 +149,7 @@ Item {
         text: root.derivedText
         color: Theme.muted
         font.family: Theme.fontFamily
-        font.pixelSize: 9
+        font.pixelSize: 11
         elide: Text.ElideRight
     }
 }

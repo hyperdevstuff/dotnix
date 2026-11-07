@@ -19,8 +19,8 @@ Item {
     property real anchorX: 0
     property real anchorY: 0
 
-    readonly property int cardWidth: 232
-    readonly property int rowHeight: 32
+    readonly property int cardWidth: 240
+    readonly property int rowHeight: 36
     readonly property int separatorGap: 9
 
     readonly property var entries: [
@@ -141,7 +141,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            radius: 12
+            radius: Theme.radius
             color: Theme.bgElev
             border.width: 1
             border.color: Theme.hairline
@@ -178,7 +178,7 @@ Item {
                                 right: parent.right
                             }
                             height: root.rowHeight
-                            radius: 8
+                            radius: Theme.radiusControl
                             color: hover.hovered ? Theme.hairline : "transparent"
 
                             Text {
@@ -187,8 +187,8 @@ Item {
                                 anchors.leftMargin: 10
                                 text: slot.modelData.label
                                 color: Theme.fg
-                                font.family: "Roboto"
-                                font.pixelSize: 12
+                                font.family: Theme.fontFamily
+                                font.pixelSize: Theme.fontBody
                             }
 
                             HoverHandler {

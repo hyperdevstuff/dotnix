@@ -1,0 +1,95 @@
+#!/bin/sh
+# music-shuffle — replace the MPD queue with the whole library, minus film/TV
+# scores and soundtracks, then play it in random order.
+#
+# Filtering happens inside MPD (`searchadd` with a filter expression), so the
+# 459-track library is never loaded into a shell variable and no second copy of
+# the tags is read from the slow NTFS disk.
+#
+# Patterns come from ~/.config/music/ignore (installed from dotfiles/music/
+# ignore). Each one is applied to every tag and to the relative file path.
+
+set -eu
+
+music_dir=${MUSIC_DIR:-/mnt/library/Music}
+config_home=${XDG_CONFIG_HOME:-$HOME/.config}
+ignore_file=$config_home/music/ignore
+
+die() {
+    printf 'music-shuffle: %s\n' "$*" >&2
+    exit 1
+}
+
+command -v mpc >/dev/null 2>&1 || die "mpc is not installed"
+
+# Touching the directory triggers the systemd automount.
+[ -d "$music_dir" ] || die "$music_dir is not available (is the drive plugged in?)"
+
+if ! mpc stats >/dev/null 2>&1; then
+    die "cannot reach MPD (try: systemctl --user status mpd.socket)"
+fi
+
+# `mpc stats` starts MPD through socket activation, but the tag cache can
+# still be empty on a fresh install. Build it once, then be quiet.
+songs=$(mpc stats | sed -n 's/^Songs: //p')
+case $songs in
+    '' | *[!0-9]*) songs=0 ;;
+esac
+if [ "$songs" -eq 0 ]; then
+    printf 'mpd database is empty; scanning %s (slow on the HDD, one time)...\n' "$music_dir" >&2
+    mpc update >/dev/null
+    while mpc status 2>/dev/null | grep -q '^Updating:'; do
+        sleep 1
+    done
+fi
+
+# Fall back to the built-in defaults if the config file was not installed.
+cleanup=
+if [ -r "$ignore_file" ]; then
+    patterns=$ignore_file
+else
+    patterns=$(mktemp)
+    cleanup=$patterns
+    trap 'rm -f "$cleanup"' EXIT
+    printf '%s\n' \
+        soundtrack \
+        'original motion picture' \
+        'motion picture score' \
+        '\bscore\b' \
+        '\bost\b' \
+        'music from the' \
+        '\bF1\b' \
+        'Project Hail Mary' >"$patterns"
+fi
+
+filter=
+while IFS= read -r pattern || [ -n "$pattern" ]; do
+    case $pattern in
+        '' | '#'*) continue ;;
+    esac
+    # MPD expressions use backslash escaping inside quoted strings.
+    escaped=$(printf '%s' "$pattern" | sed "s/'/\\\\'/g")
+    clause="((!(any =~ '$escaped')) AND (!(file =~ '$escaped')))"
+    if [ -z "$filter" ]; then
+        filter=$clause
+    else
+        filter="($filter AND $clause)"
+    fi
+done <"$patterns"
+
+[ -n "$filter" ] || die "no ignore patterns found in $ignore_file"
+
+mpc clear >/dev/null
+if ! mpc searchadd "$filter" >/dev/null; then
+    die "MPD rejected the filter expression"
+fi
+
+count=$(mpc playlist | wc -l | tr -d ' ')
+[ "$count" -gt 0 ] || die "nothing matched; check $ignore_file"
+
+mpc random on >/dev/null
+mpc repeat off >/dev/null
+mpc consume off >/dev/null
+mpc play >/dev/null
+
+printf 'shuffling %s songs (scores and soundtracks excluded)\n' "$count"

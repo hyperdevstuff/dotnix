@@ -4,20 +4,29 @@ import ".."
 import "../components"
 import "../services" as Services
 
-// Display flyout: backlight, night light, brightness presets.
+// Display flyout: backlight, night-light Kelvin control, monitor power.
 FlyoutFrame {
     id: root
 
     title: "Display"
 
-    rightContent: Toggle {
-        checked: Services.System.nightLight
-        onToggled: Services.System.toggleNightLight()
+    readonly property bool nightOn: Services.System.nightLight
+    readonly property real kelvinPos: {
+        const min = Services.System.nightLightMin;
+        const max = Services.System.nightLightMax;
+        return (Services.System.nightLightTemp - min) / (max - min);
+    }
+
+    function kelvinAt(x, width) {
+        const min = Services.System.nightLightMin;
+        const max = Services.System.nightLightMax;
+        const p = Math.max(0, Math.min(1, x / Math.max(1, width)));
+        return Math.round(min + p * (max - min));
     }
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: 10
 
         SliderCard {
             Layout.fillWidth: true
@@ -32,15 +41,15 @@ FlyoutFrame {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 5
+            spacing: 6
 
             Repeater {
                 model: [25, 50, 75, 100]
                 delegate: Rectangle {
                     required property int modelData
                     Layout.fillWidth: true
-                    height: 26
-                    radius: 8
+                    height: 30
+                    radius: Theme.radiusControl
                     color: presetMouse.containsMouse ? Theme.surfaceHover : Theme.surface
                     border.width: 1
                     border.color: Theme.hairlineSoft
@@ -49,7 +58,7 @@ FlyoutFrame {
                         text: modelData + "%"
                         color: Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 9
+                        font.pixelSize: Theme.fontLabel
                     }
                     MouseArea {
                         id: presetMouse
@@ -68,56 +77,142 @@ FlyoutFrame {
             color: Theme.hairlineSoft
         }
 
-        Rectangle {
+        // ------------------------------------------------------- night light
+        ColumnLayout {
             Layout.fillWidth: true
-            height: 54
-            radius: Theme.radiusSmall
-            color: Theme.surface
-            border.width: 1
-            border.color: Theme.hairlineSoft
+            spacing: 8
 
             RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 10
-                anchors.rightMargin: 10
+                Layout.fillWidth: true
                 spacing: 9
 
-                Rectangle {
-                    width: 26
-                    height: 26
-                    radius: 8
-                    color: Theme.dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
-                    Icon {
-                        anchors.centerIn: parent
-                        glyph: "\uf186"
-                        size: 13
-                        tint: Services.System.nightLight ? Theme.info : Theme.fg
-                    }
+                Icon {
+                    glyph: "\uf186"
+                    size: 15
+                    tint: root.nightOn ? Theme.warn : Theme.muted
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 1
+                    spacing: 0
                     Text {
                         text: "Night light"
                         color: Theme.fg
                         font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: Theme.fontBody
                         font.weight: Font.Medium
                     }
                     Text {
-                        text: Services.System.nightLight
-                            ? "On · " + Services.System.nightLightTemp + "K"
-                            : "Off · reduce blue light"
+                        text: Services.System.nightLightText
                         color: Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 9
+                        font.pixelSize: Theme.fontLabel
                     }
                 }
 
                 Toggle {
-                    checked: Services.System.nightLight
+                    checked: root.nightOn
                     onToggled: Services.System.toggleNightLight()
+                }
+            }
+
+            Item {
+                id: kelvinArea
+                Layout.fillWidth: true
+                height: 26
+                opacity: root.nightOn ? 1.0 : 0.45
+
+                Behavior on opacity { NumberAnimation { duration: 140 } }
+
+                Rectangle {
+                    id: kelvinTrack
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    height: 6
+                    radius: 3
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: "#ffb066" }
+                        GradientStop { position: 0.55; color: "#ffd9b3" }
+                        GradientStop { position: 1.0; color: "#cfe0ff" }
+                    }
+                }
+
+                Rectangle {
+                    id: kelvinKnob
+                    width: 16
+                    height: 16
+                    radius: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: Math.max(0, Math.min(parent.width - width, parent.width * root.kelvinPos - width / 2))
+                    color: Theme.fg
+                    border.width: 2
+                    border.color: Theme.panelSolid
+                    Behavior on x { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onPressed: (mouse) => Services.System.setNightLightTemp(root.kelvinAt(mouse.x, width))
+                    onPositionChanged: (mouse) => {
+                        if (pressed)
+                            Services.System.setNightLightTemp(root.kelvinAt(mouse.x, width));
+                    }
+                    onWheel: (wheel) => Services.System.stepNightLightTemp(wheel.angleDelta.y > 0 ? -100 : 100)
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: "Warm " + Services.System.nightLightMin + "K"
+                    color: Theme.muted
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontLabel
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    text: "Cool " + Services.System.nightLightMax + "K"
+                    color: Theme.muted
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.fontLabel
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
+
+                Repeater {
+                    model: [2700, 3400, 4500, 5500]
+                    delegate: Rectangle {
+                        required property int modelData
+                        readonly property bool active: Services.System.nightLightTemp === modelData
+                        Layout.fillWidth: true
+                        height: 30
+                        radius: Theme.radiusControl
+                        color: active ? Theme.surfaceHover
+                                      : (presetKelvinMouse.containsMouse ? Theme.surfaceHover : Theme.surface)
+                        border.width: 1
+                        border.color: active ? Theme.fg : Theme.hairlineSoft
+                        opacity: root.nightOn ? 1.0 : 0.45
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData + "K"
+                            color: active ? Theme.fg : Theme.muted
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontLabel
+                            font.weight: active ? Font.Medium : Font.Normal
+                        }
+                        MouseArea {
+                            id: presetKelvinMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: Services.System.setNightLightTemp(modelData)
+                        }
+                    }
                 }
             }
         }
@@ -130,8 +225,8 @@ FlyoutFrame {
 
         Rectangle {
             Layout.fillWidth: true
-            height: 38
-            radius: Theme.radiusSmall
+            height: 40
+            radius: Theme.radiusControl
             color: powerMouse.containsMouse ? Theme.surfaceHover : Theme.surface
             border.width: 1
             border.color: Theme.hairlineSoft
@@ -141,15 +236,15 @@ FlyoutFrame {
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
                 spacing: 8
-                Icon { glyph: "\uf108"; size: 12; tint: Theme.muted }
+                Icon { glyph: "\uf108"; size: 13; tint: Theme.muted }
                 Text {
                     Layout.fillWidth: true
                     text: "Power off displays"
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 10
+                    font.pixelSize: Theme.fontBody
                 }
-                Icon { glyph: "\uf054"; size: 9; tint: Theme.hairline }
+                Icon { glyph: "\uf054"; size: 10; tint: Theme.hairline }
             }
 
             MouseArea {
@@ -163,13 +258,12 @@ FlyoutFrame {
 
         Text {
             Layout.fillWidth: true
-            Layout.topMargin: 2
-            text: "Night light uses gammastep. Brightness uses brightnessctl, so it works without compositor support."
+            text: "This GPU exposes no gamma control, so night light is a warm screen tint rather than a calibrated colour shift."
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 8
+            font.pixelSize: Theme.fontLabel
             wrapMode: Text.WordWrap
-            opacity: 0.8
+            opacity: 0.9
         }
 
         Item { Layout.fillHeight: true }

@@ -35,7 +35,7 @@ Rectangle {
         Rectangle {
             width: 26
             height: 26
-            radius: 8
+            radius: Theme.radiusControl
             color: Theme.dark ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(0, 0, 0, 0.04)
             Icon {
                 anchors.centerIn: parent
@@ -52,7 +52,7 @@ Rectangle {
                 text: root.label
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 11
                 font.letterSpacing: 0.4
                 elide: Text.ElideRight
                 Layout.fillWidth: true

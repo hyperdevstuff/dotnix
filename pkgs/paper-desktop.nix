@@ -7,9 +7,33 @@
 
 # Paper only ships an AppImage for Linux. The download URL is stable but the
 # payload is versioned, so bump `version` and the hash together when it moves.
+let
+  # `appimageTools.wrapType2` is a buildFHSEnv wrapper and silently drops the
+  # `desktopItems` argument, so the launcher is installed explicitly below.
+  # Without this the package has no .desktop file and fuzzel never sees it.
+  desktopItem = makeDesktopItem {
+    name = "paper-desktop";
+    desktopName = "Paper";
+    exec = "paper-desktop --no-sandbox %U";
+    icon = "paper-desktop";
+    comment = "Design app for creating visuals and user interfaces";
+    categories = [
+      "Graphics"
+      "Development"
+    ];
+    startupWMClass = "Paper";
+    mimeTypes = [
+      "x-scheme-handler/paper"
+      "x-scheme-handler/paper-dev"
+    ];
+  };
+in
 appimageTools.wrapType2 (finalAttrs: {
   pname = "paper-desktop";
-  version = "0.5.16";
+  # `download.paper.design/linux/appImage/x64` is a moving "latest" URL. The
+  # pinned hash currently resolves to 0.5.18; bump this label when the hash is
+  # refreshed, since the AppImage itself carries the real version.
+  version = "0.5.18";
 
   src = fetchurl {
     url = "https://download.paper.design/linux/appImage/x64";
@@ -34,26 +58,10 @@ appimageTools.wrapType2 (finalAttrs: {
   extraInstallCommands = ''
     install -Dm444 ${finalAttrs.contents}/usr/share/icons/hicolor/1024x1024/apps/paper-desktop.png \
       $out/share/icons/hicolor/1024x1024/apps/paper-desktop.png
-  '';
 
-  desktopItems = [
-    (makeDesktopItem {
-      name = "paper-desktop";
-      desktopName = "Paper";
-      exec = "paper-desktop --no-sandbox %U";
-      icon = "paper-desktop";
-      comment = "Design app for creating visuals and user interfaces";
-      categories = [
-        "Graphics"
-        "Development"
-      ];
-      startupWMClass = "Paper";
-      mimeTypes = [
-        "x-scheme-handler/paper"
-        "x-scheme-handler/paper-dev"
-      ];
-    })
-  ];
+    install -Dm444 ${desktopItem}/share/applications/paper-desktop.desktop \
+      $out/share/applications/paper-desktop.desktop
+  '';
 
   meta = {
     description = "Design app for creating visuals and user interfaces";

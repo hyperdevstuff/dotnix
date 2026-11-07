@@ -19,13 +19,13 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 11
+        anchors.margins: 12
         spacing: 11
 
         // ---------------------------------------------------------- album art
         Rectangle {
-            Layout.preferredWidth: 66
-            Layout.preferredHeight: 66
+            Layout.preferredWidth: 76
+            Layout.preferredHeight: 76
             Layout.alignment: Qt.AlignVCenter
             radius: Theme.radiusSmall
             color: Theme.surface
@@ -71,7 +71,7 @@ Item {
                 text: Services.Media.hasPlayer ? (Services.Media.title || "Nothing playing") : "Nothing playing"
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 13
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }
@@ -83,7 +83,7 @@ Item {
                     : "Start a player to see it here"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 11
                 elide: Text.ElideRight
             }
 
@@ -121,7 +121,7 @@ Item {
                     text: root.timeText(Services.Media.position)
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 8
+                    font.pixelSize: 11
                 }
 
                 Item { Layout.fillWidth: true }
@@ -130,7 +130,7 @@ Item {
                     text: root.timeText(Services.Media.length)
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 8
+                    font.pixelSize: 11
                 }
             }
 
@@ -158,7 +158,7 @@ Item {
             Rectangle {
                 width: 32
                 height: 32
-                radius: 10
+                radius: Theme.radiusControl
                 color: playMouse.containsMouse ? Theme.surfaceHover : Theme.surface
                 border.width: 1
                 border.color: Theme.hairlineSoft

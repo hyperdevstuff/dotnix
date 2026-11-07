@@ -47,12 +47,12 @@ FlyoutFrame {
                 text: "Scanning…"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 9
+                font.pixelSize: 11
             }
             Rectangle {
                 width: 24
-                height: 24
-                radius: 7
+                height: 30
+                radius: Theme.radiusControl
                 color: scanMouse.containsMouse ? Theme.surfaceHover : "transparent"
                 Icon {
                     anchors.centerIn: parent
@@ -117,7 +117,7 @@ FlyoutFrame {
         // ------------------------------------------------------------- footer
         Item {
             Layout.fillWidth: true
-            height: 24
+            height: 30
 
             RowLayout {
                 anchors.fill: parent
@@ -128,7 +128,7 @@ FlyoutFrame {
                     text: Services.Network.errorMessage
                     color: Theme.danger
                     font.family: Theme.fontFamily
-                    font.pixelSize: 9
+                    font.pixelSize: 11
                     elide: Text.ElideRight
                     visible: Services.Network.errorMessage.length > 0
                 }
@@ -137,8 +137,8 @@ FlyoutFrame {
 
                 Rectangle {
                     width: advancedLabel.implicitWidth + 16
-                    height: 24
-                    radius: 7
+                    height: 30
+                    radius: Theme.radiusControl
                     color: advMouse.containsMouse ? Theme.surfaceHover : "transparent"
                     Row {
                         id: advancedLabel
@@ -149,7 +149,7 @@ FlyoutFrame {
                             text: "Advanced"
                             color: Theme.muted
                             font.family: Theme.fontFamily
-                            font.pixelSize: 9
+                            font.pixelSize: 11
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
@@ -175,7 +175,7 @@ FlyoutFrame {
         Rectangle {
             anchors.centerIn: parent
             width: parent.width - 28
-            height: 138
+            height: 164
             radius: Theme.radiusSmall
             color: Theme.panelSolid
             border.width: 1
@@ -198,8 +198,8 @@ FlyoutFrame {
 
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 32
-                    radius: 8
+                    height: 38
+                    radius: Theme.radiusControl
                     color: Theme.surface
                     border.width: 1
                     border.color: pwd.activeFocus ? Theme.fg : Theme.hairline
@@ -256,16 +256,16 @@ FlyoutFrame {
                         }
                     }
                     Rectangle {
-                        width: 66
-                        height: 26
-                        radius: 8
+                        width: 74
+                        height: 32
+                        radius: Theme.radiusControl
                         color: Theme.fg
                         Text {
                             anchors.centerIn: parent
                             text: "Connect"
                             color: Theme.accentInk
                             font.family: Theme.fontFamily
-                            font.pixelSize: 10
+                            font.pixelSize: 11
                             font.weight: Font.DemiBold
                         }
                         MouseArea {

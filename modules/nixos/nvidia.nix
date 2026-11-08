@@ -29,6 +29,8 @@
     # Tradeoff: if a GPU workload ever allocates more than the free tmpfs
     # (currently ~5.8G), suspend may fail; remove this line if that happens.
     moduleParams.nvidia.NVreg_TemporaryFilePath = "/dev/shm";
+
+    dynamicBoost.enable = true;
   };
 
   # This laptop's ACPI S3 (deep) path hard-hangs in the open NVIDIA driver's

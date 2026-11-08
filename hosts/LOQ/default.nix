@@ -51,7 +51,6 @@
       "gid=100"
       "iocharset=utf8"
       "umask=0022"
-      "noCheck"
     ];
   };
 

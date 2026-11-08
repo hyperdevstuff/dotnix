@@ -43,9 +43,15 @@
     executable = true;
   };
 
-  # rmpc's default theme uses ANSI color names, so matugen's kitty palette
-  # (written from the wallpaper) colors it too. Only layout/behaviour is set.
+  # Old rmpc config/theme from hyperdevstuff/dotfiles (gruvbox), adapted for
+  # /mnt/library and no Cava/FIFO. The lrc.sh hook downloads synced lyrics
+  # from lrclib (needs curl + jq).
   xdg.configFile."rmpc/config.ron".source = ../dotfiles/rmpc/config.ron;
+  xdg.configFile."rmpc/themes/gruvbox.ron".source = ../dotfiles/rmpc/themes/gruvbox.ron;
+  xdg.configFile."rmpc/scripts/lrc.sh" = {
+    source = ../dotfiles/rmpc/scripts/lrc.sh;
+    executable = true;
+  };
 
   # Library-wide exclusions for `music-shuffle` (scores, soundtracks, ...).
   xdg.configFile."music/ignore".source = ../dotfiles/music/ignore;

@@ -140,6 +140,9 @@ in
       music = "rmpc";
       shuffle = "music-shuffle";
       lib = "cd /mnt/library";
+
+      # --agentic work
+      oc = "opencode";
     };
   };
 

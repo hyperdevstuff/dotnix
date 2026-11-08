@@ -105,6 +105,7 @@ Defined in `dotfiles/niri/config.kdl`:
 | `Mod+Alt+Shift+N` | Advanced networks (`nm-connection-editor`) |
 | `Mod+Alt+S` | Session flyout |
 | `Mod+Alt+M` | Now playing |
+| `Mod+Alt+H` | Toggle the home surface |
 | `Mod+Shift+B` | Brightness 60% + OSD |
 
 The hub is also fully keyboard driven: arrows move between chips, `1`–`6`
@@ -126,6 +127,7 @@ quickshell ipc -c notchD call notchD status
 expand / collapse / back / toggleExpanded
 openHub / openWifi / openBluetooth / openAudio / openBattery / openDisplay
 openSession / openSettings
+toggleHome / showHome / hideHome
 
 # media
 openMedia / closeMedia / mediaPeek
@@ -157,6 +159,7 @@ registered modules.
 ## Files
 
 - `shell.qml` — shell root, windows, lock/idle wiring, persistence, IPC.
+- `HomeWindow.qml` — floating home surface (clock, live stats, quick actions).
 - `NotchD.qml` — morphing surface, side flyout loader, downward media card.
 - `IslandState.qml` — idle / osd / hub / flyout / media / auth state machine.
 - `LockScreen.qml` — `WlSessionLock` + PAM lock screen.

@@ -23,6 +23,9 @@ input {
         // Ignore accidental taps/pointer motion while typing.
         dwt
     }
+
+    // Pressing the same Mod+<n> twice returns to the previous workspace.
+    workspace-auto-back-and-forth
 }
 
 // Hide the pointer while typing and after a couple of seconds of inactivity.
@@ -199,6 +202,13 @@ window-rule {
     open-floating true
 }
 
+// Quickshell home surface (Mod+Alt+H). A normal toplevel, floated by title.
+window-rule {
+    match app-id=r#"^org\.quickshell$"#
+    match title="^home$"
+    open-floating true
+}
+
 // Keep password managers out of screencasts and cast targets. Several
 // `match` lines in one rule are ANDed, so the alternatives are one regex.
 window-rule {
@@ -295,6 +305,7 @@ binds {
     Mod+Alt+Shift+N hotkey-overlay-title="Advanced networks (nm-connection-editor)" { spawn "nm-connection-editor"; }
     Mod+Alt+S hotkey-overlay-title="Session and power" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openSession"; }
     Mod+Alt+M hotkey-overlay-title="Now playing" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openMedia"; }
+    Mod+Alt+H hotkey-overlay-title="Toggle home" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleHome"; }
 
     // Focus jump and dynamic cast (OBS/browser screen share).
     Mod+G              hotkey-overlay-title="Focus previous window" { focus-window-previous; }
@@ -362,6 +373,9 @@ binds {
     Mod+Shift+Page_Up   { move-workspace-up; }
 
     Mod+Tab { focus-workspace-previous; }
+
+    // Instant last-window toggle: no switcher UI.
+    Mod+grave { focus-window-previous; }
 
     // Mouse wheel: switch workspaces, or move the focused column.
     Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }

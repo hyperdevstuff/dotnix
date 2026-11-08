@@ -28,8 +28,8 @@
 
   services.mpdris2-rs = {
     enable = true;
-    # notchD shows the current track; mako notifications for every song change
-    # would be noise.
+    # notchD shows the current track; desktop notifications for every song
+    # change would be noise.
     notifications.enable = false;
   };
 

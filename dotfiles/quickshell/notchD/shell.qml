@@ -176,6 +176,15 @@ ShellRoot {
         screen: shell.primaryScreen
     }
 
+    // Native org.freedesktop.Notifications server + top-right cards. Lives in
+    // this process, so no extra daemon and no extra idle CPU. Hidden while
+    // locked (privacy) and while the side flyout is open (both sit right).
+    NotificationPopups {
+        id: notificationPopups
+        screen: shell.primaryScreen
+        suppressed: lockScreen.locked || islandState.mode === "flyout"
+    }
+
     // ------------------------------------------------------------- polkit
     PolkitAgent {
         id: polkitAgent

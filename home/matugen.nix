@@ -53,7 +53,7 @@ EOF
   # so the app `include`s resolve before the user runs `wp`.
   # Scheme follows the wallpaper's brightness: light walls get light chrome.
   home.activation.matugenSeed = lib.hm.dag.entryAfter [ "niriColorsSeed" ] ''
-    if [ ! -f "$HOME/.config/matugen/generated/mako-colors" ]; then
+    if [ ! -f "$HOME/.config/matugen/generated/kitty-colors.conf" ]; then
       run mkdir -p "$HOME/.config/matugen/generated"
       wall="$(find "$HOME/Pictures/walls" -type f | shuf -n 1)"
       if [ -n "$wall" ]; then

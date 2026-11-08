@@ -27,6 +27,8 @@ input {
 
 // Hide the pointer while typing and after a couple of seconds of inactivity.
 cursor {
+    xcursor-theme "Bibata-Modern-Classic"
+    xcursor-size 24
     hide-when-typing
     hide-after-inactive-ms 2000
 }
@@ -88,7 +90,7 @@ layout {
 }
 
 // Wallpaper-first theming: wp-boot starts awww-daemon and applies a random
-// wall (regenerating kitty/foot/fuzzel/mako via matugen). swaybg stays
+// wall (regenerating kitty/foot/fuzzel via matugen). swaybg stays
 // installed as a fallback but is intentionally not spawned.
 spawn-at-startup "/home/hyper/.local/bin/wp-boot"
 
@@ -234,9 +236,10 @@ layer-rule {
 }
 
 // Notifications can contain secrets (2FA codes, message previews); keep them
-// out of screencasts as well.
+// out of screencasts as well. notchD owns org.freedesktop.Notifications and
+// draws the cards on its own layer surface.
 layer-rule {
-    match namespace="^notifications$"
+    match namespace="^notchD-notifications$"
     block-out-from "screencast"
 }
 

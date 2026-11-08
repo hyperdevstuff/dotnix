@@ -89,6 +89,20 @@ render inside the pill surface. They are transient and never replace an open
 hub or flyout. OSD values come from the shared service singletons; modules can
 also call `showOsd(kind, {...})`.
 
+## Notifications
+
+There is no separate notification daemon. `services/Notifications.qml` wraps
+`Quickshell.Services.Notifications.NotificationServer`, so notchD itself owns
+`org.freedesktop.Notifications`; `NotificationPopups.qml` draws up to four
+cards in a top-right overlay. Card timeouts follow the sender's `expire-time`
+(`0` never expires, `-1` uses 8 s), critical notifications never expire, and
+hovering pauses the timer. Left-click invokes the default action, the close
+button dismisses. Cards are hidden while the shell is locked and while the
+right-hand flyout is open; they stay tracked and appear when it closes.
+
+Cost: zero extra processes and no steady-state CPU. Four cards peak at about
+5 MiB of additional memory in the already-running shell.
+
 ## Desktop home widgets
 
 `HomeWidgets.qml` paints a small 2×2 cluster of stat tiles (CPU, memory,
@@ -217,7 +231,8 @@ PPI). `Theme.qml` is the single source of truth:
 
 Global light/dark. `wp` writes the effective mode to
 `~/.config/matugen/generated/mode`, and notchD follows the same file as kitty,
-foot, fuzzel, mako and the niri border.
+foot, fuzzel and the niri border. Notifications are drawn by notchD itself
+(`NotificationPopups.qml` + `services/Notifications.qml`) and follow `Theme`.
 
 - `wp theme auto` — follow the wallpaper's brightness (default)
 - `wp theme light` / `wp theme dark` — force it

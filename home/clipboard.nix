@@ -24,7 +24,7 @@
     file
   ];
 
-  # Keep the watcher alive for the niri session, like quickshell/mako.
+  # Keep the watcher alive for the niri session, like quickshell.
   systemd.user.services.cliphist-watch = {
     Unit = {
       Description = "cliphist clipboard history watcher (text)";

@@ -8,7 +8,7 @@ NixOS + Home Manager configuration for `hyper`, built around:
 - **Quickshell** `notchD` — Dynamic-Island-style pill and hub (media, audio, network, session)
 - **greetd + tuigreet** text login
 - **NVIDIA open kernel modules** for the RTX 4050 Max-Q
-- **PipeWire + WirePlumber**, **mako**, **awww**, **native Quickshell lock**
+- **PipeWire + WirePlumber**, **native Quickshell notifications**, **awww**, **native Quickshell lock**
 - **MPD + rmpc** for the music library, **Yazi** for files
 
 ## Layout
@@ -30,12 +30,11 @@ NixOS + Home Manager configuration for `hyper`, built around:
 │   ├── foot.nix                       # terminal
 │   ├── kitty.nix                      # terminal + single-instance server
 │   ├── niri.nix                       # installs config.kdl
-│   ├── quickshell.nix                 # bar + systemd service
+│   ├── quickshell.nix                 # bar, notifications, systemd service
 │   ├── fuzzel.nix                     # app launcher
 │   ├── clipboard.nix                  # cliphist watchers + fzf picker
 │   ├── music.nix                      # MPD + mpc + rmpc + MPRIS bridge
 │   ├── yazi.nix                       # Yazi config and plugins
-│   ├── mako.nix
 │   └── opencode.nix                   # phase 2, not imported yet
 └── dotfiles/
     ├── bin/                           # clipmenu, music-shuffle, helpers

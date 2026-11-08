@@ -20,7 +20,6 @@
     ./nvim.nix
     ./quickshell.nix
     ./fuzzel.nix
-    ./mako.nix
     ./music.nix
     ./yazi.nix
     inputs.helium-browser.homeModules.default
@@ -185,8 +184,8 @@
 
   home.pointerCursor = {
     enable = true;
-    name = "Adwaita";
-    package = pkgs.adwaita-icon-theme;
+    name = "Bibata-Modern-Classic";
+    package = pkgs.bibata-cursors;
     size = 24;
     gtk.enable = true;
   };

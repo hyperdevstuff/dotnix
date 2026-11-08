@@ -89,6 +89,16 @@ render inside the pill surface. They are transient and never replace an open
 hub or flyout. OSD values come from the shared service singletons; modules can
 also call `showOsd(kind, {...})`.
 
+## Desktop home widgets
+
+`HomeWidgets.qml` paints a small 2×2 cluster of stat tiles (CPU, memory,
+uptime, battery) on the wallpaper. It is a `WlrLayer.Bottom` surface with an
+empty input mask, so it sits above the wallpaper but below normal windows and
+never steals clicks: right-clicking the desktop still opens `DesktopMenu`.
+
+Because windows open full-width, the cluster is visible whenever the focused
+workspace is empty. `Mod+Alt+H` (or the `toggleHome` IPC call) hides/shows it.
+
 ## Keybindings
 
 Defined in `dotfiles/niri/config.kdl`:
@@ -105,7 +115,7 @@ Defined in `dotfiles/niri/config.kdl`:
 | `Mod+Alt+Shift+N` | Advanced networks (`nm-connection-editor`) |
 | `Mod+Alt+S` | Session flyout |
 | `Mod+Alt+M` | Now playing |
-| `Mod+Alt+H` | Toggle the home surface |
+| `Mod+Alt+H` | Toggle the desktop home widgets |
 | `Mod+Shift+B` | Brightness 60% + OSD |
 
 The hub is also fully keyboard driven: arrows move between chips, `1`–`6`
@@ -159,7 +169,7 @@ registered modules.
 ## Files
 
 - `shell.qml` — shell root, windows, lock/idle wiring, persistence, IPC.
-- `HomeWindow.qml` — floating home surface (clock, live stats, quick actions).
+- `HomeWidgets.qml` — desktop home widgets (CPU, memory, uptime, battery) on the wallpaper.
 - `NotchD.qml` — morphing surface, side flyout loader, downward media card.
 - `IslandState.qml` — idle / osd / hub / flyout / media / auth state machine.
 - `LockScreen.qml` — `WlSessionLock` + PAM lock screen.

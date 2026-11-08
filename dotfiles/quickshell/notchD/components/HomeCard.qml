@@ -2,8 +2,9 @@ import QtQuick
 import QtQuick.Layouts
 import ".."
 
-// Minimal stat card for the home surface. Values are plain properties so the
-// caller can bind them to live services without rebuilding a model.
+// Small square stat tile for the desktop home widgets.
+// Values are plain properties so the caller can bind them to live services
+// without rebuilding a model.
 Rectangle {
     id: root
 
@@ -11,17 +12,17 @@ Rectangle {
     property string value: ""
     property string detail: ""
 
-    Layout.fillWidth: true
-    implicitHeight: 116
+    implicitWidth: 128
+    implicitHeight: 128
     radius: Theme.radiusControl
     color: Theme.surface
     border.width: 1
-    border.color: Theme.hairlineSoft
+    border.color: Theme.hairline
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 6
+        anchors.margins: 14
+        spacing: 2
 
         Text {
             text: root.title
@@ -31,6 +32,8 @@ Rectangle {
             font.capitalization: Font.AllUppercase
             font.letterSpacing: 0.6
         }
+
+        Item { Layout.fillHeight: true }
 
         Text {
             text: root.value

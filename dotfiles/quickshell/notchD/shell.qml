@@ -168,10 +168,12 @@ ShellRoot {
         screen: shell.primaryScreen
     }
 
-    // Auxiliary home surface: clock, live stats, quick actions. Hidden at
-    // startup; Mod+Alt+H toggles it through the IPC handler below.
-    HomeWindow {
-        id: homeWindow
+    // Desktop home widgets: small stat squares on the wallpaper. They live on
+    // a bottom layer behind normal windows, so they are visible whenever the
+    // focused workspace is empty. Mod+Alt+H toggles them.
+    HomeWidgets {
+        id: homeWidgets
+        screen: shell.primaryScreen
     }
 
     // ------------------------------------------------------------- polkit
@@ -465,9 +467,9 @@ ShellRoot {
         function openDesktopMenu() { desktopMenu.menuOpen = true; }
         function closeDesktopMenu() { desktopMenu.menuOpen = false; }
 
-        function toggleHome() { homeWindow.visible = !homeWindow.visible; }
-        function showHome() { homeWindow.visible = true; }
-        function hideHome() { homeWindow.visible = false; }
+        function toggleHome() { homeWidgets.visible = !homeWidgets.visible; }
+        function showHome() { homeWidgets.visible = true; }
+        function hideHome() { homeWidgets.visible = false; }
 
         function setTheme(mode: string) {
             Quickshell.execDetached(["wp", "theme", mode]);
@@ -488,7 +490,7 @@ ShellRoot {
                 hubKinds: islandState.hubKinds,
                 interactive: islandState.interactive,
                 desktopMenu: desktopMenu.menuOpen,
-                home: homeWindow.visible,
+                home: homeWidgets.visible,
                 theme: Theme.dark ? "dark" : "light",
                 media: Services.Media.hasPlayer,
                 mediaMode: islandState.mode === "media",

@@ -202,13 +202,6 @@ window-rule {
     open-floating true
 }
 
-// Quickshell home surface (Mod+Alt+H). A normal toplevel, floated by title.
-window-rule {
-    match app-id=r#"^org\.quickshell$"#
-    match title="^home$"
-    open-floating true
-}
-
 // Keep password managers out of screencasts and cast targets. Several
 // `match` lines in one rule are ANDed, so the alternatives are one regex.
 window-rule {

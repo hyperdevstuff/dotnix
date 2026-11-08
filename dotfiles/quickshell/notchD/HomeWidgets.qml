@@ -9,15 +9,18 @@ import "components" as Components
 //
 // This is a bottom-layer surface with an empty input mask, so it never
 // intercepts clicks. Right-click on the wallpaper still opens DesktopMenu,
-// and normal windows draw above it. Because niri opens windows full-width,
-// the widgets are only visible when the focused workspace is empty.
+// and normal windows draw above it. The surface is only mapped while the
+// always-empty home workspace (position 1, Mod+0) is focused, so the spare
+// empty workspace at the bottom stays plain wallpaper.
 //
 // Toggle with Mod+Alt+H or:
 //   quickshell ipc -c notchD call notchD toggleHome
 PanelWindow {
     id: root
 
-    visible: true
+    // User toggle. Visibility additionally follows the focused workspace.
+    property bool enabled: true
+    visible: enabled && Services.Compositor.homeFocused
     focusable: false
 
     anchors { top: true; left: true }

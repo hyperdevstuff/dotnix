@@ -169,8 +169,8 @@ ShellRoot {
     }
 
     // Desktop home widgets: small stat squares on the wallpaper. They live on
-    // a bottom layer behind normal windows, so they are visible whenever the
-    // focused workspace is empty. Mod+Alt+H toggles them.
+    // a bottom layer behind normal windows and are only mapped on the home
+    // workspace (position 1). Mod+Alt+H toggles them.
     HomeWidgets {
         id: homeWidgets
         screen: shell.primaryScreen
@@ -467,9 +467,9 @@ ShellRoot {
         function openDesktopMenu() { desktopMenu.menuOpen = true; }
         function closeDesktopMenu() { desktopMenu.menuOpen = false; }
 
-        function toggleHome() { homeWidgets.visible = !homeWidgets.visible; }
-        function showHome() { homeWidgets.visible = true; }
-        function hideHome() { homeWidgets.visible = false; }
+        function toggleHome() { homeWidgets.enabled = !homeWidgets.enabled; }
+        function showHome() { homeWidgets.enabled = true; }
+        function hideHome() { homeWidgets.enabled = false; }
 
         function setTheme(mode: string) {
             Quickshell.execDetached(["wp", "theme", mode]);
@@ -490,7 +490,7 @@ ShellRoot {
                 hubKinds: islandState.hubKinds,
                 interactive: islandState.interactive,
                 desktopMenu: desktopMenu.menuOpen,
-                home: homeWidgets.visible,
+                home: homeWidgets.enabled,
                 theme: Theme.dark ? "dark" : "light",
                 media: Services.Media.hasPlayer,
                 mediaMode: islandState.mode === "media",

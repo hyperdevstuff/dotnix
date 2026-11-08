@@ -144,6 +144,23 @@ Singleton {
         return null;
     }
 
+    // Position 1 is niri's always-empty workspace above the first one
+    // (layout.empty-workspace-above-first). notchD treats it as home.
+    readonly property bool homeFocused: {
+        const list = root.workspacesData || [];
+        for (let i = 0; i < list.length; i++) {
+            const w = list[i];
+            if (w && w.is_focused) return w.idx === 1;
+        }
+        return false;
+    }
+
+    function workspaceLabel(w) {
+        if (!w) return "";
+        if (w.name) return String(w.name);
+        return (w.idx === 1) ? "home" : String(w.idx);
+    }
+
     function workspacesFor(output) {
         const out = [];
         const list = root.workspacesData || [];
@@ -153,7 +170,7 @@ Singleton {
             out.push({
                 id: String(w.id),
                 idx: w.idx,
-                name: w.name ? String(w.name) : String(w.idx),
+                name: root.workspaceLabel(w),
                 output: String(w.output || ""),
                 isUrgent: !!w.is_urgent,
                 isActive: !!w.is_active,
@@ -198,7 +215,7 @@ Singleton {
         for (let i = 0; i < list.length; i++) {
             const w = list[i];
             if (w && w.is_focused)
-                return w.name ? String(w.name) : String(w.idx);
+                return root.workspaceLabel(w);
         }
         const output = root.focusedScreen();
         return output ? root.activeWorkspaceName(output) : "";

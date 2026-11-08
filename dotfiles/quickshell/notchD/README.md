@@ -96,8 +96,12 @@ uptime, battery) on the wallpaper. It is a `WlrLayer.Bottom` surface with an
 empty input mask, so it sits above the wallpaper but below normal windows and
 never steals clicks: right-clicking the desktop still opens `DesktopMenu`.
 
-Because windows open full-width, the cluster is visible whenever the focused
-workspace is empty. `Mod+Alt+H` (or the `toggleHome` IPC call) hides/shows it.
+Niri keeps an always-empty workspace above the first one
+(`empty-workspace-above-first`). `Mod+0` focuses it; `Mod+1..9` focus the
+normal workspaces (positions 2..10). The widget surface is only mapped while
+that home workspace is focused, so the spare empty workspace niri keeps at
+the bottom stays plain wallpaper. `Mod+Alt+H` (or the `toggleHome` IPC call)
+enables/disables the widgets; `status.home` reports that toggle.
 
 ## Keybindings
 

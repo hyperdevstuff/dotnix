@@ -15,5 +15,8 @@
     gh
     jq
     yq
+    cmake
+    ninja
+    pkg-config
   ];
 }

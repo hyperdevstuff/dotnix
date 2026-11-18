@@ -397,6 +397,9 @@ ShellRoot {
             if (Services.Media.hasPlayer) islandState.peekMedia(2400);
         }
 
+        // ----------------------------------------------------- notifications
+        function dismissNotifications() { Services.Notifications.dismissAll(); }
+
         // ------------------------------------------------------------ osd
         function showVolume() {
             Services.System.refreshVolume();
@@ -503,6 +506,7 @@ ShellRoot {
                 theme: Theme.dark ? "dark" : "light",
                 media: Services.Media.hasPlayer,
                 mediaMode: islandState.mode === "media",
+                notifications: Services.Notifications.count,
                 modules: Modules.enabledIds,
                 moduleOrder: Modules.order,
                 nightLight: Services.System.nightLight,

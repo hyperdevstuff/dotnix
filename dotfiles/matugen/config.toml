@@ -41,3 +41,10 @@ output_path = "/home/hyper/.config/matugen/generated/fuzzel-colors.ini"
 input_path = "./templates/niri-colors.kdl"
 output_path = "/home/hyper/.config/niri/generated/colors.kdl"
 post_hook = 'niri msg action load-config-file || true'
+
+# Dolphin (the only KDE app). KColorScheme reads the scheme file named by
+# kdeglobals; the Dolphin wrapper also sets KDE_COLOR_SCHEME_PATH so Breeze
+# paints item views from it instead of its built-in light fallback.
+[templates.kde]
+input_path = "./templates/kde.colors"
+output_path = "/home/hyper/.local/share/color-schemes/Dotnix.colors"

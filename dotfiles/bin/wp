@@ -109,23 +109,68 @@ matugen_mode() {
   esac
 }
 
+# Set (or append) a key in a GTK settings.ini without touching the other keys.
+ini_set() {
+  local file="$1" key="$2" val="$3"
+  mkdir -p "$(dirname "$file")"
+  [ -f "$file" ] || printf '[Settings]\n' > "$file"
+  grep -qx '\[Settings\]' "$file" || sed -i '1i [Settings]' "$file"
+  if grep -q "^${key}=" "$file"; then
+    sed -i "s|^${key}=.*|${key}=${val}|" "$file"
+  else
+    sed -i "/^\[Settings\]/a ${key}=${val}" "$file"
+  fi
+}
+
+# Push light/dark to the three knobs the desktop actually reads:
+#
+#   gtk-3.0/settings.ini  GTK3 apps. Adwaita-dark is a real theme here.
+#   gtk-4.0/settings.ini  GTK4 apps. There is no Adwaita-dark; the
+#                         prefer-dark flag is what switches Adwaita.
+#   gsettings color-scheme
+#                         xdg-desktop-portal serves this as
+#                         org.freedesktop.appearance color-scheme, which is
+#                         what Chromium (Helium) and Electron (T3 Code) ask
+#                         for prefers-color-scheme, and what libadwaita uses.
+#
+# Chromium and Electron also watch gtk-theme-name / prefer-dark directly, so
+# both paths point the same way. Most apps repaint live; a few need a restart.
+apply_gtk_mode() {
+  local mode="$1" theme pref scheme
+  if [ "$mode" = light ]; then
+    theme=Adwaita; pref=0; scheme=prefer-light
+  else
+    theme=Adwaita-dark; pref=1; scheme=prefer-dark
+  fi
+  ini_set "$CONFIG/gtk-3.0/settings.ini" gtk-theme-name "$theme"
+  ini_set "$CONFIG/gtk-3.0/settings.ini" gtk-application-prefer-dark-theme "$pref"
+  ini_set "$CONFIG/gtk-4.0/settings.ini" gtk-theme-name Adwaita
+  ini_set "$CONFIG/gtk-4.0/settings.ini" gtk-application-prefer-dark-theme "$pref"
+  if command -v gsettings >/dev/null 2>&1; then
+    gsettings set org.gnome.desktop.interface color-scheme "$scheme" 2>/dev/null || true
+    gsettings set org.gnome.desktop.interface gtk-theme "$theme" 2>/dev/null || true
+  fi
+}
+
 # notchD reads this file to pick its palette (and other tools can too).
 write_effective_mode() {
-  local bg r g b
+  local bg r g b mode
   bg="$(awk '$1 == "background" { print $2; exit }' "$GEN_DIR/kitty-colors.conf" 2>/dev/null || true)"
   mkdir -p "$GEN_DIR"
   if [[ "$bg" =~ ^#[0-9a-fA-F]{6}$ ]]; then
     r=$((16#${bg:1:2})); g=$((16#${bg:3:2})); b=$((16#${bg:5:2}))
     if (( r * 299 + g * 587 + b * 114 > 127000 )); then
-      echo light > "$GEN_DIR/mode"
+      mode=light
     else
-      echo dark > "$GEN_DIR/mode"
+      mode=dark
     fi
   elif [ "$(theme_mode)" = light ]; then
-    echo light > "$GEN_DIR/mode"
+    mode=light
   else
-    echo dark > "$GEN_DIR/mode"
+    mode=dark
   fi
+  echo "$mode" > "$GEN_DIR/mode"
+  apply_gtk_mode "$mode"
 }
 
 usage() {
@@ -193,6 +238,10 @@ case "${1:-random}" in
     if [ -n "$cur" ] && [ -f "$cur" ]; then
       exec "$0" refresh
     fi
+    # No wallpaper to derive from yet: still honour an explicit light/dark.
+    case "$2" in
+      light|dark) apply_gtk_mode "$2" ;;
+    esac
     exit 0
     ;;
   refresh) wall="$(current_wall)" ;;
@@ -214,6 +263,8 @@ esac
 # niri has no variables: matugen writes an include file that config.kdl
 # pulls in. The directory must exist before matugen writes it.
 mkdir -p "$HOME/.config/niri/generated"
+# KDE color scheme target for Dolphin (also seeded at activation time).
+mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/color-schemes"
 
 matugen image "$wall" --type "$scheme" --mode "$(matugen_mode)"
 write_effective_mode

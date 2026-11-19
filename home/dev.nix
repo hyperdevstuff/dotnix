@@ -22,6 +22,9 @@ in
     nodejs
     bun
 
+    # OpenAI Codex CLI (the `codex` coding agent).
+    codex
+
     # node-gyp fallbacks for native addons. gcc is in home/default.nix and
     # cmake/ninja/pkg-config are system packages.
     python3

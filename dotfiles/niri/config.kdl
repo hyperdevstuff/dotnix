@@ -503,3 +503,6 @@ binds {
 
     Mod+Shift+P { power-off-monitors; }
 }
+
+// Optional bindings for this machine.
+include "local.kdl" optional=true

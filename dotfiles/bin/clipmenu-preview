@@ -8,7 +8,7 @@ set -u
 
 id=${1:?usage: clipmenu-preview ID}
 
-tmp=$(mktemp)
+tmp=$(mktemp) || exit 1
 trap 'rm -f "$tmp"' EXIT
 
 cliphist decode "$id" >"$tmp" 2>/dev/null || {
@@ -19,11 +19,11 @@ cliphist decode "$id" >"$tmp" 2>/dev/null || {
 mime=$(file -b --mime-type "$tmp")
 bytes=$(wc -c <"$tmp" | tr -d ' ')
 
-# `file` calls a one-character clip binary because it has no magic. Treat
-# short clips as text; they are almost always a copied word or number.
-if [ "$bytes" -gt 0 ] && [ "$bytes" -le 512 ]; then
-    bat --color=always --style=plain --wrap=character --language=txt -- "$tmp"
-    exit 0
+# file identifies single-byte text as binary. Recognize printable ASCII.
+if [ "$mime" = application/octet-stream ] && [ "$bytes" -eq 1 ]; then
+    if LC_ALL=C grep -aq '^[[:print:]]$' "$tmp"; then
+        mime=text/plain
+    fi
 fi
 
 case $mime in
@@ -41,6 +41,6 @@ case $mime in
         printf '[empty clip]\n'
         ;;
     *)
-        printf '[%s, %s bytes]\n' "$mime" "$(wc -c <"$tmp" | tr -d ' ')"
+        printf '[%s, %s bytes]\n' "$mime" "$bytes"
         ;;
 esac

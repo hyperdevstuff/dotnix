@@ -71,7 +71,6 @@ in
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    jack.enable = true;
   };
 
   services = {
@@ -86,6 +85,8 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    # Launch JACK clients with pw-jack to load the PipeWire JACK libraries.
+    config.services.pipewire.package.jack
     # Niri starts xwayland-satellite automatically when an X11 client needs it.
     xwayland-satellite
     foot

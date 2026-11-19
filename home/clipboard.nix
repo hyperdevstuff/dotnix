@@ -4,7 +4,6 @@
   # cliphist history: text and images, stored in $XDG_CACHE_HOME/cliphist/db.
   xdg.configFile."cliphist/config".text = ''
     max-items 1000
-    max-store-size 25MB
   '';
 
   home.file.".local/bin/clipmenu" = {

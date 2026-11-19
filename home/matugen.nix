@@ -21,6 +21,34 @@
   home.file.".local/bin/wp-pick".source = ../dotfiles/bin/wp-pick;
   home.file.".local/bin/wp-pick".executable = true;
 
+  # wp updates these files when the wallpaper's light/dark mode changes.
+  # Use Home Manager's GTK settings as defaults for new files.
+  xdg.configFile."gtk-3.0/settings.ini".enable = false;
+  xdg.configFile."gtk-4.0/settings.ini".enable = false;
+
+  home.activation.seedGtkSettings = lib.hm.dag.entryAfter [ "linkGeneration" ] (
+    lib.concatMapStringsSep "\n"
+      (
+        version:
+        let
+          path = "gtk-${version}.0/settings.ini";
+          target = lib.escapeShellArg "${config.xdg.configHome}/${path}";
+          directory = lib.escapeShellArg "${config.xdg.configHome}/gtk-${version}.0";
+          source = lib.escapeShellArg (toString config.xdg.configFile.${path}.source);
+        in
+        ''
+          if [[ ! -e ${target} && ! -L ${target} ]]; then
+            run mkdir -p ${directory}
+            run cp -T --update=none --no-preserve=mode ${source} ${target}
+          fi
+        ''
+      )
+      [
+        "3"
+        "4"
+      ]
+  );
+
   # awww's daemon is supervised here instead of being backgrounded by
   # `wp-boot`, so it restarts if it dies and the rotation timer below cannot
   # write to a stale socket. niri-session exports WAYLAND_DISPLAY into the
@@ -49,6 +77,7 @@
     Unit = {
       Description = "Rotate the wallpaper and regenerate the desktop theme";
       PartOf = [ "niri.service" ];
+      Wants = [ "awww-daemon.service" ];
       After = [ "niri.service" "awww-daemon.service" ];
     };
     Service = {

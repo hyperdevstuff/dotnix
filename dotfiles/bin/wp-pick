@@ -6,7 +6,8 @@ set -euo pipefail
 
 WALLS="$HOME/Pictures/walls"
 FAVS="${XDG_CONFIG_HOME:-$HOME/.config}/wallpapers/favorites"
-current="$(awww query 2>/dev/null | head -1 | sed 's/.*: //')"
+wp="$(dirname -- "$0")/wp"
+current="$("$wp" current)"
 
 favs=()
 if [ -f "$FAVS" ]; then
@@ -51,9 +52,9 @@ pick="$(printf '%s\n' "${menu[@]}" | fuzzel --dmenu --prompt="Wallpaper: " --lin
 [ -z "$pick" ] && exit 0
 
 case "$pick" in
-  "☆ Favorite current")   exec wp fav add "$current" ;;
-  "★ Unfavorite current") exec wp fav rm "$current" ;;
+  "☆ Favorite current")   exec "$wp" fav add "$current" ;;
+  "★ Unfavorite current") exec "$wp" fav rm "$current" ;;
 esac
 
 rel="${pick#★ }"
-exec wp "$WALLS/$rel"
+exec "$wp" "$WALLS/$rel"

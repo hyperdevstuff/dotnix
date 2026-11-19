@@ -12,6 +12,7 @@
 #   wp fav toggle [path]  toggle favorite (default: the current one)
 #   wp fav list           list favorites
 #   wp theme [mode]       global light/dark: auto (follow wallpaper) | light | dark
+#   wp current            print the current wallpaper path, if any
 #   wp refresh            regenerate the theme from the current wallpaper
 #   wp <path>             explicit image
 #
@@ -34,7 +35,7 @@ pick() {
 }
 
 current_wall() {
-  awww query 2>/dev/null | head -1 | sed 's/.*: //'
+  awww query --json 2>/dev/null | jq -r 'first(.[][] | .displaying.image? // empty) // empty' || true
 }
 
 # Absolute, normalized path for a user-provided path (or the current wallpaper).
@@ -204,6 +205,7 @@ Usage:
   wp fav list               list favorites
   wp theme                  show the global theme mode
   wp theme auto|light|dark  set global mode and re-theme the current wallpaper
+  wp current                print the current wallpaper path, if any
   wp refresh                regenerate the theme from the current wallpaper
   wp <path>                 apply an explicit image
   wp -h | --help | help     show this help
@@ -215,6 +217,7 @@ EOF
 
 case "${1:-random}" in
   -h|--help|help) usage; exit 0 ;;
+  current) current_wall; exit 0 ;;
   random)  wall="$(pick "$WALLS")" ;;
   gruvbox) wall="$(pick "$WALLS/gruvbox")" ;;
   bw)      wall="$(pick "$WALLS/bw")" ;;

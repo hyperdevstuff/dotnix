@@ -28,8 +28,11 @@ selection=$(
             --color=16 \
             --preview="$HOME/.local/bin/clipmenu-preview {1}" \
             --preview-window='right:60%:wrap' \
-            --bind='ctrl-d:execute-silent(cliphist delete {1})+reload(cliphist list)'
+            --bind='ctrl-d:execute-silent(printf "%s\n" {1} | cliphist delete)+reload(cliphist list)'
 ) || exit 0
 
 [ -n "$selection" ] || exit 0
-cliphist decode "$selection" | wl-copy
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+cliphist decode "$selection" >"$tmp"
+wl-copy <"$tmp"

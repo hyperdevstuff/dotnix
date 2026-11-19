@@ -57,6 +57,7 @@ in
       if test -x /home/hyper/.opencode/bin/opencode
           fish_add_path --move --prepend /home/hyper/.opencode/bin
       end
+      fish_add_path "/home/hyper/.cache/.bun/bin"
     '';
 
     # Hydro: fish-native prompt, async git, no process spawn per render

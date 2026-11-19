@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.Notifications
 import ".."
+import "../services" as Services
 
 // One notification card. Cards are plain QML rectangles in the running shell;
 // no extra process, no webview and no animation framework.
@@ -54,7 +55,7 @@ Rectangle {
     Timer {
         id: expiry
         interval: root.timeoutMs
-        running: root.timeoutMs > 0 && !hover.hovered
+        running: root.timeoutMs > 0 && !hover.hovered && !Services.Notifications.paused
         onTriggered: if (root.notification) root.notification.expire()
     }
 

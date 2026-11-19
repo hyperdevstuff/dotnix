@@ -137,9 +137,11 @@ in
       size = "du -sh --block-size=MB";
 
       # --- music (MPD on the NTFS library) ---
-      music = "rmpc";
-      shuffle = "music-shuffle";
-      lib = "cd /mnt/library";
+      # Disabled on the fresh install: the library disk is not attached.
+      # Re-enable together with home/music.nix and the mount.
+      # music = "rmpc";
+      # shuffle = "music-shuffle";
+      # lib = "cd /mnt/library";
 
       # --agentic work
       oc = "opencode";
@@ -178,6 +180,8 @@ in
     git = {
       enable = true;
       settings = {
+        user.name = "hyperdevstuff";
+        user.email = "168334425+hyperdevstuff@users.noreply.github.com";
         init.defaultBranch = "main";
         pull.rebase = false;
         core.editor = "nvim";

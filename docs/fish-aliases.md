@@ -79,6 +79,8 @@ is the source of truth.
 | `size` | `du -sh --block-size=MB` | |
 
 ### Music and the library drive
+> Disabled on this install until the NTFS library disk is attached.
+
 | Alias | Expands to | Notes |
 | --- | --- | --- |
 | `music` | `rmpc` | MPD TUI (the `S` key shuffles the filtered library) |

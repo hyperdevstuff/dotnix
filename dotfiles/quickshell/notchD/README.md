@@ -61,6 +61,22 @@ These remain installed for genuinely advanced tasks, not the normal path:
 - `LockScreen.qml` uses `WlSessionLock` and covers every screen. It is the
   primary locker; `Super+Alt+L`, the Session flyout and lid close all invoke
   it through `quickshell ipc`.
+- The lock has two pages:
+  - page 1 is the ambient clock: time only, over the dotted wallpaper. Any
+    key, click or scroll advances to page 2.
+  - page 2 is authentication: long date, account, password field, Wi-Fi and
+    battery in the bottom corners, and a read-only sidebar with the current
+    media activity and recent notifications. Escape clears the password, or
+    returns to page 1 when the field is already empty.
+- Notification expiry is paused while locked, so the sidebar keeps whatever
+  arrived; expiry resumes on unlock. The sidebar is read-only: cards there
+  cannot invoke actions or dismiss anything.
+- The lock surface draws its own wallpaper (`~/Pictures/walls/dotted.png` by
+  default, override with `NOTCHD_LOCK_WALLPAPER`) and darkens it locally. No
+  wallpaper daemon is involved: `awww` keeps rendering the session wallpaper,
+  `swaybg` is an alternative, and `hyprpaper` is Hyprland-specific.
+- No extra lockscreen utility is needed. `WlSessionLock` holds the session
+  lock; `swaylock` remains installed as a recovery fallback.
 - Authentication uses `PamContext` with the dedicated `quickshell` PAM
   service (`security.pam.services.quickshell` in `modules/nixos/desktop.nix`).
 - `services/Idle.qml` uses `IdleMonitor` (`ext-idle-notify-v1`):
@@ -98,7 +114,9 @@ cards in a top-right overlay. Card timeouts follow the sender's `expire-time`
 (`0` never expires, `-1` uses 8 s), critical notifications never expire, and
 hovering pauses the timer. Left-click invokes the default action, the close
 button dismisses. Cards are hidden while the shell is locked and while the
-right-hand flyout is open; they stay tracked and appear when it closes.
+right-hand flyout is open; they stay tracked and appear when it closes. While
+locked they are shown read-only in the lock screen sidebar, and expiry is
+paused until unlock.
 
 Cost: zero extra processes and no steady-state CPU. Four cards peak at about
 5 MiB of additional memory in the already-running shell.
@@ -190,7 +208,8 @@ registered modules.
 - `HomeWidgets.qml` — desktop home widgets (CPU, memory, uptime, battery) on the wallpaper.
 - `NotchD.qml` — morphing surface, side flyout loader, downward media card.
 - `IslandState.qml` — idle / osd / hub / flyout / media / auth state machine.
-- `LockScreen.qml` — `WlSessionLock` + PAM lock screen.
+- `LockScreen.qml` — two-page `WlSessionLock` + PAM lock screen.
+- `components/LockSidebar.qml` — read-only lock-screen activity/notifications sidebar.
 - `Modules.qml` — built-in module registry.
 - `Theme.qml` — light/dark palette, type scale and geometry tokens.
 - `Motion.qml` — duration/easing tokens.

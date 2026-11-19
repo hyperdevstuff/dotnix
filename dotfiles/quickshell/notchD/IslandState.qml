@@ -50,6 +50,10 @@ Item {
     readonly property bool mediaOpen: mode === "media"
     readonly property bool interactive: mode === "hub" || mode === "flyout"
         || mode === "media" || mode === "auth"
+    // Keyboard focus is a user-invoked privilege. Automatic peeks and the idle
+    // pill stay pointer-only so they never pull focus away from the app.
+    readonly property bool keyboardInteractive: mode === "hub" || mode === "flyout"
+        || mode === "auth" || (mode === "media" && mediaReturnMode === "hub")
     readonly property bool active: !hidden && mode !== "idle"
     readonly property bool osdVisible: !hidden && mode === "osd"
 

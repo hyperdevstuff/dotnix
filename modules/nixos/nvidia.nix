@@ -23,9 +23,8 @@
     powerManagement.enable = true;
 
     # The driver saves the VRAM snapshot to NVreg_TemporaryFilePath (default
-    # /tmp) on every suspend. On this laptop / is a slow USB HDD, so that
-    # snapshot adds seconds to each cycle. /dev/shm is tmpfs and survives
-    # s2idle, so keep the snapshot in RAM instead.
+    # /tmp) on every suspend. /dev/shm is tmpfs and survives s2idle, so keep
+    # the snapshot in RAM instead of writing it to disk.
     # Tradeoff: if a GPU workload ever allocates more than the free tmpfs
     # (currently ~5.8G), suspend may fail; remove this line if that happens.
     moduleParams.nvidia.NVreg_TemporaryFilePath = "/dev/shm";

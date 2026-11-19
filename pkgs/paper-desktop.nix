@@ -31,13 +31,13 @@ in
 appimageTools.wrapType2 (finalAttrs: {
   pname = "paper-desktop";
   # `download.paper.design/linux/appImage/x64` is a moving "latest" URL. The
-  # pinned hash currently resolves to 0.5.18; bump this label when the hash is
+  # pinned hash currently resolves to 0.5.19; bump this label when the hash is
   # refreshed, since the AppImage itself carries the real version.
-  version = "0.5.18";
+  version = "0.5.19";
 
   src = fetchurl {
     url = "https://download.paper.design/linux/appImage/x64";
-    hash = "sha256-TxJ8+a8bb2XOGv7YzDoPcQ5RZ794nzbAFvRCr5aECrk=";
+    hash = "sha256-YKZUYnYHCJ8ARLLPjEY20bAZ2Qdx0PrsrteDdLJa4Es=";
   };
 
   extraPkgs =

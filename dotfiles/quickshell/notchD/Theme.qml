@@ -63,6 +63,8 @@ Singleton {
     // Sizes. The hub is a single horizontal row; everything except media opens
     // sideways as a flyout, media opens as a card below the hub.
     readonly property int pillW:      60
+    // Extra width while the idle pill carries a compact now-playing indicator.
+    readonly property int pillMediaExtra: 34
     readonly property int pillH:      26
     readonly property int osdW:       320
     readonly property int osdH:       54

@@ -26,6 +26,11 @@ Item {
     readonly property bool authOpen: mode === "auth"
     readonly property bool pillLike: mode === "idle" || mode === "osd"
 
+    // A live activity only earns space in the pill, never an automatic
+    // expansion. The compact indicator is passive: it updates in place and
+    // opens the expanded media card only when clicked.
+    readonly property bool mediaActive: Services.Media.hasPlayer
+
     // Corner system. The hub and flyout share one continuous edge: when the
     // flyout is open the hub's right corners and the flyout's left corners are
     // square, so the pair reads as a single surface instead of two cards.
@@ -69,7 +74,7 @@ Item {
 
     // ----------------------------------------------------------- main surface
     readonly property real targetW: {
-        if (mode === "idle") return Theme.pillW;
+        if (mode === "idle") return Theme.pillW + (mediaActive ? Theme.pillMediaExtra : 0);
         if (mode === "osd") return Theme.osdW;
         if (mode === "auth") return Theme.authW;
         return hubW;
@@ -149,6 +154,73 @@ Item {
                         const step = wheel.angleDelta.y > 0 ? 0.05 : -0.05;
                         Services.System.setVolume(Services.System.volume + step);
                         if (root.state) root.state.showOsd("volume");
+                    }
+                }
+
+                // Compact live activity: one album-art tile (or a glyph when
+                // the player has no art) plus a playing dot. It never changes
+                // mode or requests focus on its own; a click opens the
+                // expanded media card, which is the only media surface with
+                // keyboard and transport controls.
+                Item {
+                    id: mediaPill
+                    width: 18
+                    height: 18
+                    anchors.right: parent.right
+                    anchors.rightMargin: 6
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: root.mediaActive
+                    opacity: visible ? 1 : 0
+                    z: 1
+                    Behavior on opacity { NumberAnimation { duration: Motion.fast } }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 6
+                        color: Theme.surface
+                        border.width: 1
+                        border.color: Theme.hairlineSoft
+                        clip: true
+
+                        Image {
+                            id: pillArt
+                            anchors.fill: parent
+                            source: Services.Media.artUrl
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            cache: true
+                            visible: status === Image.Ready
+                        }
+
+                        Icon {
+                            anchors.centerIn: parent
+                            visible: !pillArt.visible
+                            glyph: Services.Media.playing ? "\uf001" : "\uf04b"
+                            size: 10
+                            tint: Theme.muted
+                        }
+                    }
+
+                    // Playing state, without a second label or animation.
+                    Rectangle {
+                        width: 5
+                        height: 5
+                        radius: 3
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.rightMargin: -1
+                        anchors.bottomMargin: -1
+                        color: Theme.ok
+                        border.width: 1
+                        border.color: Theme.panel
+                        visible: Services.Media.playing
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -3
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (root.state) root.state.openMedia()
                     }
                 }
             }
@@ -357,7 +429,7 @@ Item {
     }
 
     // --------------------------------------------------------------- keyboard
-    focus: root.interactive
+    focus: root.state ? root.state.keyboardInteractive : false
 
     Keys.onEscapePressed: (event) => {
         if (!root.state) return;

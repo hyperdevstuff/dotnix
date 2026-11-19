@@ -7,6 +7,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ./storage.nix
     ../../modules/nixos/base.nix
     ../../modules/nixos/nvidia.nix
     ../../modules/nixos/desktop.nix
@@ -32,27 +33,25 @@
     ACTION=="add", SUBSYSTEM=="serio", KERNEL=="serio0", ATTR{power/wakeup}="enabled"
   '';
 
-  # The second drive is a slow NTFS data disk. Mount it by UUID at a stable
-  # path instead of udisks' "/run/media/hyper/New Volume": the label (and
-  # spaces) then stop mattering for MPD, Yazi and scripts.
+  # The NTFS data disk that held the music library is not attached to this
+  # fresh install, so the mount is disabled for now. Re-enable this block
+  # (and home/music.nix plus the music aliases in home/shell.nix) after
+  # verifying the disk's UUID with `lsblk -f`:
   #
-  # It is automounted on first access and released after 15 idle minutes, so
-  # a missing/unplugged disk never blocks boot and a sleeping disk is not kept
-  # awake by the mount itself.
-  fileSystems."/mnt/library" = {
-    device = "/dev/disk/by-uuid/DE5E56785E564A03";
-    fsType = "ntfs3";
-    options = [
-      "nofail"
-      "noauto"
-      "x-systemd.automount"
-      "x-systemd.idle-timeout=15min"
-      "uid=1000"
-      "gid=100"
-      "iocharset=utf8"
-      "umask=0022"
-    ];
-  };
+  #   fileSystems."/mnt/library" = {
+  #     device = "/dev/disk/by-uuid/DE5E56785E564A03";
+  #     fsType = "ntfs3";
+  #     options = [
+  #       "nofail"
+  #       "noauto"
+  #       "x-systemd.automount"
+  #       "x-systemd.idle-timeout=15min"
+  #       "uid=1000"
+  #       "gid=100"
+  #       "iocharset=utf8"
+  #       "umask=0022"
+  #     ];
+  #   };
 
   time.timeZone = "Asia/Kolkata";
 

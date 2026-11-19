@@ -19,10 +19,10 @@
           name "PipeWire"
       }
 
-      # Disabled: the library lives on a slow NTFS HDD and auto-scanning
-      # causes avoidable spin-ups/I/O. Run `mpc update` (or `mpc update
-      # /path`) after adding or changing files.
-      auto_update "no"
+      # Auto-update stays at MPD's default (on): while MPD is running it picks
+      # up new files in the library. `mpc update` forces a full rescan. If the
+      # library ever moves back to a spinning disk, set `auto_update "no"` to
+      # avoid wake-ups.
     '';
   };
 

@@ -147,20 +147,10 @@ ShellRoot {
         onTriggered: Services.Session.suspend()
     }
 
-    // Now-playing peeks: only while idle, never on top of an open flyout.
-    Connections {
-        target: Services.Media
-        function onTitleChanged() {
-            if (!Services.Media.hasPlayer || !Services.Media.playing) return;
-            if (islandState.hidden || islandState.mode !== "idle") return;
-            islandState.peekMedia(4200);
-        }
-        function onPlayingChanged() {
-            if (!Services.Media.playing) return;
-            if (islandState.hidden || islandState.mode !== "idle") return;
-            islandState.peekMedia(3200);
-        }
-    }
+    // Now playing is a passive live activity: the idle pill shows a compact
+    // album-art indicator and updates in place. It must never auto-expand the
+    // media card or request keyboard focus when a track changes; expanded
+    // media stays user-initiated (Mod+Alt+M, the hub chip, or the IPC call).
 
     // Right-click on the empty desktop: wallpaper actions.
     DesktopMenu {
@@ -268,7 +258,7 @@ ShellRoot {
         visible: !islandState.hidden && !lockScreen.locked
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "notchD"
-        WlrLayershell.keyboardFocus: islandState.interactive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: islandState.keyboardInteractive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
         mask: Region {
             Region {

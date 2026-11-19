@@ -36,7 +36,7 @@ case $songs in
     '' | *[!0-9]*) songs=0 ;;
 esac
 if [ "$songs" -eq 0 ]; then
-    printf 'mpd database is empty; scanning %s (slow on the HDD, one time)...\n' "$music_dir" >&2
+    printf 'mpd database is empty; scanning %s (first run only)...\n' "$music_dir" >&2
     mpc update >/dev/null
     while mpc status 2>/dev/null | grep -q '^Updating:'; do
         sleep 1

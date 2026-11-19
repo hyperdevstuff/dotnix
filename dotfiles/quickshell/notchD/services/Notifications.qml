@@ -16,6 +16,10 @@ Singleton {
     // Newest first. Reassigned (not mutated) so QML bindings update.
     property var items: []
 
+    // While the session is locked, cards stop expiring so the lock-screen
+    // sidebar can show what arrived. Expiry resumes on unlock.
+    property bool paused: false
+
     readonly property int count: items.length
 
     NotificationServer {

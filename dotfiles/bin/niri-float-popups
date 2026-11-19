@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Float pop-up windows whose titles arrive after the window is mapped.
+#
+# niri's `open-floating` window rules only run when a window first opens.
+# Browser OAuth/Google sign-in pop-ups usually open as "Mozilla Firefox" or
+# "Helium" and only later change to "Sign in - Google Accounts ...", so a
+# title-based window rule cannot catch them. Watch niri's event stream and move
+# a recently-opened window to the floating layout as soon as its title looks
+# like an auth pop-up.
+set -u
+
+# How long after a window first appears a late title change still counts as
+# "this window just opened". Long enough for a slow page load, short enough
+# that navigating an older browser window to a login page does not float it.
+readonly WINDOW_GRACE_SECONDS=45
+
+# A title must contain one of these...
+readonly AUTH_TITLE='^(sign[ -]?in|log[ -]?in|choose an account|authoriz|oauth)|^steam.{0,4}sign[ -]?in'
+# ...and one of these, so unrelated "login" pages stay tiled.
+readonly AUTH_TARGET='google|account|oauth|microsoft|github|gitlab|steam|sso|single sign'
+
+looks_like_auth_popup() {
+    local title=${1,,}
+    [[ $title =~ $AUTH_TITLE ]] || return 1
+    [[ $title =~ $AUTH_TARGET ]] || return 1
+}
+
+float_window() {
+    local id=$1
+    niri msg action move-window-to-floating --id "$id" >/dev/null 2>&1 || true
+}
+
+# The service is ordered After=niri.service, but the IPC socket may still be
+# coming up during a fast session start.
+until niri msg version >/dev/null 2>&1; do
+    sleep 1
+done
+
+declare -A first_seen=()
+
+while IFS=$'\t' read -r kind id title app_id; do
+    case $kind in
+        snapshot)
+            # Windows that predate this service (or a service restart) are not
+            # candidates: only catch titles that arrive shortly after opening.
+            first_seen[$id]=0
+            ;;
+        closed)
+            unset 'first_seen[$id]'
+            ;;
+        changed)
+            now=$(date +%s)
+            if [[ -z ${first_seen[$id]+x} ]]; then
+                first_seen[$id]=$now
+            fi
+            started=${first_seen[$id]}
+            # 0 means "already present" or "already handled".
+            (( started == 0 )) && continue
+            (( now - started > WINDOW_GRACE_SECONDS )) && continue
+            if looks_like_auth_popup "$title"; then
+                float_window "$id"
+                first_seen[$id]=0
+            fi
+            ;;
+    esac
+done < <(niri msg --json event-stream | jq -r --unbuffered '
+    if .WindowsChanged then
+        .WindowsChanged.windows[] | ["snapshot", (.id|tostring), "", ""] | @tsv
+    elif .WindowOpenedOrChanged then
+        .WindowOpenedOrChanged.window |
+        ["changed", (.id|tostring), (.title // ""), (.app_id // "")] | @tsv
+    elif .WindowClosed then
+        ["closed", ((.WindowClosed | if type == "object" then .id else . end) | tostring), "", ""] | @tsv
+    else empty end
+')

@@ -20,7 +20,10 @@
     ./nvim.nix
     ./quickshell.nix
     ./fuzzel.nix
-    ./music.nix
+    # Disabled on the fresh install: MPD points at /mnt/library, which is
+    # not mounted (the NTFS data disk is not attached). Re-enable together
+    # with the mount in hosts/LOQ/default.nix.
+    # ./music.nix
     ./yazi.nix
     inputs.helium-browser.homeModules.default
     inputs.hex.homeManagerModules.default
@@ -43,26 +46,9 @@
     };
   };
 
-  # The store and $HOME live on a 5400 rpm USB HDD, so Chromium's first window
-  # spends ~12 s on random reads (296 MB binary + profile DBs). Warm the page
-  # cache in the background once the session is up; later opens are sub-second.
-  home.file.".local/bin/warm-helium".source = ../dotfiles/bin/warm-helium;
-  home.file.".local/bin/warm-helium".executable = true;
-
-  systemd.user.services.helium-warm = {
-    Unit = {
-      Description = "Warm the page cache for Helium";
-      PartOf = [ "niri.service" ];
-      After = [ "niri.service" ];
-    };
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash ${config.home.homeDirectory}/.local/bin/warm-helium 15";
-      Nice = 19;
-      IOSchedulingClass = "idle";
-    };
-    Install.WantedBy = [ "niri.service" ];
-  };
+  # The SSD (see hosts/LOQ/storage.nix) no longer needs the old page-cache
+  # warm-up service that existed for the 5400 rpm USB HDD. Helium opens
+  # cold in a fraction of a second now.
 
   programs.hex = {
     enable = true;

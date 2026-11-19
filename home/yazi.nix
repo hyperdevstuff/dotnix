@@ -59,16 +59,6 @@
         ];
       };
 
-      # Lower concurrency than the defaults: every extra worker means more
-      # random reads on the 5400 rpm library disk.
-      tasks = {
-        file_workers = 2;
-        plugin_workers = 2;
-        fetch_workers = 2;
-        preload_workers = 1;
-        process_workers = 1;
-      };
-
       plugin = {
         prepend_fetchers = [
           {

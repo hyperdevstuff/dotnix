@@ -192,6 +192,36 @@ window-rule {
     open-floating true
 }
 
+// Transient dialogs and pop-ups are regular XDG toplevels, so they need
+// window rules, not layer rules. Layer rules only affect layer-shell surfaces
+// such as fuzzel and the notchD overlays below.
+
+// Portals draw out-of-process dialogs: file choosers, screencast pickers,
+// camera/access prompts and account/sign-in prompts. They are not parented to
+// the requesting app, so niri would otherwise tile them as a full column.
+window-rule {
+    match app-id=r#"^xdg-desktop-portal"#
+    open-floating true
+}
+
+// NetworkManager's connection editor is launched from the niri binds.
+window-rule {
+    match app-id=r#"^(nm-connection-editor|org\.gnome\.nm-connection-editor)$"#
+    open-floating true
+}
+
+// Google/OAuth sign-in pop-ups from browsers and web apps. This is the early
+// path: the title is already set when the window maps. niri only applies
+// `open-floating` at open time, so late-titled pop-ups are handled by
+// dotfiles/bin/niri-float-popups through niri's event stream. The title
+// patterns cover Firefox's en-dash form ("Sign in – Google Accounts —
+// Mozilla Firefox"), Chromium's hyphen form ("Sign in - Google Accounts -
+// Helium"), generic "Sign in to your account" dialogs, and Steam sign-in.
+window-rule {
+    match title=r#"(?i)^(sign[ -]?in|log[ -]?in|choose an account|authoriz|oauth|steam.{0,4}sign[ -]?in)"#
+    open-floating true
+}
+
 // Volume control should float instead of joining the tiling layout.
 window-rule {
     match app-id="org.pulseaudio.pavucontrol"
@@ -206,8 +236,8 @@ window-rule {
     open-floating true
 }
 
-// Keep password managers out of screencasts and cast targets. Several
-// `match` lines in one rule are ANDed, so the alternatives are one regex.
+// Keep password managers out of screencasts and cast targets. Multiple
+// `match` lines in one rule are ORed; here the alternatives share one regex.
 window-rule {
     match app-id=r#"^(org\.keepassxc\.KeePassXC|com\.bitwarden\.Bitwarden|com\.onepassword\.1Password|org\.gnome\.World\.Secrets)$"#
     block-out-from "screencast"

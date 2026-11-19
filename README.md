@@ -18,6 +18,7 @@ NixOS + Home Manager configuration for `hyper`, built around:
 ├── flake.nix
 ├── hosts/LOQ/
 │   ├── default.nix                    # host settings, boot, user
+│   ├── storage.nix                    # btrfs mount options + scrub
 │   └── hardware-configuration.nix     # copied from /etc/nixos
 ├── modules/nixos/
 │   ├── base.nix                       # nix settings, shell, fonts, basics
@@ -157,16 +158,42 @@ An interactive niri keybind/capability reference lives at `docs/niri.html` — o
   nmcli connection show
   ```
 
+## Storage
+
+The system disk is an NVMe SSD with btrfs. `hosts/LOQ/storage.nix` adds
+`ssd,discard=async,noatime,compress=zstd:3` to `/`, `/home` and `/nix`, and
+enables a monthly scrub.
+
+The current layout is **working but not the recommended one**: the root is the
+top-level btrfs subvolume (not `@`), and `/var` is not isolated. Root snapshots
+and rollback are therefore not set up. Moving to `subvol=@` is an offline
+migration from a live USB, not a config-only change — the full procedure,
+verification and rollback steps are in **[`docs/storage.md`](docs/storage.md)**.
+
+Quick checks:
+
+```bash
+findmnt -no SOURCE,FSTYPE,OPTIONS /
+sudo btrfs filesystem usage /
+sudo btrfs device stats /
+sudo btrfs scrub status /
+```
+
 ## Music library
 
-The slow NTFS data disk is mounted by UUID at **`/mnt/library`** (systemd
+> **Disabled on this install:** the NTFS data disk is not attached, so the
+> `/mnt/library` mount, `home/music.nix`, and the `music`/`shuffle`/`lib`
+> aliases are commented out. Re-enable them (and fix the UUID if it changed)
+> once the disk is connected.
+
+The NTFS data disk is mounted by UUID at **`/mnt/library`** (systemd
 automount, released after 15 idle minutes), so scripts do not depend on the
 `New Volume` label or its spaces:
 
 ```bash
 ls /mnt/library
 cd /mnt/library            # `lib` alias
-mpc update                 # scan after copying new files
+mpc update                 # force a full rescan (MPD also auto-updates)
 shuffle                    # or press S in rmpc
 music                      # rmpc TUI
 ```

@@ -185,6 +185,7 @@ in
         init.defaultBranch = "main";
         pull.rebase = false;
         core.editor = "nvim";
+        credential.helper = "!${pkgs.gh}/bin/gh auth git-credential";
       };
     };
   };

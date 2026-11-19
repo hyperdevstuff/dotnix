@@ -192,7 +192,7 @@ Item {
                             visible: status === Image.Ready
                         }
 
-                        Icon {
+                        Components.Icon {
                             anchors.centerIn: parent
                             visible: !pillArt.visible
                             glyph: Services.Media.playing ? "\uf001" : "\uf04b"

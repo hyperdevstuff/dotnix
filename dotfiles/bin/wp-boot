@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# wp-boot — niri startup entry: start awww-daemon, then set a random
-# wallpaper (and regenerate the theme) via `wp`.
+# wp-boot — niri startup entry: make sure the awww daemon is up, then set a
+# random wallpaper (and regenerate the theme) via `wp`.
 set -u
 
-awww-daemon &
+# The daemon is a supervised user service (home/matugen.nix), not a private
+# background job, so `systemctl --user restart awww-daemon.service` is enough
+# to recover it later. `start` is a no-op when it is already running.
+systemctl --user start awww-daemon.service || true
 
 wp_bin="$HOME/.local/bin/wp"
 

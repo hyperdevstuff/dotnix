@@ -1,5 +1,25 @@
 { config, pkgs, ... }:
 
+let
+  # Dolphin is the only KDE app here and NixOS does not run Plasma, so the KDE
+  # platform theme and the Breeze widget style have to travel with its wrapper.
+  # Without them Qt falls back to Fusion and never reads kdeglobals.
+  dolphin = pkgs.kdePackages.dolphin.overrideAttrs (old: {
+    qtWrapperArgs = (old.qtWrapperArgs or [ ]) ++ [
+      "--set"
+      "QT_QPA_PLATFORMTHEME"
+      "kde"
+      "--prefix"
+      "QT_PLUGIN_PATH"
+      ":"
+      "${pkgs.kdePackages.plasma-integration}/lib/qt-6/plugins"
+      "--prefix"
+      "QT_PLUGIN_PATH"
+      ":"
+      "${pkgs.kdePackages.breeze}/lib/qt-6/plugins"
+    ];
+  });
+in
 {
   programs.niri = {
     enable = true;
@@ -71,8 +91,8 @@
     foot
     kitty
     ghostty
-    # KDE file manager, bound to Mod+E.
-    kdePackages.dolphin
+    # KDE file manager, bound to Mod+E. Themed by home/dolphin.nix.
+    dolphin
     swaybg
     swaylock
     wl-clipboard

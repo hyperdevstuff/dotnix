@@ -18,6 +18,8 @@
     ./niri.nix
     ./matugen.nix
     ./nvim.nix
+    ./dev.nix
+    ./dolphin.nix
     ./quickshell.nix
     ./fuzzel.nix
     # Disabled on the fresh install: MPD points at /mnt/library, which is

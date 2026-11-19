@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Wallpaper-first theming: awww renders, matugen derives the palette,
@@ -20,6 +20,54 @@
   home.file.".local/bin/wp-boot".executable = true;
   home.file.".local/bin/wp-pick".source = ../dotfiles/bin/wp-pick;
   home.file.".local/bin/wp-pick".executable = true;
+
+  # awww's daemon is supervised here instead of being backgrounded by
+  # `wp-boot`, so it restarts if it dies and the rotation timer below cannot
+  # write to a stale socket. niri-session exports WAYLAND_DISPLAY into the
+  # user manager before starting niri.service, so ordering after it is enough.
+  systemd.user.services.awww-daemon = {
+    Unit = {
+      Description = "awww wallpaper daemon";
+      PartOf = [ "niri.service" ];
+      After = [ "niri.service" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.awww}/bin/awww-daemon";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+    Install.WantedBy = [ "niri.service" ];
+  };
+
+  # Rotate the wallpaper every 30 minutes. `wp random` also re-runs matugen,
+  # so kitty/foot/fuzzel/niri/notchD follow each new wall. The timer starts
+  # with niri.service, making OnBootSec 30 minutes after login; `wp-boot`
+  # already themed the session at startup.
+  systemd.user.services.wallpaper-rotate = {
+    Unit = {
+      Description = "Rotate the wallpaper and regenerate the desktop theme";
+      PartOf = [ "niri.service" ];
+      After = [ "niri.service" "awww-daemon.service" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${config.home.homeDirectory}/.local/bin/wp random";
+    };
+  };
+
+  systemd.user.timers.wallpaper-rotate = {
+    Unit = {
+      Description = "Rotate the wallpaper every 30 minutes";
+      PartOf = [ "niri.service" ];
+    };
+    Timer = {
+      OnBootSec = "30min";
+      OnUnitActiveSec = "30min";
+      # Keep the change off the exact half hour.
+      RandomizedDelaySec = "2min";
+    };
+    Install.WantedBy = [ "niri.service" ];
+  };
 
   # niri has no variables: matugen writes an include file that config.kdl
   # pulls in. A missing include is a fatal config error, so seed a neutral

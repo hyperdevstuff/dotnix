@@ -1,0 +1,38 @@
+# Dolphin, tuned for a File Pilot-like layout: dense details rows, always-on
+# tab strip, small status bar, no menu bar, no folder expansion tree.
+# The view mode itself is seeded once as a directory xattr by home/dolphin.nix.
+
+[General]
+Version=202
+GlobalViewProps=true
+ShowFullPath=true
+ShowFullPathInTitlebar=false
+AlwaysShowTabBar=true
+TabStyle=0
+ShowStatusBar=0
+ShowToolTips=false
+FilterBar=false
+RenameInline=true
+ShowSelectionToggle=true
+
+[MainWindow]
+MenuBar=Disabled
+
+[DetailsMode]
+IconSize=16
+PreviewSize=32
+LeftPadding=10
+RightPadding=10
+HighlightEntireRow=true
+ExpandableFolders=false
+
+[CompactMode]
+IconSize=16
+PreviewSize=32
+
+[IconsMode]
+PreviewSize=128
+
+[KFileDialog Settings]
+Places Icons Auto-resize=false
+Places Icons Static Size=22

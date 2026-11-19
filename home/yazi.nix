@@ -152,11 +152,8 @@
       ouch = pkgs.yaziPlugins.ouch;
       rich-preview = pkgs.yaziPlugins.rich-preview;
 
-      full-border = {
-        package = pkgs.yaziPlugins.full-border;
-        setup = true;
-        settings.set = "rounded";
-      };
+      # No full-border plugin: the rounded frame around the whole TUI was
+      # extra chrome. Pane separators stay, the outer box does not.
 
       git = {
         package = pkgs.yaziPlugins.git;

@@ -32,6 +32,8 @@ NixOS + Home Manager configuration for `hyper`, built around:
 │   ├── kitty.nix                      # terminal + single-instance server
 │   ├── niri.nix                       # installs config.kdl
 │   ├── quickshell.nix                 # bar, notifications, systemd service
+│   ├── dev.nix                        # Rust, Node/Bun, QML tooling
+│   ├── dolphin.nix                    # Dolphin palette, rc files, view seed
 │   ├── fuzzel.nix                     # app launcher
 │   ├── clipboard.nix                  # cliphist watchers + fzf picker
 │   ├── music.nix                      # MPD + mpc + rmpc + MPRIS bridge
@@ -42,6 +44,7 @@ NixOS + Home Manager configuration for `hyper`, built around:
     ├── music/ignore                   # score/soundtrack exclusions
     ├── rmpc/config.ron
     ├── niri/config.kdl
+    ├── kde/                           # Dolphin rc, kdeglobals, Dotnix palette
     └── quickshell/
         ├── shell.qml                  # fallback bar
         └── notchD/                    # Dynamic Island pill
@@ -178,6 +181,59 @@ sudo btrfs filesystem usage /
 sudo btrfs device stats /
 sudo btrfs scrub status /
 ```
+
+## Development
+
+`home/dev.nix` installs the toolchains:
+
+| Tool | Version source |
+| --- | --- |
+| Rust (`rustc`, `cargo`, `rustfmt`, `clippy`, `rust-analyzer`) | matching nixpkgs 1.99.0 |
+| Node.js (`node`, `npm`, `npx`, `corepack`) | nixpkgs `nodejs` |
+| Bun | nixpkgs `bun` |
+| QML (`qml`, `qmllint`, `qmlls`, `qmlformat`, `qmlscene`) | `qt6.qtdeclarative` |
+
+The store is read-only, so global JS packages are redirected into the home
+directory: `npm i -g` writes to `~/.local` (`~/.local/bin` is on `PATH`) and
+`bun add -g` writes to `~/.bun/bin`. Native addons use the `python3`/`gnumake`
+from the same file; `gcc`, `cmake` and `pkg-config` are already available.
+
+QML tooling resolves Quickshell's modules through `QML_IMPORT_PATH`, so this
+works from any directory (`-E` tells the tools to read that variable):
+
+```bash
+qmllint -E ~/dotnix/dotfiles/quickshell/notchD/shell.qml
+qmlls -E      # editor integration
+```
+
+Leave `RUST_SRC_PATH` unset — the nixpkgs `rust-analyzer` wrapper already
+points at the stdlib sources.
+
+## File manager
+
+Dolphin is set up as a dense, File Pilot-style browser rather than the stock
+KDE default:
+
+- The KDE platform theme and Breeze widget style are baked into Dolphin's
+  wrapper in `modules/nixos/desktop.nix`. NixOS does not run Plasma here, so
+  without that the app would fall back to Fusion and ignore `kdeglobals`.
+- `dotfiles/kde/kdeglobals` picks the neutral `Dotnix` palette
+  (`dotfiles/kde/Dotnix.colors`), Inter 10 and Papirus-Dark icons.
+- `dotfiles/kde/dolphinrc` turns on the details view with 16 px icons, 32 px
+  previews, tighter side padding, always-visible tabs, the small status bar and
+  no menu bar or expandable-folder tree.
+- The details view is a global view property, which Dolphin stores as a
+  `user.kde.fm.viewproperties#1` xattr. `home/dolphin.nix` seeds it once, and
+  only when it is missing, so a later `Ctrl+1/2/3` choice sticks.
+
+Handy keys: `Ctrl+L` edits the path, `Ctrl+I` filters the current folder,
+`F11` toggles the information panel, `F3` toggles split view.
+
+Both rc files are read-only store links, so a rebuild restores them and drops
+runtime tweaks such as the last window size.
+
+In Yazi the outer rounded frame came from the `full-border` plugin and has been
+removed; the pane separators are still drawn.
 
 ## Music library
 

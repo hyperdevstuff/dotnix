@@ -109,6 +109,22 @@ matugen_mode() {
   esac
 }
 
+# Set a dconf-backed desktop setting without assuming gsettings is on PATH.
+# niri's spawn environment and user systemd units carry the Nix profile but
+# not /usr/bin, where this system keeps gsettings; dconf is in the profile.
+settings_set() {
+  local schema="$1" key="$2" value="$3" bin
+  for bin in "$(command -v gsettings 2>/dev/null || true)" /usr/bin/gsettings /run/current-system/sw/bin/gsettings; do
+    if [ -n "$bin" ] && [ -x "$bin" ] && "$bin" set "$schema" "$key" "$value" 2>/dev/null; then
+      return 0
+    fi
+  done
+  if command -v dconf >/dev/null 2>&1; then
+    dconf write "/${schema//.//}/$key" "'$value'" 2>/dev/null || true
+  fi
+  return 0
+}
+
 # Set (or append) a key in a GTK settings.ini without touching the other keys.
 ini_set() {
   local file="$1" key="$2" val="$3"
@@ -146,10 +162,8 @@ apply_gtk_mode() {
   ini_set "$CONFIG/gtk-3.0/settings.ini" gtk-application-prefer-dark-theme "$pref"
   ini_set "$CONFIG/gtk-4.0/settings.ini" gtk-theme-name Adwaita
   ini_set "$CONFIG/gtk-4.0/settings.ini" gtk-application-prefer-dark-theme "$pref"
-  if command -v gsettings >/dev/null 2>&1; then
-    gsettings set org.gnome.desktop.interface color-scheme "$scheme" 2>/dev/null || true
-    gsettings set org.gnome.desktop.interface gtk-theme "$theme" 2>/dev/null || true
-  fi
+  settings_set org.gnome.desktop.interface color-scheme "$scheme"
+  settings_set org.gnome.desktop.interface gtk-theme "$theme"
 }
 
 # notchD reads this file to pick its palette (and other tools can too).
@@ -263,8 +277,6 @@ esac
 # niri has no variables: matugen writes an include file that config.kdl
 # pulls in. The directory must exist before matugen writes it.
 mkdir -p "$HOME/.config/niri/generated"
-# KDE color scheme target for Dolphin (also seeded at activation time).
-mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/color-schemes"
 
 matugen image "$wall" --type "$scheme" --mode "$(matugen_mode)"
 write_effective_mode

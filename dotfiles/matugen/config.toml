@@ -42,9 +42,9 @@ input_path = "./templates/niri-colors.kdl"
 output_path = "/home/hyper/.config/niri/generated/colors.kdl"
 post_hook = 'niri msg action load-config-file || true'
 
-# Dolphin (the only KDE app). KColorScheme reads the scheme file named by
-# kdeglobals; the Dolphin wrapper also sets KDE_COLOR_SCHEME_PATH so Breeze
-# paints item views from it instead of its built-in light fallback.
+# Dolphin (the only KDE app). Writing kdeglobals directly, rather than a
+# .colors file selected by name, is what makes the item view pick up the same
+# palette as the window chrome outside a Plasma session.
 [templates.kde]
-input_path = "./templates/kde.colors"
-output_path = "/home/hyper/.local/share/color-schemes/Dotnix.colors"
+input_path = "./templates/kdeglobals"
+output_path = "/home/hyper/.config/kdeglobals"

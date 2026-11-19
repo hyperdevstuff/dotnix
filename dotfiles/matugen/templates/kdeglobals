@@ -1,15 +1,28 @@
-# KDE color scheme generated from the current wallpaper by matugen.
-# Installed as ~/.local/share/color-schemes/Dotnix.colors and referenced from
-# dotfiles/kde/kdeglobals (`ColorScheme=Dotnix`).
+# KDE configuration + color scheme generated from the current wallpaper.
 #
-# Dolphin is the only KDE app here. It reads the scheme through
-# plasma-integration; modules/nixos/desktop.nix sets KDE_COLOR_SCHEME_PATH so
-# Breeze paints item views with the same palette as the rest of the window.
+# Written straight to ~/.config/kdeglobals because Dolphin's file view reads
+# its palette from the color groups here, not from a .colors file named by
+# ColorScheme (a scheme lookup requires Plasma's color-scheme machinery and
+# otherwise falls back to white in the item view).
 #
-# Role choices: surfaces come from the Material surface ramp, text from
-# on_surface/on_surface_variant, and the wallpaper accent (primary) is used
-# sparingly for focus rings and links. Selection stays a muted container so
-# the file list does not read as a block of accent color.
+# Dolphin is the only KDE app here. Fonts, icons and the Breeze widget style
+# are intentionally fixed; only the colors move with the wallpaper.
+
+[General]
+SingleClick=false
+font=Inter,10,-1,5,50,0,0,0,0,0
+menuFont=Inter,10,-1,5,50,0,0,0,0,0
+toolBarFont=Inter,10,-1,5,50,0,0,0,0,0
+smallestReadableFont=Inter,8,-1,5,50,0,0,0,0,0
+
+[Icons]
+Theme=Papirus-Dark
+
+[KDE]
+contrast=4
+widgetStyle=Breeze
+ShowIconsOnPushButtons=false
+ShowIconsInMenuItems=false
 
 [ColorEffects:Disabled]
 Color=56,56,56
@@ -142,14 +155,6 @@ ForegroundNeutral={{colors.tertiary.default.red}},{{colors.tertiary.default.gree
 ForegroundNormal={{colors.on_surface.default.red}},{{colors.on_surface.default.green}},{{colors.on_surface.default.blue}}
 ForegroundPositive={{colors.tertiary.default.red}},{{colors.tertiary.default.green}},{{colors.tertiary.default.blue}}
 ForegroundVisited={{colors.tertiary.default.red}},{{colors.tertiary.default.green}},{{colors.tertiary.default.blue}}
-
-[General]
-ColorScheme=Dotnix
-Name=Dotnix
-shadeSortColumn=true
-
-[KDE]
-contrast=4
 
 [WM]
 activeBackground={{colors.surface.default.red}},{{colors.surface.default.green}},{{colors.surface.default.blue}}

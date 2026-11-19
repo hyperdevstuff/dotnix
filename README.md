@@ -217,8 +217,14 @@ KDE default:
 - The KDE platform theme and Breeze widget style are baked into Dolphin's
   wrapper in `modules/nixos/desktop.nix`. NixOS does not run Plasma here, so
   without that the app would fall back to Fusion and ignore `kdeglobals`.
-- `dotfiles/kde/kdeglobals` picks the neutral `Dotnix` palette
-  (`dotfiles/kde/Dotnix.colors`), Inter 10 and Papirus-Dark icons.
+- `dotfiles/kde/kdeglobals` is only a seed. `wp`/`wp-boot` regenerate the real
+  `~/.config/kdeglobals` from the wallpaper with
+  `dotfiles/matugen/templates/kdeglobals`, so Dolphin follows the same palette
+  as kitty, foot, fuzzel and niri. Inter 10, Papirus-Dark icons and the Breeze
+  widget style are fixed in the template.
+- Writing the color groups into `kdeglobals` itself (instead of naming a
+  `.colors` scheme) matters: without Plasma's color-scheme service Dolphin's
+  item view otherwise keeps Breeze's white base while the chrome goes dark.
 - `dotfiles/kde/dolphinrc` turns on the details view with 16 px icons, 32 px
   previews, tighter side padding, always-visible tabs, the small status bar and
   no menu bar or expandable-folder tree.
@@ -229,8 +235,10 @@ KDE default:
 Handy keys: `Ctrl+L` edits the path, `Ctrl+I` filters the current folder,
 `F11` toggles the information panel, `F3` toggles split view.
 
-Both rc files are read-only store links, so a rebuild restores them and drops
-runtime tweaks such as the last window size.
+`dolphinrc` is a read-only store link, so a rebuild restores it and drops
+runtime tweaks such as the last window size. A new wallpaper updates
+`kdeglobals` immediately, but an already running Dolphin keeps its process
+palette — close its windows (or quit it) to pick up the new colors.
 
 In Yazi the outer rounded frame came from the `full-border` plugin and has been
 removed; the pane separators are still drawn.

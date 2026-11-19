@@ -40,9 +40,11 @@
   };
 
   # Rotate the wallpaper every 30 minutes. `wp random` also re-runs matugen,
-  # so kitty/foot/fuzzel/niri/notchD follow each new wall. The timer starts
-  # with niri.service, making OnBootSec 30 minutes after login; `wp-boot`
-  # already themed the session at startup.
+  # so kitty/foot/fuzzel/niri/notchD follow each new wall. OnActiveSec counts
+  # from when the timer starts (login), and `wp-boot` already themed the
+  # session at startup. Wanted by timers.target rather than niri.service so a
+  # `home-manager switch` starts it in the running session instead of waiting
+  # for the next login.
   systemd.user.services.wallpaper-rotate = {
     Unit = {
       Description = "Rotate the wallpaper and regenerate the desktop theme";
@@ -61,12 +63,12 @@
       PartOf = [ "niri.service" ];
     };
     Timer = {
-      OnBootSec = "30min";
+      OnActiveSec = "30min";
       OnUnitActiveSec = "30min";
       # Keep the change off the exact half hour.
       RandomizedDelaySec = "2min";
     };
-    Install.WantedBy = [ "niri.service" ];
+    Install.WantedBy = [ "timers.target" ];
   };
 
   # niri has no variables: matugen writes an include file that config.kdl

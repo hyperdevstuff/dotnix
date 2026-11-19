@@ -17,11 +17,6 @@ let
       "QT_PLUGIN_PATH"
       ":"
       "${pkgs.kdePackages.breeze}/lib/qt-6/plugins"
-      # Breeze paints item views from KColorScheme, not the QPalette the
-      # platform theme installs; without this path it falls back to a light
-      # base in the file view only. `wp` regenerates this file from matugen.
-      "--run"
-      "export KDE_COLOR_SCHEME_PATH=\"$HOME/.local/share/color-schemes/Dotnix.colors\""
     ];
   });
 in

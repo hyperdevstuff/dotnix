@@ -140,6 +140,10 @@
   home.file.".local/bin/try-shell".source = ../scripts/try-shell;
   home.file.".local/bin/try-shell".executable = true;
 
+  # Trial Dux Modular Shell (DMS) in a nested niri window with a private bus.
+  home.file.".local/bin/try-dux".source = ../scripts/try-dux;
+  home.file.".local/bin/try-dux".executable = true;
+
   home.sessionVariables = {
     EDITOR = "nvim";
     VISUAL = "nvim";

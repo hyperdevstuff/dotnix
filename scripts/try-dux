@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# try-dux — try Dux Modular Shell (DMS) in a nested niri session.
+#
+# The whole trial runs inside a nested niri window with its own D-Bus session,
+# so DMS cannot steal the notification bus, the polkit agent, or the clipboard
+# from the running dotnix session. Quitting the window returns you to notchD.
+#
+# Usage:
+#   try-dux                 # nixpkgs package (2.1.x, prebuilt on cache.nixos.org)
+#   DUX_SOURCE=flake try-dux  # github:duxlabs-dev/dux-shell/stable (builds once)
+#
+# Inside the nested session, Mod is Alt:
+#   Alt+Return  terminal (foot)
+#   Alt+Q       close window
+#   Alt+Shift+E quit the trial
+#
+# Notes:
+#   * Settings are written to ~/.config/dms and ~/.local/state/dms, so they
+#     survive between trials. Delete those directories for a clean slate.
+#   * Nothing in the real session is stopped or reconfigured. This only proves
+#     the UI; for the real daily-driver trial see docs/dux.md.
+set -euo pipefail
+
+if [ -z "${WAYLAND_DISPLAY:-}" ]; then
+  echo "try-dux: no Wayland session (WAYLAND_DISPLAY is unset)" >&2
+  exit 1
+fi
+
+case "${DUX_SOURCE:-nixpkgs}" in
+  flake) pkgs=(github:duxlabs-dev/dux-shell/stable nixpkgs#quickshell) ;;
+  nixpkgs) pkgs=(nixpkgs#dux-shell nixpkgs#quickshell) ;;
+  *)
+    echo "try-dux: DUX_SOURCE must be 'nixpkgs' or 'flake'" >&2
+    exit 2
+    ;;
+esac
+
+runner="$(mktemp -t try-dux-run.XXXXXX)"
+cat > "$runner" <<'EOF'
+#!/usr/bin/env bash
+exec dms run --log-level info
+EOF
+chmod +x "$runner"
+
+config="$(mktemp -t try-dux-niri.XXXXXX)"
+cat > "$config" <<EOF
+input {
+    mod-key-nested "Alt"
+}
+
+spawn-at-startup "$runner"
+
+binds {
+    Mod+Return { spawn "foot"; }
+    Mod+Q { close-window; }
+    Mod+Shift+E { quit; }
+}
+
+layout {
+    gaps 10
+}
+EOF
+
+echo "try-dux: launching DMS in nested niri (Mod = Alt, quit with Mod+Shift+E)"
+# One private bus for the nested compositor and every client DMS spawns.
+exec nix shell "${pkgs[@]}" -c dbus-run-session -- niri -c "$config"

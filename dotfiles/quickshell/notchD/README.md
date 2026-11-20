@@ -1,28 +1,9 @@
 # notchD
 
 A low-memory control center for NixOS + niri, built with Quickshell 0.3.2.
-It is a horizontal hub with sideways flyouts, plus a single downward media
-card. Everything is keyboard reachable and native QML; there is no Hyprland
-dependency and no extra daemon for the control center itself.
-
-## Layout
-
-```
-┌───────────────────────────── hub ─────────────────────────────┐
-│ 16:06  │ Wi-Fi │ Bluetooth │ Audio │ Battery │ Display │ Session │ ⚙ │
-│ Sat 7 Nov                                                      │
-└───────────────────────────────────────────────────────────────┘
-        ┌──── flyout (sideways) ────┐        ┌─ media (down) ─┐
-        │ detail page               │        │ album art …   │
-        └───────────────────────────┘        └────────────────┘
-```
-
-- Only the media card grows downward. Every other module opens a side flyout
-  that docks flush to the right edge of the hub, sharing one continuous edge.
-- One flyout/media card is open at a time.
-- Escape or a click outside steps back; Escape from the hub returns to the pill.
-- The pill floats a few pixels below the top edge instead of sitting on the
-  bezel. Notch mode stays flush on purpose.
+The expanded hub presents media, controls and notifications in three columns.
+Module details open in the middle column; Escape steps back to the hub and
+then to the pill. Ctrl+Tab switches hub tabs.
 
 ## Modules
 
@@ -40,12 +21,10 @@ the shared Quickshell services stay alive.
 | Display | `brightnessctl`, night-light tint overlay, niri `power-off-monitors` |
 | Session | logind / systemctl, native lock screen |
 
-The gear in the hub opens **Modules**, where modules can be enabled, disabled
+The Settings button in the hub opens **Modules**, where modules can be enabled, disabled
 and reordered. The order and enabled set are written to
 `$XDG_STATE_HOME/notchD/settings.json` through a `FileView` + `JsonAdapter`, so
-they survive restarts, config reloads and home-manager rebuilds. The default
-order groups Wi-Fi, Bluetooth and Battery on the left of the clock; Audio,
-Display and Session plus the Modules gear sit on the right.
+they survive restarts, config reloads and home-manager rebuilds. The default grid order is Wi-Fi, Bluetooth, Battery, Audio, Display and Session.
 
 ### Advanced fallbacks
 
@@ -114,7 +93,7 @@ cards in a top-right overlay. Card timeouts follow the sender's `expire-time`
 (`0` never expires, `-1` uses 8 s), critical notifications never expire, and
 hovering pauses the timer. Left-click invokes the default action, the close
 button dismisses. Cards are hidden while the shell is locked and while the
-right-hand flyout is open; they stay tracked and appear when it closes. While
+hub is open; they stay tracked and appear when it closes. While
 locked they are shown read-only in the lock screen sidebar, and expiry is
 paused until unlock.
 
@@ -206,7 +185,7 @@ registered modules.
 
 - `shell.qml` — shell root, windows, lock/idle wiring, persistence, IPC.
 - `HomeWidgets.qml` — desktop home widgets (CPU, memory, uptime, battery) on the wallpaper.
-- `NotchD.qml` — morphing surface, side flyout loader, downward media card.
+- `NotchD.qml` — morphing surface and middle-column detail loader.
 - `IslandState.qml` — idle / osd / hub / flyout / media / auth state machine.
 - `LockScreen.qml` — two-page `WlSessionLock` + PAM lock screen.
 - `components/LockSidebar.qml` — read-only lock-screen activity/notifications sidebar.
@@ -232,16 +211,11 @@ PPI). `Theme.qml` is the single source of truth:
 - Colour: one accent (status dots only); everything else is foreground,
   muted, hairline and surface. `muted` is `#a1a1aa` in dark mode because
   `#8f8f8f` fails contrast at 11 px.
-- The hub is one horizontal row: clock and date, an icon+value chip per
-  enabled module, a now-playing chip and the Modules gear. Module names live
-  in flyout headers, so the row stays readable without a second label line.
-- The clock is a single layer owned by the surface, not by a mode. It sits at
-  the exact same x in the pill, the hub and a side flyout; the date fades in
-  only when the hub expands. Enabled modules split evenly either side of it.
-- Hub width is content-driven: `Theme.hubW` is a floor and `HubSurface`
-  reports the width its wider chip group needs, so a now-playing chip or a
-  long value grows the panel instead of clipping it. The surface stays centred
-  while it grows. `Theme.hubSidePad` is the minimum edge breathing room.
+- The hub keeps media on the left, tabs and module controls in the middle,
+  and actionable notifications on the right. Module details scroll in the
+  middle column when the available height is limited.
+- The idle pill shows the clock and a compact media indicator. The hub size is
+  constrained to the selected screen.
 - The panel is opaque (`#0b0b0b` dark, `#fafafa` light). The pill and the hub
   are the same black, there is no background blur and no top highlight, so
   the morph cannot pick up the wallpaper or leak a light edge.
@@ -257,3 +231,33 @@ foot, fuzzel and the niri border. Notifications are drawn by notchD itself
 - `wp theme light` / `wp theme dark` — force it
 
 The same actions are in the desktop right-click menu (Light/Dark/Auto theme).
+
+The expanded island groups media, controls and notifications from left to right.
+The center tabs expose Controls, Performance, Limits and Clipboard; the
+wallpaper button opens the picker. `qs ipc call notchD openClipboard` opens
+the clipboard tab, and `openWallpapers`, `toggleWallpapers`, and
+`closeWallpapers` control the picker. Limits are populated only when a local
+usage feed is available. The shell continues to use the matugen palette.
+
+## Clipboard and usage
+
+`Mod+V` opens native Quickshell clipboard history. Search, use ↑/↓ to preview,
+Enter to copy, Delete to remove, and Escape to close. `cliphist` still stores
+text and images; a terminal picker is retained for shell recovery.
+
+Performance samples CPU, memory and uptime every five seconds while visible.
+Limits reads an optional local usage feed; see [USAGE.md](USAGE.md). No provider
+API adapter is included, so unavailable limits stay explicitly unavailable.
+
+## Wallpaper picker
+
+Open **Wallpapers** from Controls, or run:
+
+```sh
+quickshell ipc -c notchD call notchD openWallpapers
+```
+
+The bottom preview and thumbnail strip browse `~/Pictures/walls`; override
+with `NOTCHD_WALLS_DIR`. Search by filename, use ←/→ to select, Enter to apply,
+and Escape to close. Apply invokes the existing `wp` command, preserving awww
+transitions and matugen. Favorites use the same file as `wp fav`.

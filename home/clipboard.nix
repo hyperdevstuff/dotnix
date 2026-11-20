@@ -11,6 +11,11 @@
     executable = true;
   };
 
+  home.file.".local/bin/notchd-clipboard" = {
+    source = ../dotfiles/bin/notchd-clipboard;
+    executable = true;
+  };
+
   home.file.".local/bin/clipmenu-preview" = {
     source = ../dotfiles/bin/clipmenu-preview;
     executable = true;

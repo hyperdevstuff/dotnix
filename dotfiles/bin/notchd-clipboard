@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+"""Private cliphist bridge for the notch clipboard surface."""
+import base64
+import json
+import subprocess
+import sys
+
+
+def run(*args, data=None):
+    return subprocess.run(args, input=data, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True).stdout
+
+
+def main():
+    action = sys.argv[1]
+    if action == 'list':
+        entries = []
+        for line in run('cliphist', 'list').decode('utf-8', 'replace').splitlines():
+            ident, sep, label = line.partition('\t')
+            if sep and ident.isdecimal():
+                entries.append({'id': ident, 'label': label})
+        print(json.dumps(entries))
+    elif action in ('copy', 'delete', 'preview'):
+        ident = sys.argv[2]
+        if not ident.isdecimal():
+            raise ValueError('invalid id')
+        if action == 'delete':
+            run('cliphist', 'delete', data=(ident + '\n').encode())
+        else:
+            content = run('cliphist', 'decode', ident)
+            if action == 'copy':
+                run('wl-copy', data=content)
+            else:
+                image = content.startswith((b'\x89PNG\r\n\x1a\n', b'\xff\xd8\xff', b'GIF8', b'RIFF'))
+                if image:
+                    # QML can display data URLs without leaving clipboard data on disk.
+                    mime = 'image/png' if content.startswith(b'\x89PNG') else 'image/jpeg' if content.startswith(b'\xff\xd8') else 'image/gif' if content.startswith(b'GIF8') else 'image/webp'
+                    print(json.dumps({'image': 'data:' + mime + ';base64,' + base64.b64encode(content).decode()}))
+                else:
+                    print(json.dumps({'text': content[:65536].decode('utf-8', 'replace')}))
+    else:
+        raise ValueError('invalid action')
+
+
+try:
+    main()
+except (OSError, subprocess.CalledProcessError, ValueError, IndexError):
+    sys.exit(1)

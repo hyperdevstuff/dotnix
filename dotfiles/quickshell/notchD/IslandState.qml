@@ -1,11 +1,12 @@
 import QtQuick
 import Quickshell
+import "services" as Services
 
 // State machine for the island. Drives NotchD.qml and shell.qml.
 //
-//   idle ── click / Mod+N ──> hub ── chip ──> flyout (sideways)
+//   idle ── click / Mod+N ──> hub ── chip ──> flyout (middle column)
 //     ▲                        │                │
-//     │                        └── media chip ──> media (downward)
+//     │                        └── media chip ──> media hub
 //     └──── Escape / outside ──┴──── back ──────┘
 //
 // OSD and media peeks are transient and never clobber an open hub/flyout.
@@ -21,6 +22,7 @@ Item {
     // Current surface: idle | osd | hub | flyout | media | auth
     property string mode: "idle"
     property string flyoutKind: ""
+    property string hubTab: "Controls"
 
     // Hub keyboard focus. The chip order follows the module registry, so
     // disabling or reordering a module changes navigation too.
@@ -144,14 +146,10 @@ Item {
     }
 
     function peekMedia(ms) {
-        if (hidden) return;
-        if (interactive) return;
-        osdTimer.stop();
-        mediaReturnMode = "idle";
-        mode = "media";
-        mediaTimer.interval = (ms && ms > 0) ? ms : 4200;
-        mediaTimer.restart();
+        if (hidden || interactive) return;
+        showOsd("media", { title: Services.Media.title || "Now playing", text: Services.Media.artist || "" }, ms);
     }
+
 
     function closeMedia() {
         mediaTimer.stop();

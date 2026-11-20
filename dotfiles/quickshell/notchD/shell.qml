@@ -172,13 +172,16 @@ ShellRoot {
     NotificationPopups {
         id: notificationPopups
         screen: shell.primaryScreen
-        suppressed: lockScreen.locked || islandState.mode === "flyout"
+        suppressed: lockScreen.locked || islandState.mode === "hub" || islandState.mode === "flyout" || islandState.mode === "media"
     }
 
     // ------------------------------------------------------------- polkit
     PolkitAgent {
         id: polkitAgent
-        onAuthenticationRequestStarted: islandState.openAuth()
+        onAuthenticationRequestStarted: {
+            if (wallpaperLoader.item) wallpaperLoader.item.shown = false;
+            islandState.openAuth();
+        }
         onIsActiveChanged: {
             if (polkitAgent.isActive) islandState.openAuth();
             else if (islandState.mode === "auth") islandState.closeAuth();
@@ -250,7 +253,7 @@ ShellRoot {
         id: win
         screen: shell.primaryScreen
         anchors { top: true; left: true; right: true }
-        implicitHeight: 560
+        implicitHeight: Math.min(560, shell.primaryScreen ? shell.primaryScreen.height : 560)
         color: "transparent"
         aboveWindows: true
         focusable: true
@@ -290,9 +293,23 @@ ShellRoot {
             x: Math.round((win.width - notch.hubW) / 2)
             y: Theme.topGap
             state: islandState
+            screen: shell.primaryScreen
             polkitFlow: polkitAgent.flow
             notchMode: Theme.notchMode
+            onWallpapersRequested: { if (lockScreen.locked) return; islandState.collapse(); wallpaperLoader.active = true; if (wallpaperLoader.item) wallpaperLoader.item.shown = true; }
         }
+    }
+
+    Loader {
+        id: wallpaperLoader
+        active: false
+        source: "WallpaperPicker.qml"
+        onLoaded: if (item) { item.screen = shell.primaryScreen; item.shown = !lockScreen.locked; }
+        Connections { target: wallpaperLoader.item; ignoreUnknownSignals: true; function onCloseRequested() { wallpaperLoader.item.shown = false; } }
+    }
+    Connections {
+        target: lockScreen
+        function onLockedChanged() { if (lockScreen.locked && wallpaperLoader.item) wallpaperLoader.item.shown = false; }
     }
 
     // Dismiss layer: full screen, mask subtracts both island surfaces so
@@ -359,6 +376,10 @@ ShellRoot {
         function peek(s: string) { islandState.peek(s, 0); }
 
         function openHub() { islandState.openHub(); }
+        function openClipboard() { islandState.openHub(); islandState.hubTab = "Clipboard"; }
+        function openWallpapers() { if (lockScreen.locked) return; islandState.collapse(); wallpaperLoader.active = true; if (wallpaperLoader.item) wallpaperLoader.item.shown = true; }
+        function closeWallpapers() { if (wallpaperLoader.item) wallpaperLoader.item.shown = false; }
+        function toggleWallpapers() { if (wallpaperLoader.item && wallpaperLoader.item.shown) closeWallpapers(); else openWallpapers(); }
         function openFlyout(kind: string) { islandState.openFlyout(kind); }
         function openWifi() { islandState.openFlyout("wifi"); }
         function openBluetooth() { islandState.openFlyout("bluetooth"); }

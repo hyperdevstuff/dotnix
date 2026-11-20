@@ -48,3 +48,21 @@ post_hook = 'niri msg action load-config-file || true'
 [templates.kde]
 input_path = "./templates/kdeglobals"
 output_path = "/home/hyper/.config/kdeglobals"
+
+# Zen Browser. Firefox has no include path for chrome styles: the files must
+# live in <profile>/chrome/ and only load when
+# toolkit.legacyUserProfileCustomizations.stylesheets is on. `wp` copies these
+# into every profile, so the profile directory can keep its random prefix.
+[templates.zen-userchrome]
+input_path = "./templates/zen-userchrome.css"
+output_path = "/home/hyper/.config/matugen/generated/zen-userChrome.css"
+
+[templates.zen-usercontent]
+input_path = "./templates/zen-usercontent.css"
+output_path = "/home/hyper/.config/matugen/generated/zen-userContent.css"
+
+# btop reads themes from ~/.config/btop/themes; `wp` copies this in and selects
+# it, so a machine without btop configured never grows a stray config dir.
+[templates.btop]
+input_path = "./templates/btop.theme"
+output_path = "/home/hyper/.config/matugen/generated/btop.theme"

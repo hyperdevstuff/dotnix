@@ -476,7 +476,7 @@ binds {
     Mod+Shift+Minus { set-window-height "-10%"; }
     Mod+Shift+Equal { set-window-height "+10%"; }
 
-    Mod+V       hotkey-overlay-title="Clipboard history" { spawn "kitty" "--single-instance" "--class" "clipmenu" "-o" "initial_window_width=960" "-o" "initial_window_height=640" "-e" "/home/hyper/.local/bin/clipmenu"; }
+    Mod+V       hotkey-overlay-title="Clipboard history" { spawn "/home/hyper/.local/bin/clipmenu"; }
     Mod+Alt+V   hotkey-overlay-title="Toggle window floating" { toggle-window-floating; }
     Mod+Shift+V { switch-focus-between-floating-and-tiling; }
 

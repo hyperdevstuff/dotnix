@@ -167,6 +167,38 @@ apply_gtk_mode() {
   settings_set org.gnome.desktop.interface gtk-theme "$theme"
 }
 
+# Hand the rendered palette to apps that cannot include a file from
+# ~/.config/matugen/generated. Both only read their copy at startup, so a
+# running instance keeps the old palette until it is relaunched.
+sync_apps() {
+  local profile chrome
+
+  # Zen Browser: userChrome/userContent belong to the profile, not to a shared
+  # config path. Firefox also ignores them unless the legacy stylesheet pref is
+  # on; user.js is re-applied on every start and never rewritten by the browser.
+  for profile in "$CONFIG"/zen/*/; do
+    [ -f "${profile}prefs.js" ] || continue
+    chrome="${profile}chrome"
+    mkdir -p "$chrome"
+    cp -f "$GEN_DIR/zen-userChrome.css" "$chrome/userChrome.css" 2>/dev/null || continue
+    cp -f "$GEN_DIR/zen-userContent.css" "$chrome/userContent.css" 2>/dev/null || true
+    grep -q legacyUserProfileCustomizations "${profile}user.js" 2>/dev/null ||
+      printf '%s\n' 'user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);' \
+        >> "${profile}user.js"
+  done
+
+  # btop: drop the theme in its own theme dir and select it.
+  if [ -f "$CONFIG/btop/btop.conf" ]; then
+    mkdir -p "$CONFIG/btop/themes"
+    cp -f "$GEN_DIR/btop.theme" "$CONFIG/btop/themes/matugen.theme"
+    if grep -qE '^[[:space:]]*color_theme[[:space:]]*=' "$CONFIG/btop/btop.conf"; then
+      sed -i 's|^[[:space:]]*color_theme[[:space:]]*=.*|color_theme = "matugen"|' "$CONFIG/btop/btop.conf"
+    else
+      printf 'color_theme = "matugen"\n' >> "$CONFIG/btop/btop.conf"
+    fi
+  fi
+}
+
 # notchD reads this file to pick its palette (and other tools can too).
 write_effective_mode() {
   local bg r g b mode
@@ -282,5 +314,6 @@ esac
 mkdir -p "$HOME/.config/niri/generated"
 
 matugen image "$wall" --type "$scheme" --mode "$(matugen_mode)"
+sync_apps
 write_effective_mode
 echo "wp: $wall ($scheme, mode $(theme_mode))"

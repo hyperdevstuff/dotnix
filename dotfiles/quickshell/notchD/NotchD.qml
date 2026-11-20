@@ -15,6 +15,8 @@ Item {
     // Injected
     property var state: null
     property var polkitFlow: null
+    property var screen: null
+    signal wallpapersRequested()
 
     // Style
     property bool notchMode: Theme.notchMode
@@ -37,9 +39,9 @@ Item {
     readonly property real surfaceRadius: pillLike ? Theme.radiusPill : Theme.radius
     readonly property bool squareTop: notchMode && mode !== "auth"
     readonly property real maskTopLeft: squareTop ? 0 : surfaceRadius
-    readonly property real maskTopRight: squareTop ? 0 : (flyoutOpen ? 0 : surfaceRadius)
+    readonly property real maskTopRight: squareTop ? 0 : (surfaceRadius)
     readonly property real maskBottomLeft: surfaceRadius
-    readonly property real maskBottomRight: flyoutOpen ? 0 : surfaceRadius
+    readonly property real maskBottomRight: surfaceRadius
     readonly property real mask2TopLeft: flyoutOpen ? 0 : Theme.radius
     readonly property real mask2TopRight: flyoutOpen ? (notchMode ? 0 : Theme.radius) : Theme.radius
     readonly property real mask2BottomLeft: flyoutOpen ? 0 : Theme.radius
@@ -50,8 +52,8 @@ Item {
     // opens. Theme.hubW is a floor: the surface grows when the chip values or
     // a visible now-playing chip need more room, so nothing ever clips.
     readonly property real minHubW: hubSurface ? hubSurface.requiredWidth : Theme.hubW
-    readonly property int hubW: Math.ceil(Math.max(Theme.hubW, minHubW))
-    readonly property int hubH: Theme.hubH
+    readonly property int hubW: Math.max(1, Math.min(Math.ceil(Math.max(Theme.hubW, minHubW)), screen ? screen.width - 20 : 980))
+    readonly property int hubH: Math.max(1, Math.min(Theme.hubH, screen ? screen.height - Theme.topGap - 10 : 440))
     readonly property int flyoutW: Theme.flyoutW
     readonly property int flyoutH: Theme.flyoutH
     readonly property int mediaW: Theme.mediaW
@@ -61,10 +63,10 @@ Item {
     // that grows downward, with a small gap.
     readonly property int mediaGap: Theme.gap
 
-    width: hubW + (flyoutOpen ? flyoutW : 0)
+    width: hubW
     height: {
-        const mediaHeight = mediaOpen ? hubH + mediaGap + mediaH : hubH;
-        const flyoutHeight = flyoutOpen ? flyoutH : hubH;
+        const mediaHeight = hubH;
+        const flyoutHeight = hubH;
         const authHeight = mode === "auth" ? Theme.authH : hubH;
         return Math.max(hubH, mediaHeight, flyoutHeight, authHeight);
     }
@@ -101,18 +103,18 @@ Item {
     Component.onCompleted: { surfaceW = targetW; surfaceH = targetH; surfaceX = targetX; }
 
     // ---------------------------------------------------------- mask geometry
-    readonly property bool flyoutMaskOn: flyoutItem.visible && flyoutItem.opacity > 0.08
-    readonly property bool mediaMaskOn: mediaItem.visible && mediaItem.opacity > 0.08
+    readonly property bool flyoutMaskOn: false
+    readonly property bool mediaMaskOn: false
 
     readonly property real maskX: surface.x
     readonly property real maskY: surface.y
     readonly property real maskW: surface.width
     readonly property real maskH: surface.height
 
-    readonly property real mask2X: flyoutMaskOn ? flyoutItem.x : (mediaMaskOn ? mediaItem.x : 0)
-    readonly property real mask2Y: flyoutMaskOn ? flyoutItem.y : (mediaMaskOn ? mediaItem.y : 0)
-    readonly property real mask2W: flyoutMaskOn ? flyoutItem.width : (mediaMaskOn ? mediaItem.width : 0)
-    readonly property real mask2H: flyoutMaskOn ? flyoutItem.height : (mediaMaskOn ? mediaItem.height : 0)
+    readonly property real mask2X: flyoutMaskOn ? flyoutItem.x : 0
+    readonly property real mask2Y: flyoutMaskOn ? flyoutItem.y : 0
+    readonly property real mask2W: flyoutMaskOn ? flyoutItem.width : 0
+    readonly property real mask2H: flyoutMaskOn ? flyoutItem.height : 0
 
     // ---------------------------------------------------------------- surface
     Item {
@@ -169,8 +171,8 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: root.mediaActive
-                    opacity: visible ? 1 : 0
+                    visible: opacity > 0.001
+                    opacity: root.mediaActive ? 1 : 0
                     z: 1
                     Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
@@ -227,6 +229,7 @@ Item {
 
             Components.OsdSurface {
                 anchors.fill: parent
+                screen: root.screen
                 state: root.state
                 opacity: root.mode === "osd" ? 1 : 0
                 visible: opacity > 0.001
@@ -237,6 +240,7 @@ Item {
                 id: hubSurface
                 anchors.fill: parent
                 state: root.state
+                onWallpapersRequested: root.wallpapersRequested()
                 opacity: (root.mode === "hub" || root.mode === "flyout" || root.mode === "media") ? 1 : 0
                 visible: opacity > 0.001
                 Behavior on opacity { NumberAnimation { duration: Motion.fast } }
@@ -262,6 +266,8 @@ Item {
         Item {
             id: clockLayer
             anchors.centerIn: parent
+            anchors.horizontalCenterOffset: root.mode === "idle" && root.mediaActive ? -12 : 0
+            Behavior on anchors.horizontalCenterOffset { NumberAnimation { duration: Motion.glide; easing.type: Easing.OutCubic } }
             width: Math.max(timeText.implicitWidth, dateText.implicitWidth)
             height: timeText.implicitHeight
             // In the pill only the time exists, so centre it. Once the date is
@@ -270,7 +276,7 @@ Item {
             property real lift: root.mode === "idle" ? 0 : -dateText.implicitHeight / 2
             anchors.verticalCenterOffset: lift
             Behavior on lift { NumberAnimation { duration: Motion.glide; easing.type: Easing.OutCubic } }
-            visible: root.mode !== "auth" && root.mode !== "osd"
+            visible: root.mode === "idle"
             opacity: visible ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
@@ -358,10 +364,11 @@ Item {
 
     Item {
         id: flyoutItem
-        x: root.hubW
+        x: Math.round((root.hubW - width) / 2)
         y: 0
-        width: root.flyoutW
-        height: root.flyoutH
+        width: Math.max(1, Math.min(root.flyoutW, root.hubW * 0.46))
+        height: root.hubH
+        z: 5
         opacity: root.flyoutOpen ? 1 : 0
         visible: opacity > 0.001
         scale: root.flyoutOpen ? 1 : 0.99
@@ -370,9 +377,16 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
+        Flickable {
+            id: detailScroll
+            anchors.fill: parent
+            clip: true
+            contentWidth: width
+            contentHeight: Math.max(height, root.flyoutH)
         Loader {
             id: flyoutLoader
-            anchors.fill: parent
+            width: parent.width
+            height: detailScroll.contentHeight
             active: root.flyoutOpen || flyoutItem.opacity > 0.02
             sourceComponent: {
                 switch (root.lastFlyoutKind) {
@@ -392,6 +406,8 @@ Item {
         }
     }
 
+    }
+
     Component { id: wifiComponent; WifiFlyout {} }
     Component { id: bluetoothComponent; BluetoothFlyout {} }
     Component { id: audioComponent; AudioFlyout {} }
@@ -399,28 +415,6 @@ Item {
     Component { id: displayComponent; DisplayFlyout {} }
     Component { id: sessionComponent; SessionFlyout {} }
     Component { id: settingsComponent; SettingsFlyout {} }
-
-    // ------------------------------------------------------------------ media
-    Item {
-        id: mediaItem
-        x: Math.round((root.hubW - root.mediaW) / 2)
-        y: root.hubH + root.mediaGap
-        width: root.mediaW
-        height: root.mediaH
-        opacity: root.mediaOpen ? 1 : 0
-        visible: opacity > 0.001
-        scale: root.mediaOpen ? 1 : 0.985
-        transformOrigin: Item.Top
-
-        Behavior on opacity { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-        Behavior on y { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-
-        Components.MediaSurface {
-            anchors.fill: parent
-            state: root.state
-        }
-    }
 
     // ---------------------------------------------------------------- clock
     SystemClock {
@@ -444,28 +438,28 @@ Item {
 
     Keys.onLeftPressed: (event) => {
         if (!root.state) return;
-        if (root.state.mode === "hub") { root.state.moveHubFocus(-1, 0); event.accepted = true; }
+        if (root.state.mode === "hub" && root.state.hubTab === "Controls") { root.state.moveHubFocus(-1, 0); event.accepted = true; }
         else if (root.state.mode === "media") { Services.Media.previous(); event.accepted = true; }
     }
     Keys.onRightPressed: (event) => {
         if (!root.state) return;
-        if (root.state.mode === "hub") { root.state.moveHubFocus(1, 0); event.accepted = true; }
+        if (root.state.mode === "hub" && root.state.hubTab === "Controls") { root.state.moveHubFocus(1, 0); event.accepted = true; }
         else if (root.state.mode === "media") { Services.Media.next(); event.accepted = true; }
     }
     Keys.onUpPressed: (event) => {
-        if (root.state && root.state.mode === "hub") { event.accepted = true; }
+        if (root.state && root.state.mode === "hub" && root.state.hubTab === "Controls") { event.accepted = true; }
     }
     Keys.onDownPressed: (event) => {
-        if (root.state && root.state.mode === "hub") { event.accepted = true; }
+        if (root.state && root.state.mode === "hub" && root.state.hubTab === "Controls") { event.accepted = true; }
     }
     Keys.onReturnPressed: (event) => {
         if (!root.state) return;
-        if (root.state.mode === "hub") { root.state.activateHubIndex(root.state.hubIndex); event.accepted = true; }
+        if (root.state.mode === "hub" && root.state.hubTab === "Controls") { root.state.activateHubIndex(root.state.hubIndex); event.accepted = true; }
         else if (root.state.mode === "media") { Services.Media.playPause(); event.accepted = true; }
     }
     Keys.onEnterPressed: (event) => {
         if (!root.state) return;
-        if (root.state.mode === "hub") { root.state.activateHubIndex(root.state.hubIndex); event.accepted = true; }
+        if (root.state.mode === "hub" && root.state.hubTab === "Controls") { root.state.activateHubIndex(root.state.hubIndex); event.accepted = true; }
         else if (root.state.mode === "media") { Services.Media.playPause(); event.accepted = true; }
     }
     Keys.onSpacePressed: (event) => {
@@ -477,6 +471,14 @@ Item {
     Keys.onPressed: (event) => {
         if (!root.state) return;
         if (root.state.mode === "hub") {
+            if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab)) {
+                const tabs = ["Controls", "Performance", "Limits", "Clipboard"];
+                const delta = (event.modifiers & Qt.ShiftModifier) || event.key === Qt.Key_Backtab ? -1 : 1;
+                root.state.hubTab = tabs[(tabs.indexOf(root.state.hubTab) + delta + tabs.length) % tabs.length];
+                event.accepted = true;
+                return;
+            }
+            if (root.state.hubTab !== "Controls") return;
             const n = parseInt(event.text);
             if (!isNaN(n) && n >= 1 && n <= root.state.hubCount) {
                 root.state.activateHubIndex(n - 1);

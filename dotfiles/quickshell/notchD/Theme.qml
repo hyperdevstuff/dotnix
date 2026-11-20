@@ -68,8 +68,8 @@ Singleton {
     readonly property int pillH:      26
     readonly property int osdW:       320
     readonly property int osdH:       54
-    readonly property int hubW:       640
-    readonly property int hubH:       56
+    readonly property int hubW:       980
+    readonly property int hubH:       440
     // Theme.hubW is a floor: HubSurface.requiredWidth grows the hub past it
     // when the chip values or the now-playing chip need more room. hubSidePad
     // is the minimum breathing room from the outer chip group to the edge.

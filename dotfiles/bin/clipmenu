@@ -1,14 +1,20 @@
 #!/bin/sh
 # clipmenu — searchable cliphist picker.
 #
-# Runs inside a floating kitty window (see the Mod+V bind in niri/config.kdl),
-# because fzf can wrap text and show a full preview, which fuzzel's dmenu mode
-# cannot. Fuzzel stays the app launcher; this is only the clipboard UI.
+# Opens native Quickshell history first, with a terminal picker for recovery.
 
 set -eu
 
+if command -v quickshell >/dev/null 2>&1 && quickshell ipc -c notchD call notchD openClipboard >/dev/null 2>&1; then
+    exit 0
+fi
+
 command -v cliphist >/dev/null 2>&1 || exit 0
 command -v fzf >/dev/null 2>&1 || exit 1
+
+if [ ! -t 0 ]; then
+    exec kitty --single-instance --class clipmenu -o initial_window_width=960 -o initial_window_height=640 -e "$0"
+fi
 
 selection=$(
     cliphist list |

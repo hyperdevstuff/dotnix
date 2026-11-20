@@ -10,6 +10,7 @@ Item {
     id: root
 
     property var state: null
+    property var screen: null
     readonly property string kind: state ? state.osdKind : "generic"
 
     readonly property string derivedIcon: {
@@ -43,7 +44,7 @@ Item {
         case "volume": return Services.System.sinkName;
         case "mic": return Services.System.sourceName;
         case "battery": return Services.System.batteryTimeText;
-        case "workspace": return Services.Compositor.activeWorkspaceName(Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "");
+        case "workspace": return Services.Compositor.activeWorkspaceName(screen ? screen.name : "");
         case "nightlight": return Services.System.nightLightText;
         case "theme": return Theme.dark ? "Dark" : "Light";
         default: return (state && state.osdText.length > 0) ? state.osdText : "";

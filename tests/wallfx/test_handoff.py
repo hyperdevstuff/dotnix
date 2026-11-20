@@ -23,9 +23,10 @@ class Handoff(unittest.TestCase):
         self.env = dict(os.environ, HOME=str(self.root), XDG_RUNTIME_DIR=str(self.root),
                         PATH=str(self.bin) + ":" + os.environ["PATH"], MODE="ok", LOG=str(self.log))
         source = (ROOT / "dotfiles/bin/wp").read_text()
-        block = source.split("# Serialize every wallpaper writer", 1)[1].split("\n", 1)[1].split('\ncase "$wall" in', 1)[0]
+        block = source.split("# Serialize every wallpaper writer", 1)[1].split("\n", 1)[1].split('\ngenerate_palette "$wall"', 1)[0]
         self.script = self.root / "handoff"
-        self.script.write_text('set -euo pipefail\nCONFIG="$HOME/.config"\nwall="$1"\ncurrent_wall() { printf "%s/old.png\\n" "$HOME"; }\n' + block)
+        lock = 'appearance_lock() {' + source.split('appearance_lock() {', 1)[1].split('\n}\n', 1)[0] + '\n}\n'
+        self.script.write_text('set -euo pipefail\nCONFIG="$HOME/.config"\nwall="$1"\ncurrent_wall() { printf "%s/old.png\\n" "$HOME"; }\n' + lock + block)
         self.mock("wallfx-map", 'printf "%s/map.png\\n%s/smooth.png\\n" "$HOME" "$HOME"\n')
         self.mock("qs", '''python3 - "$@" <<'MOCK'
 import os,sys,json

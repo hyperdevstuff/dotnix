@@ -1,35 +1,38 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Adapted from caelestia-dots; see notification-attribution/README.md.
 pragma Singleton
 
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
 
-// Native notification daemon. Quickshell implements org.freedesktop.Notifications
-// in-process, so notifications cost no extra daemon: the cards are QML inside
-// the shell that is already running.
+// One native server; the store owns expiry independently of all card views.
 Singleton {
     id: root
+    property alias items: store.items
+    property alias history: store.history
+    property alias paused: store.paused
+    property alias dnd: store.dnd
+    readonly property alias count: store.count
+    readonly property alias historyCount: store.historyCount
+    readonly property alias popups: store.popups
+    readonly property alias entries: store.entries
+    readonly property alias progressRevision: store.progressRevision
+    readonly property alias maxVisible: store.maxVisible
+    function add(n) { store.add(n) }
+    function remove(n) { store.remove(n) }
+    function dismiss(n) { store.dismiss(n) }
+    function dismissAll() { store.dismissAll() }
+    function removeHistory(key) { store.removeHistory(key) }
+    function clearHistory() { store.clearHistory() }
+    function liveForKey(key) { return store.liveForKey(key) }
+    function timeFor(n) { return store.timeFor(n) }
+    function progressFor(n) { return store.progressFor(n) }
+    function setHovered(n, owner, hovered) { store.setHovered(n, owner, hovered) }
 
-    // Keep at most this many cards on screen; older ones are expired.
-    readonly property int maxVisible: 4
-
-    // Newest first. Reassigned (not mutated) so QML bindings update.
-    property var items: []
-
-    // While the session is locked, cards stop expiring so the lock-screen
-    // sidebar can show what arrived. Expiry resumes on unlock.
-    property bool paused: false
-
-    readonly property int count: items.length
-
+    NotificationStore { id: store }
     NotificationServer {
-        id: server
-
-        // Reloading the shell (config changes, rebuilds) should not lose cards.
         keepOnReload: true
-
-        // Advertise what the cards actually render. Markup/hyperlinks are off
-        // so text is always plain and cannot inject styling.
         bodySupported: true
         bodyMarkupSupported: false
         bodyHyperlinksSupported: false
@@ -39,49 +42,6 @@ Singleton {
         imageSupported: true
         inlineReplySupported: false
         persistenceSupported: false
-
-        onNotification: (notification) => {
-            // tracked keeps the object alive after this handler returns and
-            // adds it to trackedNotifications.
-            notification.tracked = true
-            root.add(notification)
-        }
-    }
-
-    function add(notification) {
-        if (!notification) return
-
-        // A replaces_id update reuses the same object; move it to the top.
-        let next = items.slice().filter(n => n !== notification)
-        next.unshift(notification)
-
-        // Don't let a chatty app pile up cards forever.
-        if (next.length > maxVisible) {
-            const dropped = next.splice(maxVisible)
-            for (let i = 0; i < dropped.length; i++)
-                if (dropped[i]) dropped[i].expire()
-        }
-
-        items = next
-    }
-
-    function remove(notification) {
-        const idx = items.indexOf(notification)
-        if (idx === -1) return
-        const next = items.slice()
-        next.splice(idx, 1)
-        items = next
-    }
-
-    function dismiss(notification) {
-        if (notification) notification.dismiss()
-        remove(notification)
-    }
-
-    function dismissAll() {
-        const all = items.slice()
-        items = []
-        for (let i = 0; i < all.length; i++)
-            if (all[i]) all[i].dismiss()
+        onNotification: notification => { notification.tracked = true; root.add(notification) }
     }
 }

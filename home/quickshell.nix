@@ -1,6 +1,12 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
+  home.packages = [ pkgs.python3 ];
+  home.file.".local/bin/notchd-metrics" = {
+    source = ../dotfiles/bin/notchd-metrics;
+    executable = true;
+  };
+
   programs.quickshell = {
     enable = true;
     configs = {

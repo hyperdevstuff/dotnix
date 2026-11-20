@@ -16,6 +16,7 @@ Singleton {
     id: root
 
     property bool dark: true
+    property real surfaceOpacity: 1.0
 
     property var palettes: ({})
     readonly property var palette: palettes[dark ? "dark" : "light"] || ({})
@@ -44,12 +45,10 @@ Singleton {
     readonly property int fontLabel: 11
     readonly property int fontValue: 12
 
-    // Surfaces. The panel is deliberately opaque: the pill and the expanded hub
-    // must be the exact same black, and a translucent panel picks up whatever
-    // wallpaper sits behind it (which read as a grey, washed-out hub).
+    // Shared matugen surfaces. Only the outer panel uses the persisted opacity.
     readonly property color bg: tone("background", dark ? "#0a0a0a" : "#fafafa")
     readonly property color bgElev: tone("surface_container", dark ? "#161616" : "#ffffff")
-    readonly property color panel: tone("surface", dark ? "#0b0b0b" : "#fafafa")
+    readonly property color panel: Qt.rgba(panelSolid.r, panelSolid.g, panelSolid.b, Math.max(0.7, Math.min(1, surfaceOpacity)))
     readonly property color panelSolid: tone("surface", dark ? "#0b0b0b" : "#fafafa")
     readonly property color surface: tone("surface_container", dark ? "#141414" : "#ffffff")
     readonly property color surfaceHover: tone("surface_container_high", dark ? "#1e1e1e" : "#f1f1f2")
@@ -63,6 +62,7 @@ Singleton {
     readonly property color accentInk: tone("on_primary", dark ? "#0a0a0a" : "#ffffff")
     readonly property color accentContainer: tone("primary_container", dark ? "#38301c" : "#f4e4b9")
     readonly property color accentContainerInk: tone("on_primary_container", dark ? "#f4e4b9" : "#28200d")
+    readonly property color secondary: tone("secondary", dark ? "#cbc5a6" : "#625f46")
     readonly property color track: tone("surface_container_highest", dark ? "#333333" : "#e4e4e7")
 
     // Status
@@ -79,8 +79,7 @@ Singleton {
     readonly property real earSize: 10
     property bool notchMode: false
 
-    // Sizes. The hub is a single horizontal row; everything except media opens
-    // sideways as a flyout, media opens as a card below the hub.
+    // Dashboard size and compact activity sizes; detail pages replace the hub.
     readonly property int pillW: 60
     // Extra width while the idle pill carries a compact now-playing indicator.
     readonly property int pillMediaExtra: 76
@@ -88,10 +87,8 @@ Singleton {
     readonly property int osdW: 196
     readonly property int osdH: 32
     readonly property int hubW: 980
-    readonly property int hubH: 470
-    // Theme.hubW is a floor: HubSurface.requiredWidth grows the hub past it
-    // when the chip values or the now-playing chip need more room. hubSidePad
-    // is the minimum breathing room from the outer chip group to the edge.
+    readonly property int hubH: 524
+    // Dashboard width is bounded by the output in NotchD.qml.
     readonly property int hubSidePad: 6
     readonly property int mediaW: 400
     readonly property int mediaH: 150

@@ -283,7 +283,7 @@ binds {
     Mod+B hotkey-overlay-title="Open Helium" { spawn "helium"; }
     Mod+E hotkey-overlay-title="Open Dolphin" { spawn "dolphin"; }
     Mod+D hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
-    Mod+Space hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
+    Mod+Space hotkey-overlay-title="Open notchD launcher" { spawn "sh" "-c" "quickshell ipc -c notchD call notchD toggleRunner || fuzzel"; }
     Super+Alt+L allow-when-locked=true hotkey-overlay-title="Lock the screen" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "lock"; }
 
     // Quickshell NotchD: Mod+N opens the hub and closes it again on the next

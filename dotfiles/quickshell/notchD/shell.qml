@@ -31,7 +31,7 @@ ShellRoot {
         // Coalesce rapid edits into one atomic write of the final state.
         onAdapterUpdated: saveTimer.restart()
         onLoaded: shell.applySettings()
-        onLoadFailed: (error) => {
+        onLoadFailed: error => {
             // First run: seed defaults so the next launch has a file to read.
             // Defer until the failed read has fully unwound.
             if (error === FileViewError.FileNotFound)
@@ -46,6 +46,7 @@ ShellRoot {
             property string modulesEnabled: "wifi,bluetooth,battery,audio,display,session"
             property bool nightLight: false
             property int nightLightTemp: 3500
+            property real surfaceOpacity: 1.0
         }
     }
 
@@ -83,11 +84,13 @@ ShellRoot {
 
     function applySettings() {
         if (settingsFile.loaded) {
-            if (settings.modulesOrder.length > 0) Modules.orderCsv = settings.modulesOrder;
-            if (settings.modulesEnabled.length > 0) Modules.enabledCsv = settings.modulesEnabled;
+            if (settings.modulesOrder.length > 0)
+                Modules.orderCsv = settings.modulesOrder;
+            if (settings.modulesEnabled.length > 0)
+                Modules.enabledCsv = settings.modulesEnabled;
             Theme.notchMode = settings.style === "notch";
-            Services.System.nightLightTemp = Math.max(Services.System.nightLightMin,
-                Math.min(Services.System.nightLightMax, settings.nightLightTemp));
+            Theme.surfaceOpacity = Math.max(0.7, Math.min(1, settings.surfaceOpacity));
+            Services.System.nightLightTemp = Math.max(Services.System.nightLightMin, Math.min(Services.System.nightLightMax, settings.nightLightTemp));
             Services.System.setNightLight(settings.nightLight);
         }
     }
@@ -96,22 +99,35 @@ ShellRoot {
     // the flyout inner corners can react without every file reading settings.
     Connections {
         target: settings
-        function onStyleChanged() { Theme.notchMode = settings.style === "notch"; }
+        function onStyleChanged() {
+            Theme.notchMode = settings.style === "notch";
+        }
+        function onSurfaceOpacityChanged() {
+            Theme.surfaceOpacity = Math.max(0.7, Math.min(1, settings.surfaceOpacity));
+        }
     }
 
     // Night light is a tint, not a gamma ramp, so it is plain state. Persist
     // both the enabled flag and the Kelvin value.
     Connections {
         target: Services.System
-        function onNightLightChanged() { settings.nightLight = Services.System.nightLight; }
-        function onNightLightTempChanged() { settings.nightLightTemp = Services.System.nightLightTemp; }
+        function onNightLightChanged() {
+            settings.nightLight = Services.System.nightLight;
+        }
+        function onNightLightTempChanged() {
+            settings.nightLightTemp = Services.System.nightLightTemp;
+        }
     }
 
     // Persist registry changes as they happen.
     Connections {
         target: Modules
-        function onOrderCsvChanged() { settings.modulesOrder = Modules.orderCsv; }
-        function onEnabledCsvChanged() { settings.modulesEnabled = Modules.enabledCsv; }
+        function onOrderCsvChanged() {
+            settings.modulesOrder = Modules.orderCsv;
+        }
+        function onEnabledCsvChanged() {
+            settings.modulesEnabled = Modules.enabledCsv;
+        }
     }
 
     IslandState {
@@ -127,18 +143,28 @@ ShellRoot {
 
     Connections {
         target: Services.Session
-        function onLockRequested() { if (!lockScreen.locked) lockScreen.lock(); }
+        function onLockRequested() {
+            if (!lockScreen.locked)
+                lockScreen.lock();
+        }
     }
 
     Connections {
         target: Services.Idle
-        function onLockRequested() { if (!lockScreen.locked) lockScreen.lock(); }
-        function onDisplayOffRequested() { Services.Session.powerOffMonitors(); }
+        function onLockRequested() {
+            if (!lockScreen.locked)
+                lockScreen.lock();
+        }
+        function onDisplayOffRequested() {
+            Services.Session.powerOffMonitors();
+        }
         function onSuspendRequested() {
-            if (!UPower.onBattery) return;
+            if (!UPower.onBattery)
+                return;
             // Give the compositor a moment to acquire the session lock before
             // logind freezes the machine.
-            if (!lockScreen.locked) lockScreen.lock();
+            if (!lockScreen.locked)
+                lockScreen.lock();
             suspendTimer.restart();
         }
     }
@@ -174,43 +200,76 @@ ShellRoot {
     NotificationPopups {
         id: notificationPopups
         screen: shell.primaryScreen
-        suppressed: lockScreen.locked || islandState.mode === "hub" || islandState.mode === "flyout" || islandState.mode === "media"
+        suppressed: lockScreen.locked || islandState.mode === "hub" || islandState.mode === "flyout" || islandState.mode === "media" || islandState.mode === "runner"
     }
 
     // ------------------------------------------------------------- polkit
     PolkitAgent {
         id: polkitAgent
         onAuthenticationRequestStarted: {
-            if (wallpaperLoader.item) wallpaperLoader.item.shown = false;
+            if (wallpaperLoader.item)
+                wallpaperLoader.item.shown = false;
             islandState.openAuth();
         }
         onIsActiveChanged: {
-            if (polkitAgent.isActive) islandState.openAuth();
-            else if (islandState.mode === "auth") islandState.closeAuth();
+            if (polkitAgent.isActive)
+                islandState.openAuth();
+            else if (islandState.mode === "auth")
+                islandState.closeAuth();
         }
     }
 
     Timer {
         id: authCloseTimer
         interval: 450
-        onTriggered: if (islandState.mode === "auth") islandState.closeAuth()
+        onTriggered: if (islandState.mode === "auth")
+            islandState.closeAuth()
     }
 
     Connections {
         target: polkitAgent.flow
         ignoreUnknownSignals: true
         function onIsCompletedChanged() {
-            if (polkitAgent.flow && polkitAgent.flow.isCompleted) authCloseTimer.restart();
+            if (polkitAgent.flow && polkitAgent.flow.isCompleted)
+                authCloseTimer.restart();
         }
     }
 
     function dismissTop() {
         if (islandState.mode === "auth") {
-            if (polkitAgent.flow) polkitAgent.flow.cancelAuthenticationRequest();
-            else islandState.back();
+            if (polkitAgent.flow)
+                polkitAgent.flow.cancelAuthenticationRequest();
+            else
+                islandState.back();
             return;
         }
-        islandState.back();
+        if (islandState.mode === "runner")
+            islandState.closeRunner();
+        else
+            islandState.back();
+    }
+
+    function runAction(action, value) {
+        if (islandState.mode !== "runner" || lockScreen.locked)
+            return;
+        islandState.closeRunner();
+        islandState.collapse();
+        if (action === "calendar" || action === "tray") {
+            islandState.selectTab(action === "calendar" ? "Calendar" : "Tray");
+        } else if (action === "wallpaper") {
+            wallpaperLoader.active = true;
+            if (wallpaperLoader.item)
+                wallpaperLoader.item.shown = true;
+        } else if (action === "theme" || action === "scheme" || action === "variant")
+            Quickshell.execDetached(["wp", action, String(value)]);
+        else if (action === "transparency") {
+            const n = value === "opaque" ? 1 : value === "translucent" ? 0.85 : Number(value);
+            if (isFinite(n))
+                settings.surfaceOpacity = Math.max(0.7, Math.min(1, n));
+        } else if (action === "lock")
+            Services.Session.lock();
+        else if (action === "sleep")
+            Services.Session.suspend();
     }
 
     // Workspace OSD: only after the first event-stream snapshot, so startup
@@ -234,7 +293,12 @@ ShellRoot {
     PanelWindow {
         id: nightLightWin
         screen: shell.primaryScreen
-        anchors { top: true; left: true; right: true; bottom: true }
+        anchors {
+            top: true
+            left: true
+            right: true
+            bottom: true
+        }
         color: "transparent"
         aboveWindows: true
         focusable: false
@@ -254,11 +318,15 @@ ShellRoot {
     PanelWindow {
         id: win
         screen: shell.primaryScreen
-        anchors { top: true; left: true; right: true }
+        anchors {
+            top: true
+            left: true
+            right: true
+        }
         implicitHeight: Math.min(560, shell.primaryScreen ? shell.primaryScreen.height : 560)
         color: "transparent"
         aboveWindows: true
-        focusable: true
+        // WlrLayershell.keyboardFocus below is the sole focus authority.
         exclusiveZone: 0
         visible: !islandState.hidden && !lockScreen.locked
         WlrLayershell.layer: WlrLayer.Overlay
@@ -298,7 +366,15 @@ ShellRoot {
             screen: shell.primaryScreen
             polkitFlow: polkitAgent.flow
             notchMode: Theme.notchMode
-            onWallpapersRequested: { if (lockScreen.locked) return; islandState.collapse(); wallpaperLoader.active = true; if (wallpaperLoader.item) wallpaperLoader.item.shown = true; }
+            onWallpapersRequested: {
+                if (lockScreen.locked)
+                    return;
+                islandState.collapse();
+                wallpaperLoader.active = true;
+                if (wallpaperLoader.item)
+                    wallpaperLoader.item.shown = true;
+            }
+            onRunnerActionRequested: (action, value) => shell.runAction(action, value)
         }
     }
 
@@ -306,12 +382,24 @@ ShellRoot {
         id: wallpaperLoader
         active: false
         source: "WallpaperPicker.qml"
-        onLoaded: if (item) { item.screen = shell.primaryScreen; item.shown = !lockScreen.locked; }
-        Connections { target: wallpaperLoader.item; ignoreUnknownSignals: true; function onCloseRequested() { wallpaperLoader.item.shown = false; } }
+        onLoaded: if (item) {
+            item.screen = shell.primaryScreen;
+            item.shown = !lockScreen.locked;
+        }
+        Connections {
+            target: wallpaperLoader.item
+            ignoreUnknownSignals: true
+            function onCloseRequested() {
+                wallpaperLoader.item.shown = false;
+            }
+        }
     }
     Connections {
         target: lockScreen
-        function onLockedChanged() { if (lockScreen.locked && wallpaperLoader.item) wallpaperLoader.item.shown = false; }
+        function onLockedChanged() {
+            if (lockScreen.locked && wallpaperLoader.item)
+                wallpaperLoader.item.shown = false;
+        }
     }
 
     // Dismiss layer: full screen, mask subtracts both island surfaces so
@@ -319,7 +407,12 @@ ShellRoot {
     PanelWindow {
         id: dismissWin
         screen: shell.primaryScreen
-        anchors { top: true; left: true; right: true; bottom: true }
+        anchors {
+            top: true
+            left: true
+            right: true
+            bottom: true
+        }
         color: "transparent"
         aboveWindows: true
         focusable: false
@@ -368,64 +461,160 @@ ShellRoot {
     IpcHandler {
         target: "notchD"
 
-        function toggle() { islandState.setHidden(!islandState.hidden); }
-        function hide()   { islandState.setHidden(true); }
-        function show()   { islandState.setHidden(false); }
-        function expand() { islandState.openHub(); }
-        function collapse() { islandState.collapse(); }
-        function back() { islandState.back(); }
-        function toggleExpanded() { islandState.toggleExpanded(); }
-        function peek(s: string) { islandState.peek(s, 0); }
+        function toggle() {
+            islandState.setHidden(!islandState.hidden);
+        }
+        function hide() {
+            islandState.setHidden(true);
+        }
+        function show() {
+            islandState.setHidden(false);
+        }
+        function expand() {
+            islandState.openHub();
+        }
+        function collapse() {
+            islandState.collapse();
+        }
+        function back() {
+            islandState.back();
+        }
+        function toggleExpanded() {
+            islandState.toggleExpanded();
+        }
+        function peek(s: string) {
+            islandState.peek(s, 0);
+        }
 
-        function openHub() { islandState.openHub(); }
-        function openClipboard() { islandState.openHub(); islandState.hubTab = "Clipboard"; }
-        function openWallpapers() { if (lockScreen.locked) return; islandState.collapse(); wallpaperLoader.active = true; if (wallpaperLoader.item) wallpaperLoader.item.shown = true; }
-        function closeWallpapers() { if (wallpaperLoader.item) wallpaperLoader.item.shown = false; }
-        function toggleWallpapers() { if (wallpaperLoader.item && wallpaperLoader.item.shown) closeWallpapers(); else openWallpapers(); }
-        function openFlyout(kind: string) { islandState.openFlyout(kind); }
-        function openWifi() { islandState.openFlyout("wifi"); }
-        function openBluetooth() { islandState.openFlyout("bluetooth"); }
-        function openAudio() { islandState.openFlyout("audio"); }
-        function openBattery() { islandState.openFlyout("battery"); }
-        function openDisplay() { islandState.openFlyout("display"); }
-        function openSession() { islandState.openFlyout("session"); }
-        function openSettings() { islandState.openFlyout("settings"); }
+        function openHub() {
+            islandState.openHub();
+        }
+        function openTab(tab: string) {
+            if (["Dashboard", "Media", "Performance", "Limits", "Clipboard", "Calendar", "Tray"].indexOf(tab) >= 0 && !lockScreen.locked)
+                islandState.selectTab(tab);
+        }
+        function openCalendar() {
+            if (!lockScreen.locked) islandState.selectTab("Calendar");
+        }
+        function openTray() {
+            if (!lockScreen.locked) islandState.selectTab("Tray");
+        }
+        function openRunner() {
+            if (!lockScreen.locked)
+                islandState.openRunner();
+        }
+        function toggleRunner() {
+            if (!lockScreen.locked)
+                islandState.toggleRunner();
+        }
+        function closeRunner() {
+            islandState.closeRunner();
+        }
+        function openClipboard() {
+            islandState.openHub();
+            islandState.hubTab = "Clipboard";
+        }
+        function openWallpapers() {
+            if (lockScreen.locked)
+                return;
+            islandState.collapse();
+            wallpaperLoader.active = true;
+            if (wallpaperLoader.item)
+                wallpaperLoader.item.shown = true;
+        }
+        function closeWallpapers() {
+            if (wallpaperLoader.item)
+                wallpaperLoader.item.shown = false;
+        }
+        function toggleWallpapers() {
+            if (wallpaperLoader.item && wallpaperLoader.item.shown)
+                closeWallpapers();
+            else
+                openWallpapers();
+        }
+        function openFlyout(kind: string) {
+            islandState.openFlyout(kind);
+        }
+        function openWifi() {
+            islandState.openFlyout("wifi");
+        }
+        function openBluetooth() {
+            islandState.openFlyout("bluetooth");
+        }
+        function openAudio() {
+            islandState.openFlyout("audio");
+        }
+        function openBattery() {
+            islandState.openFlyout("battery");
+        }
+        function openDisplay() {
+            islandState.openFlyout("display");
+        }
+        function openSession() {
+            islandState.openFlyout("session");
+        }
+        function openSettings() {
+            islandState.openFlyout("settings");
+        }
 
         // ------------------------------------------------------------ media
-        function openMedia() { islandState.openMedia(); }
-        function closeMedia() { islandState.closeMedia(); }
+        function openMedia() {
+            islandState.openMedia();
+        }
+        function closeMedia() {
+            islandState.closeMedia();
+        }
         function mediaPeek() {
-            if (Services.Media.hasPlayer) islandState.peekMedia(4200);
+            if (Services.Media.hasPlayer)
+                islandState.peekMedia(4200);
         }
         function mediaPlayPause() {
             Services.Media.playPause();
-            if (Services.Media.hasPlayer) islandState.peekMedia(2400);
+            if (Services.Media.hasPlayer)
+                islandState.peekMedia(2400);
         }
         function mediaNext() {
             Services.Media.next();
-            if (Services.Media.hasPlayer) islandState.peekMedia(2400);
+            if (Services.Media.hasPlayer)
+                islandState.peekMedia(2400);
         }
         function mediaPrevious() {
             Services.Media.previous();
-            if (Services.Media.hasPlayer) islandState.peekMedia(2400);
+            if (Services.Media.hasPlayer)
+                islandState.peekMedia(2400);
         }
 
         // ----------------------------------------------------- notifications
-        function dismissNotifications() { Services.Notifications.dismissAll(); }
+        function notificationHistory(): string {
+            return JSON.stringify(Services.Notifications.history.map(n => ({key: n.key, appName: n.appName})));
+        }
+        function removeNotification(key: int) { Services.Notifications.removeHistory(key); }
+        function toggleDnd() { Services.Notifications.dnd = !Services.Notifications.dnd; }
+        function dismissNotifications() {
+            Services.Notifications.dismissAll();
+        }
 
         // ------------------------------------------------------------ osd
         function showVolume() {
             Services.System.refreshVolume();
             islandState.showOsd("volume");
         }
-        function showMic() { islandState.showOsd("mic"); }
+        function showMic() {
+            islandState.showOsd("mic");
+        }
         function showBrightness() {
             Services.System.refreshBrightness();
             islandState.showOsd("brightness");
         }
-        function showBattery() { islandState.showOsd("battery"); }
-        function showWorkspace() { islandState.showOsd("workspace"); }
-        function showNightLight() { islandState.showOsd("nightlight"); }
+        function showBattery() {
+            islandState.showOsd("battery");
+        }
+        function showWorkspace() {
+            islandState.showOsd("workspace");
+        }
+        function showNightLight() {
+            islandState.showOsd("nightlight");
+        }
         function setNightLightTemp(k: int) {
             Services.System.setNightLightTemp(k);
             islandState.showOsd("nightlight");
@@ -439,7 +628,10 @@ ShellRoot {
             islandState.showOsd("nightlight");
         }
         function showOsd(kind: string, title: string, text: string) {
-            islandState.showOsd(kind, { title: title, text: text });
+            islandState.showOsd(kind, {
+                title: title,
+                text: text
+            });
         }
 
         // ---------------------------------------------------------- actions
@@ -473,34 +665,61 @@ ShellRoot {
         }
 
         // ------------------------------------------------------------- lock
-        function lock() { if (!lockScreen.locked) lockScreen.lock(); }
-        function unlock() { if (lockScreen.locked) lockScreen.unlock(); }
+        function lock() {
+            if (!lockScreen.locked)
+                lockScreen.lock();
+        }
+        function unlock() {
+            if (lockScreen.locked)
+                lockScreen.unlock();
+        }
 
         // ---------------------------------------------------------- modules
-        function enableModule(id: string) { Modules.setEnabled(id, true); }
-        function disableModule(id: string) { Modules.setEnabled(id, false); }
-        function toggleModule(id: string) { Modules.toggle(id); }
-        function moveModule(id: string, delta: int) { Modules.move(id, delta); }
+        function enableModule(id: string) {
+            Modules.setEnabled(id, true);
+        }
+        function disableModule(id: string) {
+            Modules.setEnabled(id, false);
+        }
+        function toggleModule(id: string) {
+            Modules.toggle(id);
+        }
+        function moveModule(id: string, delta: int) {
+            Modules.move(id, delta);
+        }
 
         function toggleStyle() {
             settings.style = (settings.style === "notch") ? "pill" : "notch";
         }
         function setStyle(s: string) {
-            if (s === "pill" || s === "notch") settings.style = s;
+            if (s === "pill" || s === "notch")
+                settings.style = s;
         }
 
-        function openDesktopMenu() { desktopMenu.menuOpen = true; }
-        function closeDesktopMenu() { desktopMenu.menuOpen = false; }
+        function openDesktopMenu() {
+            desktopMenu.menuOpen = true;
+        }
+        function closeDesktopMenu() {
+            desktopMenu.menuOpen = false;
+        }
 
-        function toggleHome() { homeWidgets.enabled = !homeWidgets.enabled; }
-        function showHome() { homeWidgets.enabled = true; }
-        function hideHome() { homeWidgets.enabled = false; }
+        function toggleHome() {
+            homeWidgets.enabled = !homeWidgets.enabled;
+        }
+        function showHome() {
+            homeWidgets.enabled = true;
+        }
+        function hideHome() {
+            homeWidgets.enabled = false;
+        }
 
         function setTheme(mode: string) {
             Quickshell.execDetached(["wp", "theme", mode]);
             islandState.showOsd("theme");
         }
-        function toggleTheme() { setTheme(Theme.dark ? "light" : "dark"); }
+        function toggleTheme() {
+            setTheme(Theme.dark ? "light" : "dark");
+        }
 
         function status(): string {
             return JSON.stringify({
@@ -508,6 +727,9 @@ ShellRoot {
                 hidden: islandState.hidden,
                 locked: lockScreen.locked,
                 mode: islandState.mode,
+                hubTab: islandState.hubTab,
+                runnerFocused: notch.runnerFocused,
+                surfaceOpacity: Theme.surfaceOpacity,
                 hubWidth: notch.hubW,
                 surfaceWidth: notch.surfaceW,
                 surfaceHeight: notch.surfaceH,
@@ -524,7 +746,12 @@ ShellRoot {
                 theme: Theme.dark ? "dark" : "light",
                 media: Services.Media.hasPlayer,
                 mediaMode: islandState.mode === "media",
+                trayItems: Services.Tray.count,
+                trayAttention: Services.Tray.attentionCount,
                 notifications: Services.Notifications.count,
+                notificationHistory: Services.Notifications.historyCount,
+                notificationPopups: Services.Notifications.popups.length,
+                dnd: Services.Notifications.dnd,
                 modules: Modules.enabledIds,
                 moduleOrder: Modules.order,
                 nightLight: Services.System.nightLight,

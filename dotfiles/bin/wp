@@ -28,6 +28,8 @@ WALLS="$HOME/Pictures/walls"
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"
 FAVS="$CONFIG/wallpapers/favorites"
 THEME_FILE="$CONFIG/wallpapers/theme"
+SCHEME_FILE="$CONFIG/wallpapers/scheme"
+VARIANT_FILE="$CONFIG/wallpapers/variant"
 GEN_DIR="$CONFIG/matugen/generated"
 
 pick() {
@@ -108,6 +110,39 @@ matugen_mode() {
     light|dark) theme_mode ;;
     *)          echo smart ;;
   esac
+}
+
+scheme_source() {
+  local value
+  value="$(cat "$SCHEME_FILE" 2>/dev/null || true)"
+  if [[ "$value" =~ ^#[[:xdigit:]]{6}$ ]]; then printf '%s\n' "$value"; else echo wallpaper; fi
+}
+
+valid_variant() {
+  case "$1" in
+    auto|scheme-content|scheme-expressive|scheme-fidelity|scheme-fruit-salad|scheme-monochrome|scheme-neutral|scheme-rainbow|scheme-tonal-spot|scheme-vibrant|scheme-smart) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+variant_selection() {
+  local value
+  value="$(cat "$VARIANT_FILE" 2>/dev/null || true)"
+  if valid_variant "$value"; then printf '%s\n' "$value"; else echo auto; fi
+}
+
+appearance_lock() {
+  mkdir -p "${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}"
+  exec 9>"${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}/wp.lock"
+  flock 9
+}
+
+atomic_setting() {
+  local file="$1" value="$2" tmp
+  mkdir -p "$(dirname "$file")"
+  tmp="$(mktemp "${file}.XXXXXX")"
+  printf '%s\n' "$value" > "$tmp"
+  mv -f -- "$tmp" "$file"
 }
 
 # Set a dconf-backed desktop setting without assuming gsettings is on PATH.
@@ -220,6 +255,32 @@ write_effective_mode() {
   apply_gtk_mode "$mode"
 }
 
+# Caller holds wp.lock. An explicit seed survives wallpaper and mode changes.
+generate_palette() {
+  local wall="$1" source variant
+  source="$(scheme_source)"
+  variant="$(variant_selection)"
+  if [ "$variant" = auto ]; then
+    case "$wall" in
+      "$WALLS/bw/"*) variant=scheme-monochrome ;;
+      *) variant=scheme-tonal-spot ;;
+    esac
+  fi
+  if [ "$source" = wallpaper ] && { [ -z "$wall" ] || [ ! -f "$wall" ]; }; then
+    echo "wp: no current wallpaper to derive a palette from" >&2
+    return 1
+  fi
+  mkdir -p "$CONFIG/niri/generated"
+  if [ "$source" = wallpaper ]; then
+    matugen image "$wall" --type "$variant" --mode "$(matugen_mode)"
+  else
+    matugen color hex "$source" --type "$variant" --mode "$(matugen_mode)"
+  fi
+  sync_apps
+  write_effective_mode
+  echo "wp: palette $source ($variant, mode $(theme_mode))"
+}
+
 usage() {
   cat <<'EOF'
 wp — set wallpaper and regenerate the desktop theme from it.
@@ -237,6 +298,8 @@ Usage:
   wp fav list               list favorites
   wp theme                  show the global theme mode
   wp theme auto|light|dark  set global mode and re-theme the current wallpaper
+  wp scheme [wallpaper|#RRGGBB]  show or set palette source
+  wp variant [scheme-*]     show or set the Material variant (default: auto)
   wp current                print the current wallpaper path, if any
   wp refresh                regenerate the theme from the current wallpaper
   wp <path>                 apply an explicit image
@@ -270,8 +333,8 @@ case "${1:-random}" in
   theme)
     case "${2:-show}" in
       light|dark|auto)
-        mkdir -p "$(dirname "$THEME_FILE")"
-        printf '%s\n' "$2" > "$THEME_FILE"
+        appearance_lock
+        atomic_setting "$THEME_FILE" "$2"
         echo "wp: theme mode: $2"
         ;;
       show|"")
@@ -284,13 +347,32 @@ case "${1:-random}" in
         ;;
     esac
     cur="$(current_wall)"
-    if [ -n "$cur" ] && [ -f "$cur" ]; then
-      exec "$0" refresh
+    if { [ -n "$cur" ] && [ -f "$cur" ]; } || [ "$(scheme_source)" != wallpaper ]; then
+      generate_palette "$cur"
+      exit 0
     fi
     # No wallpaper to derive from yet: still honour an explicit light/dark.
     case "$2" in
       light|dark) apply_gtk_mode "$2" ;;
     esac
+    exit 0
+    ;;
+  scheme|variant)
+    kind="$1"
+    if [ "$#" -eq 1 ]; then
+      if [ "$kind" = scheme ]; then scheme_source; else variant_selection; fi
+      exit 0
+    fi
+    [ "$#" -eq 2 ] || { echo "wp: expected one $kind value" >&2; exit 1; }
+    if [ "$kind" = scheme ]; then
+      [[ "$2" = wallpaper || "$2" =~ ^#[[:xdigit:]]{6}$ ]] || { echo 'wp: scheme must be wallpaper or #RRGGBB' >&2; exit 1; }
+    else
+      valid_variant "$2" || { echo "wp: invalid variant: $2" >&2; exit 1; }
+    fi
+    appearance_lock
+    cur="$(current_wall)"
+    if [ "$kind" = scheme ]; then atomic_setting "$SCHEME_FILE" "$2"; else atomic_setting "$VARIANT_FILE" "$2"; fi
+    generate_palette "$cur"
     exit 0
     ;;
   refresh) wall="$(current_wall)" ;;
@@ -303,9 +385,7 @@ if [ -z "$wall" ] || [ ! -f "$wall" ]; then
 fi
 
 # Serialize every wallpaper writer, including the complete shell handoff.
-mkdir -p "${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}"
-exec 9>"${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}/wp.lock"
-flock 9
+appearance_lock
 old="$(current_wall)"
 wall="$(realpath -- "$wall")"
 fx_started=false
@@ -338,16 +418,4 @@ else
   timeout -k 1 6 flock -w 2 "${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}/wp-awww.lock" timeout -k 0.5 3 awww img --transition-type fade --transition-duration 0.5 "$wall"
 fi
 
-case "$wall" in
-  "$WALLS/bw/"*) scheme=scheme-monochrome ;;
-  *)             scheme=scheme-tonal-spot ;;
-esac
-
-# niri has no variables: matugen writes an include file that config.kdl
-# pulls in. The directory must exist before matugen writes it.
-mkdir -p "$HOME/.config/niri/generated"
-
-matugen image "$wall" --type "$scheme" --mode "$(matugen_mode)"
-sync_apps
-write_effective_mode
-echo "wp: $wall ($scheme, mode $(theme_mode))"
+generate_palette "$wall"

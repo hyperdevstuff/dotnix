@@ -17,6 +17,13 @@ Item {
     property var polkitFlow: null
     property var screen: null
     signal wallpapersRequested
+    signal runnerActionRequested(string action, string value)
+    function runnerBack() {
+        if (runnerLoader.item && runnerLoader.item.back)
+            runnerLoader.item.back();
+        else if (state)
+            state.closeRunner();
+    }
 
     // Style
     property bool notchMode: Theme.notchMode
@@ -26,6 +33,7 @@ Item {
     readonly property bool flyoutOpen: mode === "flyout"
     readonly property bool mediaOpen: mode === "media"
     readonly property bool authOpen: mode === "auth"
+    readonly property bool runnerFocused: runnerLoader.item ? !!runnerLoader.item.searchFocused : false
     readonly property bool pillLike: mode === "idle" || mode === "osd"
 
     // A live activity only earns space in the pill, never an automatic
@@ -85,6 +93,18 @@ Item {
         }
     }
 
+    readonly property real availableH: Math.max(1, screen ? screen.height - Theme.topGap - 12 : 540)
+    readonly property real pageW: Math.min(hubW,
+        state && state.hubTab === "Media" ? 820
+        : state && state.hubTab === "Performance" ? 860
+        : state && (state.hubTab === "Calendar" || state.hubTab === "Tray") ? 720
+        : state && (state.hubTab === "Clipboard" || state.hubTab === "Limits") ? 760 : Theme.hubW)
+    readonly property real pageH: Math.min(availableH,
+        state && state.hubTab === "Performance" ? 544
+        : state && state.hubTab === "Tray" ? 340
+        : state && state.hubTab === "Media" ? 484 : Theme.hubH)
+    property real revealTargetH: Theme.hubH
+
     // ----------------------------------------------------------- main surface
     readonly property real targetW: {
         if (mode === "idle")
@@ -93,7 +113,9 @@ Item {
             return state && state.osdKind === "workspace" ? 160 : Theme.osdW;
         if (mode === "auth")
             return Theme.authW;
-        return hubW;
+        if (mode === "runner") return Math.min(hubW, 640);
+        if (mode === "flyout") return Math.min(hubW, 560);
+        return pageW;
     }
     readonly property real targetH: {
         if (mode === "idle")
@@ -102,7 +124,9 @@ Item {
             return Theme.osdH;
         if (mode === "auth")
             return Theme.authH;
-        return hubH;
+        if (mode === "runner") return Math.min(availableH, 480);
+        if (mode === "flyout") return Math.min(availableH, Theme.flyoutH);
+        return pageH;
     }
     readonly property real targetX: (hubW - targetW) / 2
 
@@ -112,18 +136,27 @@ Item {
     readonly property bool surfaceMoving: shapeMotion.running
     // The fixed-size hub is clipped by the surface; its reveal follows geometry
     // in both directions, including interrupted transitions.
-    readonly property real hubReveal: Math.max(0, Math.min(1,
-        (surfaceH - Theme.osdH) / Math.max(1, hubH - Theme.osdH)))
+    readonly property real hubReveal: Math.max(0, Math.min(1, (surfaceH - Theme.osdH) / Math.max(1, revealTargetH - Theme.osdH)))
     readonly property var shapeTarget: ({
-        width: targetW, height: targetH, offsetAlong: 0, offsetCross: 0,
-        topLeftRadius: squareTop ? 0 : targetRadius,
-        topRightRadius: squareTop ? 0 : targetRadius,
-        bottomLeftRadius: targetRadius, bottomRightRadius: targetRadius
-    })
+            width: targetW,
+            height: targetH,
+            offsetAlong: 0,
+            offsetCross: 0,
+            topLeftRadius: squareTop ? 0 : targetRadius,
+            topRightRadius: squareTop ? 0 : targetRadius,
+            bottomLeftRadius: targetRadius,
+            bottomRightRadius: targetRadius
+        })
     property bool shapeReady: false
     onShapeTargetChanged: {
-        if (shapeReady)
-            shapeMotion.setTarget(shapeTarget);
+        if (targetH > Theme.osdH) revealTargetH = targetH;
+        if (shapeReady) {
+            // The keyboard palette must be ready for typing immediately.
+            if (mode === "runner" || runnerLoader.item)
+                shapeMotion.snapTo(shapeTarget);
+            else
+                shapeMotion.setTarget(shapeTarget);
+        }
     }
     Component.onCompleted: {
         shapeMotion.snapTo(shapeTarget);
@@ -245,7 +278,11 @@ Item {
                 spacing: 2
                 visible: opacity > 0.001
                 opacity: root.mode === "idle" && root.mediaActive ? 1 : 0
-                Behavior on opacity { NumberAnimation { duration: 100 } }
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 100
+                    }
+                }
                 property int phase: 0
                 Timer {
                     interval: 240
@@ -287,17 +324,108 @@ Item {
 
             Components.HubSurface {
                 id: hubSurface
-                enabled: root.interactive && root.mode !== "auth"
-                width: root.hubW
-                height: root.hubH
+                enabled: root.mode === "hub"
+                width: root.pageW
+                height: root.pageH
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 state: root.state
                 onWallpapersRequested: root.wallpapersRequested()
-                opacity: root.mode === "auth" ? 0 : root.hubReveal
+                opacity: root.mode === "hub" && flyoutItem.opacity < 0.01 && runnerLoader.opacity < 0.01 ? root.hubReveal : 0
                 visible: opacity > 0.001
             }
 
+            Item {
+                id: flyoutItem
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: 0
+                width: Math.max(1, Math.min(root.hubW, 560) - 24)
+                height: Math.min(root.availableH, Theme.flyoutH)
+                z: 5
+                opacity: root.flyoutOpen ? 1 : 0
+                visible: root.flyoutOpen
+
+                Flickable {
+                    id: detailScroll
+                    anchors.fill: parent
+                    clip: true
+                    contentWidth: width
+                    contentHeight: Math.max(height, root.flyoutH)
+                    Loader {
+                        id: flyoutLoader
+                        width: parent.width
+                        height: detailScroll.contentHeight
+                        active: root.flyoutOpen || flyoutItem.opacity > 0.02
+                        sourceComponent: {
+                            switch (root.lastFlyoutKind) {
+                            case "bluetooth":
+                                return bluetoothComponent;
+                            case "audio":
+                                return audioComponent;
+                            case "battery":
+                                return batteryComponent;
+                            case "display":
+                                return displayComponent;
+                            case "session":
+                                return sessionComponent;
+                            case "settings":
+                                return settingsComponent;
+                            default:
+                                return wifiComponent;
+                            }
+                        }
+                        onLoaded: {
+                            if (item && item.showBack !== undefined)
+                                item.showBack = true;
+                            if (item && item.showPanel !== undefined)
+                                item.showPanel = false;
+                            if (item && item.back)
+                                item.back.connect(function () {
+                                    if (root.state)
+                                        root.state.back();
+                                });
+                        }
+                    }
+                }
+            }
+
+            Loader {
+                id: runnerLoader
+                focus: root.mode === "runner"
+                onVisibleChanged: if (visible && item && item.focusSearch) Qt.callLater(item.focusSearch)
+                width: Math.min(root.hubW, 640)
+                height: Math.min(root.availableH, 480)
+                anchors.horizontalCenter: parent.horizontalCenter
+                active: root.mode === "runner" || opacity > 0.01
+                opacity: root.mode === "runner" ? 1 : 0
+                visible: opacity > 0.001
+                Behavior on opacity {
+                    enabled: root.mode !== "runner"
+                    NumberAnimation {
+                        duration: Motion.fast
+                    }
+                }
+                source: "components/RunnerSurface.qml"
+                onLoaded: {
+                    if (item && item.state !== undefined)
+                        item.state = root.state;
+                    if (item && item.refresh)
+                        item.refresh();
+                    if (item)
+                        item.forceActiveFocus();
+                }
+                Connections {
+                    target: runnerLoader.item
+                    ignoreUnknownSignals: true
+                    function onCloseRequested() {
+                        if (root.state)
+                            root.state.closeRunner();
+                    }
+                    function onActionRequested(action, value) {
+                        root.runnerActionRequested(action, value);
+                    }
+                }
+            }
             Item {
                 anchors.fill: parent
                 opacity: root.mode === "auth" ? 1 : 0
@@ -456,71 +584,6 @@ Item {
         }
     }
 
-    Item {
-        id: flyoutItem
-        x: Math.round((root.hubW - width) / 2)
-        y: 0
-        width: Math.max(1, Math.min(root.flyoutW, root.hubW * 0.46))
-        height: root.hubH
-        z: 5
-        opacity: root.flyoutOpen ? 1 : 0
-        visible: opacity > 0.001
-        scale: root.flyoutOpen ? 1 : 0.99
-        transformOrigin: Item.Left
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 150
-                easing.type: Easing.OutCubic
-            }
-        }
-        Behavior on scale {
-            NumberAnimation {
-                duration: 200
-                easing.type: Easing.OutCubic
-            }
-        }
-
-        Flickable {
-            id: detailScroll
-            anchors.fill: parent
-            clip: true
-            contentWidth: width
-            contentHeight: Math.max(height, root.flyoutH)
-            Loader {
-                id: flyoutLoader
-                width: parent.width
-                height: detailScroll.contentHeight
-                active: root.flyoutOpen || flyoutItem.opacity > 0.02
-                sourceComponent: {
-                    switch (root.lastFlyoutKind) {
-                    case "bluetooth":
-                        return bluetoothComponent;
-                    case "audio":
-                        return audioComponent;
-                    case "battery":
-                        return batteryComponent;
-                    case "display":
-                        return displayComponent;
-                    case "session":
-                        return sessionComponent;
-                    case "settings":
-                        return settingsComponent;
-                    default:
-                        return wifiComponent;
-                    }
-                }
-                onLoaded: {
-                    if (item && item.back)
-                        item.back.connect(function () {
-                            if (root.state)
-                                root.state.back();
-                        });
-                }
-            }
-        }
-    }
-
     Component {
         id: wifiComponent
         WifiFlyout {}
@@ -567,6 +630,8 @@ Item {
                 root.polkitFlow.cancelAuthenticationRequest();
             else
                 root.state.back();
+        } else if (root.mode === "runner") {
+            root.runnerBack();
         } else {
             root.state.back();
         }
@@ -576,7 +641,7 @@ Item {
     Keys.onLeftPressed: event => {
         if (!root.state)
             return;
-        if (root.state.mode === "hub" && root.state.hubTab === "Controls") {
+        if (root.state.mode === "hub" && root.state.hubTab === "Dashboard") {
             root.state.moveHubFocus(-1, 0);
             event.accepted = true;
         } else if (root.state.mode === "media") {
@@ -587,7 +652,7 @@ Item {
     Keys.onRightPressed: event => {
         if (!root.state)
             return;
-        if (root.state.mode === "hub" && root.state.hubTab === "Controls") {
+        if (root.state.mode === "hub" && root.state.hubTab === "Dashboard") {
             root.state.moveHubFocus(1, 0);
             event.accepted = true;
         } else if (root.state.mode === "media") {
@@ -596,19 +661,19 @@ Item {
         }
     }
     Keys.onUpPressed: event => {
-        if (root.state && root.state.mode === "hub" && root.state.hubTab === "Controls") {
+        if (root.state && root.state.mode === "hub" && root.state.hubTab === "Dashboard") {
             event.accepted = true;
         }
     }
     Keys.onDownPressed: event => {
-        if (root.state && root.state.mode === "hub" && root.state.hubTab === "Controls") {
+        if (root.state && root.state.mode === "hub" && root.state.hubTab === "Dashboard") {
             event.accepted = true;
         }
     }
     Keys.onReturnPressed: event => {
         if (!root.state)
             return;
-        if (root.state.mode === "hub" && root.state.hubTab === "Controls") {
+        if (root.state.mode === "hub" && root.state.hubTab === "Dashboard") {
             root.state.activateHubIndex(root.state.hubIndex);
             event.accepted = true;
         } else if (root.state.mode === "media") {
@@ -619,7 +684,7 @@ Item {
     Keys.onEnterPressed: event => {
         if (!root.state)
             return;
-        if (root.state.mode === "hub" && root.state.hubTab === "Controls") {
+        if (root.state.mode === "hub" && root.state.hubTab === "Dashboard") {
             root.state.activateHubIndex(root.state.hubIndex);
             event.accepted = true;
         } else if (root.state.mode === "media") {
@@ -638,13 +703,13 @@ Item {
             return;
         if (root.state.mode === "hub") {
             if ((event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab)) {
-                const tabs = ["Controls", "Performance", "Limits", "Clipboard"];
+                const tabs = root.state.mainTabs;
                 const delta = (event.modifiers & Qt.ShiftModifier) || event.key === Qt.Key_Backtab ? -1 : 1;
-                root.state.hubTab = tabs[(tabs.indexOf(root.state.hubTab) + delta + tabs.length) % tabs.length];
+                root.state.stepTab(delta);
                 event.accepted = true;
                 return;
             }
-            if (root.state.hubTab !== "Controls")
+            if (root.state.hubTab !== "Dashboard")
                 return;
             const n = parseInt(event.text);
             if (!isNaN(n) && n >= 1 && n <= root.state.hubCount) {

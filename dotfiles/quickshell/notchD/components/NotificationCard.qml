@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Adapted from caelestia-dots; see notification-attribution/README.md.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -5,231 +7,144 @@ import Quickshell.Services.Notifications
 import ".."
 import "../services" as Services
 
-// One notification card. Cards are plain QML rectangles in the running shell;
-// no extra process, no webview and no animation framework.
 Rectangle {
     id: root
-
-    required property var notification
-
+    property var notification: null
+    property var snapshot: null
+    property bool popup: false
     signal closed()
-
-    readonly property bool critical: notification && notification.urgency === NotificationUrgency.Critical
-
+    readonly property var cardData: snapshot || notification
+    readonly property bool critical: cardData && cardData.urgency === NotificationUrgency.Critical
     readonly property var shownActions: {
-        const out = []
-        const list = notification && notification.actions ? notification.actions : []
-        for (let i = 0; i < list.length && out.length < 2; i++)
-            if (list[i] && list[i].text && list[i].text.length > 0) out.push(list[i])
-        return out
+        const result = []
+        const actions = notification && notification.actions ? notification.actions : []
+        for (let i = 0; i < actions.length && result.length < 2; i++)
+            if (actions[i] && actions[i].text) result.push(actions[i])
+        return result
     }
-
-    // Seconds in Quickshell, milliseconds in QML. 0 = never; -1 = server default.
-    readonly property int timeoutMs: {
-        if (!notification) return 0
-        if (critical) return 0
-        if (notification.expireTimeout > 0) return Math.round(notification.expireTimeout * 1000)
-        if (notification.expireTimeout === 0) return 0
-        return 8000
-    }
-
     readonly property string iconSource: {
-        if (!notification) return ""
-        if (notification.image && notification.image.length > 0) return notification.image
-        const icon = notification.appIcon || ""
-        if (icon.length === 0) return ""
+        if (!cardData) return ""
+        const icon = cardData.image || cardData.appIcon || ""
+        if (!icon) return ""
         if (icon.startsWith("/")) return "file://" + icon
+        if (icon.indexOf("://") >= 0) return icon
         return Quickshell.iconPath(icon, true)
     }
-
-    implicitHeight: content.implicitHeight + 24
+    readonly property real progress: {
+        const update = Services.Notifications.progressRevision
+        return popup && notification ? Services.Notifications.progressFor(notification) : -1
+    }
+    readonly property double timestamp: snapshot ? snapshot.time : notification ? Services.Notifications.timeFor(notification) : Date.now()
+    implicitHeight: content.implicitHeight + 24 + (progress >= 0 ? 3 : 0)
     radius: Theme.radius
-    color: Theme.panelSolid
+    color: critical ? Theme.accentContainer : Theme.surface
     border.width: 1
     border.color: critical ? Theme.danger : Theme.hairline
     antialiasing: true
 
-    HoverHandler { id: hover }
-
-    // Pause while the pointer is over the card so long messages can be read.
-    Timer {
-        id: expiry
-        interval: root.timeoutMs
-        running: root.timeoutMs > 0 && !hover.hovered && !Services.Notifications.paused
-        onTriggered: if (root.notification) root.notification.expire()
+    HoverHandler {
+        id: hover
+        onHoveredChanged: if (root.popup && root.notification) Services.Notifications.setHovered(root.notification, root, hovered)
     }
-
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.LeftButton
-        onClicked: {
-            if (!root.notification) return
-            const actions = root.notification.actions || []
-            // The first action is the spec's default action; invoking it also
-            // dismisses the card when it is not resident.
-            if (actions.length > 0) actions[0].invoke()
-            else root.notification.dismiss()
-        }
-    }
-
-    Connections {
-        target: root.notification
-        function onClosed() { root.closed() }
-    }
+    Component.onDestruction: if (popup && notification) Services.Notifications.setHovered(notification, root, false)
+    Connections { target: root.notification; ignoreUnknownSignals: true; function onClosed() { root.closed() } }
 
     RowLayout {
         id: content
-        anchors {
-            left: parent.left
-            right: parent.right
-            top: parent.top
-            leftMargin: 12
-            rightMargin: 30 // leave room for the close button
-            topMargin: 12
-        }
+        anchors { left: parent.left; right: parent.right; top: parent.top; margins: 12; rightMargin: 32 }
         spacing: 10
-
         Rectangle {
             Layout.alignment: Qt.AlignTop
-            implicitWidth: 34
-            implicitHeight: 34
-            radius: 9
-            color: Theme.surface
-
+            implicitWidth: 34; implicitHeight: 34; radius: 17
+            color: Theme.accentContainer
             Image {
                 id: icon
-                anchors.centerIn: parent
-                width: 22
-                height: 22
+                anchors.centerIn: parent; width: 22; height: 22
                 source: root.iconSource
-                sourceSize.width: 44
-                sourceSize.height: 44
-                fillMode: Image.PreserveAspectFit
-                asynchronous: true
-                cache: false
+                sourceSize.width: 44; sourceSize.height: 44
+                fillMode: Image.PreserveAspectFit; asynchronous: true
                 visible: source !== "" && status === Image.Ready
             }
-
             Text {
-                anchors.centerIn: parent
-                visible: !icon.visible
-                text: "\uf0f3"
-                color: Theme.muted
-                font.family: Theme.iconFont
-                font.pixelSize: 16
+                anchors.centerIn: parent; visible: !icon.visible
+                text: "\uf0f3"; color: Theme.accentContainerInk
+                font.family: Theme.iconFont; font.pixelSize: 16
                 textFormat: Text.PlainText
-                renderType: Text.NativeRendering
             }
         }
-
         ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 2
-
-            Text {
-                Layout.fillWidth: true
-                text: root.notification ? (root.notification.appName || "Notification") : ""
-                color: Theme.muted
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontLabel
-                elide: Text.ElideRight
-                textFormat: Text.PlainText
-                maximumLineCount: 1
-            }
-
-            Text {
-                Layout.fillWidth: true
-                text: root.notification ? (root.notification.summary || "") : ""
-                color: Theme.fg
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontTitle
-                font.weight: Font.DemiBold
-                wrapMode: Text.Wrap
-                maximumLineCount: 2
-                elide: Text.ElideRight
-                textFormat: Text.PlainText
-            }
-
-            Text {
-                Layout.fillWidth: true
-                visible: text.length > 0
-                text: root.notification ? (root.notification.body || "") : ""
-                color: Theme.muted
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.fontBody
-                wrapMode: Text.Wrap
-                maximumLineCount: 3
-                elide: Text.ElideRight
-                textFormat: Text.PlainText
-            }
-
+            Layout.fillWidth: true; spacing: 3
             RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 4
-                spacing: 6
-                visible: root.shownActions.length > 0
-
+                Layout.fillWidth: true; spacing: 6
+                Text {
+                    Layout.fillWidth: true
+                    text: root.cardData ? (root.cardData.appName || "Notification") : ""
+                    color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontLabel
+                    elide: Text.ElideRight; textFormat: Text.PlainText
+                }
+                Text {
+                    text: Qt.formatTime(new Date(root.timestamp), "hh:mm")
+                    color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontLabel
+                }
+            }
+            Text {
+                Layout.fillWidth: true; text: root.cardData ? (root.cardData.summary || "") : ""
+                color: Theme.fg; font.family: Theme.fontFamily; font.pixelSize: Theme.fontTitle; font.weight: Font.DemiBold
+                wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight; textFormat: Text.PlainText
+            }
+            Text {
+                Layout.fillWidth: true; visible: text.length > 0
+                text: root.cardData ? (root.cardData.body || "") : ""
+                color: Theme.muted; font.family: Theme.fontFamily; font.pixelSize: Theme.fontBody
+                wrapMode: Text.Wrap; maximumLineCount: 3; elide: Text.ElideRight; textFormat: Text.PlainText
+            }
+            RowLayout {
+                Layout.fillWidth: true; Layout.topMargin: 4; spacing: 6; visible: root.shownActions.length > 0
                 Repeater {
                     model: root.shownActions
-
                     delegate: Rectangle {
                         required property var modelData
-
-                        implicitWidth: actionLabel.implicitWidth + 16
-                        implicitHeight: 24
-                        radius: Theme.radiusSmall
-                        color: actionHover.hovered ? Theme.surfacePress : Theme.surface
-
+                        Layout.fillWidth: true; Layout.preferredWidth: 1
+                        implicitHeight: 30; radius: Theme.radiusSmall
+                        color: actionMouse.pressed ? Theme.surfacePress : actionHover.hovered ? Theme.surfaceHover : Theme.panelSolid
+                        scale: actionMouse.pressed ? 0.97 : 1
+                        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                         HoverHandler { id: actionHover }
-
                         Text {
-                            id: actionLabel
-                            anchors.centerIn: parent
-                            text: modelData.text
-                            color: Theme.fg
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontLabel
-                            textFormat: Text.PlainText
+                            anchors.fill: parent; anchors.leftMargin: 8; anchors.rightMargin: 8
+                            verticalAlignment: Text.AlignVCenter; horizontalAlignment: Text.AlignHCenter
+                            text: modelData.text; elide: Text.ElideRight; textFormat: Text.PlainText
+                            color: Theme.fg; font.family: Theme.fontFamily; font.pixelSize: Theme.fontLabel
                         }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: modelData.invoke()
-                        }
+                        MouseArea { id: actionMouse; anchors.fill: parent; onClicked: modelData.invoke() }
                     }
                 }
             }
         }
     }
-
     Rectangle {
-        id: closeButton
-        width: 20
-        height: 20
-        radius: 10
-        anchors {
-            top: parent.top
-            right: parent.right
-            topMargin: 6
-            rightMargin: 6
-        }
-        color: closeHover.hovered ? Theme.surfacePress : "transparent"
-
+        width: 24; height: 24; radius: 12
+        anchors { top: parent.top; right: parent.right; margins: 6 }
+        color: closeMouse.pressed ? Theme.surfacePress : closeHover.hovered ? Theme.surfaceHover : "transparent"
+        scale: closeMouse.pressed ? 0.95 : 1
+        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
         HoverHandler { id: closeHover }
-
         Text {
-            anchors.centerIn: parent
-            text: "\uf00d"
-            color: Theme.muted
-            font.family: Theme.iconFont
-            font.pixelSize: 11
-            textFormat: Text.PlainText
-            renderType: Text.NativeRendering
+            anchors.centerIn: parent; text: "\uf00d"; color: Theme.muted
+            font.family: Theme.iconFont; font.pixelSize: 11; textFormat: Text.PlainText
         }
-
         MouseArea {
-            anchors.fill: parent
-            onClicked: if (root.notification) root.notification.dismiss()
+            id: closeMouse; anchors.fill: parent
+            onClicked: {
+                if (root.snapshot) Services.Notifications.removeHistory(root.snapshot.key)
+                else if (root.notification) Services.Notifications.dismiss(root.notification)
+            }
         }
+    }
+    Rectangle {
+        visible: root.progress >= 0
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 12; bottomMargin: 6 }
+        height: 2; radius: 1; color: Theme.track
+        Rectangle { width: parent.width * Math.max(0, root.progress); height: parent.height; radius: 1; color: Theme.accent }
     }
 }

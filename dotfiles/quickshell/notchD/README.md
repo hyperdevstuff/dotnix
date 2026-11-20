@@ -2,7 +2,7 @@
 
 A low-memory control center for NixOS + niri, built with Quickshell 0.3.2.
 The expanded hub presents media, controls and notifications in three columns.
-Module details open in the middle column; Escape steps back to the hub and
+Module details replace the dashboard; Escape steps back to the hub and
 then to the pill. Ctrl+Tab switches hub tabs.
 
 ## Modules
@@ -86,19 +86,17 @@ also call `showOsd(kind, {...})`.
 
 ## Notifications
 
-There is no separate notification daemon. `services/Notifications.qml` wraps
-`Quickshell.Services.Notifications.NotificationServer`, so notchD itself owns
-`org.freedesktop.Notifications`; `NotificationPopups.qml` draws up to four
-cards in a top-right overlay. Card timeouts follow the sender's `expire-time`
-(`0` never expires, `-1` uses 8 s), critical notifications never expire, and
-hovering pauses the timer. Left-click invokes the default action, the close
-button dismisses. Cards are hidden while the shell is locked and while the
-hub is open; they stay tracked and appear when it closes. While
-locked they are shown read-only in the lock screen sidebar, and expiry is
-paused until unlock.
+notchD owns the native notification server. The service runs one expiry clock
+for all live notifications; cards never create competing lifetime timers.
+Sender timeouts use milliseconds in Quickshell 0.3. Persistent and critical
+notifications do not auto-expire, and hovering or locking pauses expiry.
 
-Cost: zero extra processes and no steady-state CPU. Four cards peak at about
-5 MiB of additional memory in the already-running shell.
+Up to four popups appear at the top right. DND suppresses popups while retaining
+history. The dashboard center groups up to 100 plain snapshots by date, with
+clear and dismiss controls; snapshots survive toast expiry and never retain
+expired notification objects. Live notifications retain their actions, while
+expired history cards do not offer dead actions. History is currently in memory
+and resets when the shell restarts. Transient notifications are popup-only.
 
 ## Desktop home widgets
 
@@ -185,8 +183,8 @@ registered modules.
 
 - `shell.qml` — shell root, windows, lock/idle wiring, persistence, IPC.
 - `HomeWidgets.qml` — desktop home widgets (CPU, memory, uptime, battery) on the wallpaper.
-- `NotchD.qml` — morphing surface and middle-column detail loader.
-- `IslandState.qml` — idle / osd / hub / flyout / media / auth state machine.
+- `NotchD.qml` — morphing surface, tab pages and replacement detail loader.
+- `IslandState.qml` — idle / osd / hub / flyout / media / runner / auth state machine.
 - `LockScreen.qml` — two-page `WlSessionLock` + PAM lock screen.
 - `components/LockSidebar.qml` — read-only lock-screen activity/notifications sidebar.
 - `Modules.qml` — built-in module registry.
@@ -197,7 +195,8 @@ registered modules.
 - `services/` — Quickshell service seams (system, network, Bluetooth, media,
   compositor, session, idle).
 - `vendor/` — vendored MIT components (see `vendor/README.md`).
-- `LICENSE` — MIT.
+- `LICENSE` — MIT for the original shell; adapted components have their own
+  license notices and attribution directories.
 
 ## Design
 
@@ -207,18 +206,17 @@ PPI). `Theme.qml` is the single source of truth:
 - Type: nothing below 11 px (`fontLabel`), 12 px body (`fontBody`), 14 px
   titles and hub clock. Pixel sizes are written as tokens, not magic numbers,
   in the flyouts and shared components.
-- Shape: exactly three radii — 16 px cards, 10 px controls, 18 px pill.
-- Colour: one accent (status dots only); everything else is foreground,
-  muted, hairline and surface. `muted` is `#a1a1aa` in dark mode because
-  `#8f8f8f` fails contrast at 11 px.
-- The hub keeps media on the left, tabs and module controls in the middle,
-  and actionable notifications on the right. Module details scroll in the
-  middle column when the available height is limited.
+- Shape: shared card, control and capsule tokens, with the surface radii
+  driven by the same spring as its dimensions.
+- Colour: matugen semantic surfaces, foreground and accent tokens, with
+  fallback palettes when generated colors are unavailable.
+- Dashboard keeps media on the left, controls in the middle, and notifications
+  on the right (roughly 30% / 35% / 35% of the dashboard). Top tabs select dedicated views; module details replace them
+  and scroll when the available height is limited.
 - The idle pill shows the clock and a compact media indicator. The hub size is
   constrained to the selected screen.
-- The panel is opaque (`#0b0b0b` dark, `#fafafa` light). The pill and the hub
-  are the same black, there is no background blur and no top highlight, so
-  the morph cannot pick up the wallpaper or leak a light edge.
+- The pill and expanded surface share a panel color. Panel opacity defaults
+  to 1 and can be set between 0.70 and 1 through the command palette.
 
 ## Theming
 
@@ -233,8 +231,8 @@ foot, fuzzel and the niri border. Notifications are drawn by notchD itself
 The same actions are in the desktop right-click menu (Light/Dark/Auto theme).
 
 The expanded island groups media, controls and notifications from left to right.
-The center tabs expose Controls, Performance, Limits and Clipboard; the
-wallpaper button opens the picker. `qs ipc call notchD openClipboard` opens
+The top tabs expose Dashboard, Media and Performance; the
+wallpaper button opens the picker. `quickshell ipc -c notchD call notchD openClipboard` opens
 the clipboard tab, and `openWallpapers`, `toggleWallpapers`, and
 `closeWallpapers` control the picker. Limits are populated only when a local
 usage feed is available. The shell continues to use the matugen palette.
@@ -245,13 +243,18 @@ usage feed is available. The shell continues to use the matugen palette.
 Enter to copy, Ctrl+Delete to remove, and Escape to close. `cliphist` still stores
 text and images; a terminal picker is retained for shell recovery.
 
-Performance samples CPU, memory and uptime every five seconds while visible.
+Performance samples CPU/GPU, temperatures, memory, home-filesystem storage,
+network traffic and uptime every two seconds while visible. Circular gauges
+show current load; graphs retain the last 30 samples while the page is open.
+Missing sensors remain unavailable, and sampling avoids waking suspended NVIDIA
+GPUs. The `notchd-metrics` helper uses Python's standard library and an optional,
+bounded `nvidia-smi` query for an already-active NVIDIA GPU.
 Limits reads an optional local usage feed; see [USAGE.md](USAGE.md). No provider
 API adapter is included, so unavailable limits stay explicitly unavailable.
 
 ## Wallpaper picker
 
-Open **Wallpapers** from Controls, or run:
+Open **Wallpapers** from Dashboard, or run:
 
 ```sh
 quickshell ipc -c notchD call notchD openWallpapers
@@ -283,3 +286,43 @@ centered and reveals the final-size content without relaying out its columns.
 The playback bars indicate playing/paused state; they are not an audio spectrum.
 
 Handoff regression tests: `python3 tests/wallfx/test_handoff.py -v` from the repo root.
+
+### Dashboard and launcher
+
+The top tabs switch views without collapsing the island. Ctrl+Tab cycles the
+main tabs; tab focus and arrow keys also navigate the tab bar. Dashboard
+provides quick settings, media and notification overview, plus Limits and
+Clipboard pages. Detail pages have a Back control and preserve the current
+dashboard tab. Workspace feedback remains in the compact pill rather than a
+separate tab.
+
+Mod+Space opens the integrated launcher (falling back to fuzzel if IPC fails);
+Mod+D retains fuzzel. Type `>` for actions. Panel transparency is persisted
+under `~/.local/state/notchD/settings.json`, with opacity clamped to 0.70–1.
+The IPC methods `openRunner`, `toggleRunner` and `closeRunner` are available.
+The shared moving tab indicator is inspired by Caelestia Shell's dashboard.
+
+The command palette takes keyboard focus immediately rather than waiting for
+an opening morph. `> scheme` chooses wallpaper-derived or custom hex colors;
+`> variant` chooses a Material variant or Automatic; `> transparency` sets
+0.70–1.00 panel opacity; `> light`, `> dark` and `> auto` change appearance.
+Lock and Sleep actions are available, and `> wallpaper` opens the picker.
+Wi-Fi/Bluetooth details replace the dashboard and Back returns to its prior tab.
+
+
+### Media and system details
+
+The dashboard keeps transport controls below the track title and artist.
+The played segment of the seekbar waves during playback and settles when
+paused. Drag to preview and release to seek; focused seekbars accept Left/Right
+in five-second steps and Home/End. Unsupported seeking stays disabled, and
+unknown duration is displayed as `—:—`.
+
+Media opens a wider artwork-and-details view with album metadata and MPRIS
+source selection. Selecting a source changes which player the controls target;
+if it disappears, the shell follows another available player. The pill retains
+its compact playback indicator; the expanded player has no decorative bars.
+
+Dashboard's battery percentage and power profile have labeled icons and open
+power details. Wi-Fi uses a symmetric vector icon with consistent centering.
+Polish checks are documented in [tests/notchd-polish](../../../tests/notchd-polish/README.md).

@@ -10,15 +10,17 @@ Item {
 
     property string title: ""
     property bool showBack: false
+    property bool showPanel: true
     property alias rightContent: rightSlot.data
     default property alias bodyContent: body.data
 
-    signal back()
+    signal back
 
     implicitWidth: Theme.flyoutW
     implicitHeight: Theme.flyoutH
 
     Panel {
+        visible: root.showPanel
         anchors.fill: parent
         panelRadius: Theme.radius
         cornerTopLeft: 0

@@ -1,0 +1,1 @@
+Artwork.qml and MediaTransportButton.qml adapt patterns from [duxlabs-dev/dux-shell](https://github.com/duxlabs-dev/dux-shell), commit aa3dc8bbc08707f67ef0e6c4f319c2ff628966d4. The MIT license and copyright notice are included in each component.

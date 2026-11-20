@@ -302,7 +302,41 @@ if [ -z "$wall" ] || [ ! -f "$wall" ]; then
   exit 1
 fi
 
-awww img --transition-type center --transition-duration 0.6 "$wall"
+# Serialize every wallpaper writer, including the complete shell handoff.
+mkdir -p "${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}"
+exec 9>"${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}/wp.lock"
+flock 9
+old="$(current_wall)"
+wall="$(realpath -- "$wall")"
+fx_started=false
+if [ -n "$old" ] && [ -f "$old" ] && command -v wallfx-map >/dev/null 2>&1 && command -v qs >/dev/null 2>&1; then
+  mapfile -t maps < <(wallfx-map)
+  if [ "${#maps[@]}" -eq 2 ]; then
+    reply="$(timeout 3 qs -c notchD ipc call wallfx play "$old" "$wall" contagio "${maps[0]}" "${maps[1]}" 2>/dev/null || true)"
+    if [[ "$reply" == "busy" ]]; then
+      echo "wp: wallpaper effect is busy" >&2; exit 1
+    fi
+    if [[ "$reply" == "ok" ]]; then fx_started=true; fi
+  fi
+fi
+if "$fx_started"; then
+  finished=false
+  deadline=$((SECONDS + 20))
+  while ((SECONDS < deadline)); do
+    state="$(timeout 1 qs -c notchD ipc call wallfx state 2>/dev/null || true)"
+    if [[ "$state" == "idle" ]]; then finished=true; break; fi
+    sleep 0.1
+  done
+  if ! "$finished"; then
+    # A busy process may still be writing. Do not start a competing awww.
+    echo "wp: wallpaper effect timed out; refusing overlapping wallpaper writes" >&2
+    exit 1
+  fi
+  result="$(timeout 1 qs -c notchD ipc call wallfx result 2>/dev/null || true)"
+  [[ "$result" == "ok" ]] || timeout -k 1 6 flock -w 2 "${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}/wp-awww.lock" timeout -k 0.5 3 awww img --transition-type fade --transition-duration 0.5 "$wall"
+else
+  timeout -k 1 6 flock -w 2 "${XDG_RUNTIME_DIR:-$CONFIG/wallpapers}/wp-awww.lock" timeout -k 0.5 3 awww img --transition-type fade --transition-duration 0.5 "$wall"
+fi
 
 case "$wall" in
   "$WALLS/bw/"*) scheme=scheme-monochrome ;;

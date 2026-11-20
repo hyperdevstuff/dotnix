@@ -242,7 +242,7 @@ usage feed is available. The shell continues to use the matugen palette.
 ## Clipboard and usage
 
 `Mod+V` opens native Quickshell clipboard history. Search, use ↑/↓ to preview,
-Enter to copy, Delete to remove, and Escape to close. `cliphist` still stores
+Enter to copy, Ctrl+Delete to remove, and Escape to close. `cliphist` still stores
 text and images; a terminal picker is retained for shell recovery.
 
 Performance samples CPU, memory and uptime every five seconds while visible.
@@ -261,3 +261,25 @@ The bottom preview and thumbnail strip browse `~/Pictures/walls`; override
 with `NOTCHD_WALLS_DIR`. Search by filename, use ←/→ to select, Enter to apply,
 and Escape to close. Apply invokes the existing `wp` command, preserving awww
 transitions and matugen. Favorites use the same file as `wp fav`.
+
+The expanded control center takes visual inspiration from [pocket-dots](https://github.com/diegoMalagrida/pocket-dots) by diegoMalagrida; its implementation uses notchD services.
+
+## Wallpaper transitions and motion
+
+Wallpaper changes now use Pocket's contagion shader over awww. The shell
+loads the old/new images and cached arrival maps before it covers the desktop,
+switches awww underneath, and releases the overlay at completion. `wp` serializes
+requests; both overlay and fallback writers share a lock and bounded timeouts.
+A missing shell or unreadable map uses an awww fade. Character-outline/model
+support is not included.
+
+`home/wallpaper-fx.nix` installs the NumPy/Pillow map helper. The compiled
+shader includes desktop OpenGL, OpenGL ES, HLSL, MSL and SPIR-V variants; the
+attributed source and rebuild command are in `shaders/pocket-wallfx/`.
+
+The pill reserves separate artwork, time and playback-indicator spaces.
+Workspace feedback is a small single-line capsule. The expanding surface stays
+centered and reveals the final-size content without relaying out its columns.
+The playback bars indicate playing/paused state; they are not an audio spectrum.
+
+Handoff regression tests: `python3 tests/wallfx/test_handoff.py -v` from the repo root.

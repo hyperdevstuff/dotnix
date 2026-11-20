@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+set -eu
+cd "$(dirname "$0")"
+qsb --glsl "100 es,120,150,300 es,330,310 es" --hlsl 50 --msl 12 -o wallfx.frag.qsb wallfx.frag

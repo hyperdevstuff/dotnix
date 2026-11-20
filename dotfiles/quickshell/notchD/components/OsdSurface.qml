@@ -77,80 +77,50 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: 12
         anchors.rightMargin: 12
-        anchors.topMargin: 8
-        anchors.bottomMargin: 8
-        spacing: 10
-
+        spacing: 9
         Icon {
             glyph: root.derivedIcon
-            size: 15
-            tint: (kind === "volume" && Services.System.volumeMuted) || (kind === "mic" && Services.System.micMuted)
-                ? Theme.muted : Theme.fg
+            size: 13
+            tint: Theme.accent
             Layout.alignment: Qt.AlignVCenter
         }
-
-        ColumnLayout {
+        Text {
+            visible: !root.showProgress
             Layout.fillWidth: true
-            spacing: 4
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 6
-                Text {
-                    Layout.fillWidth: true
-                    text: root.derivedTitle
-                    color: Theme.fg
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: Font.Medium
-                    elide: Text.ElideRight
-                }
-                Text {
-                    visible: root.derivedValue.length > 0
-                    text: root.derivedValue
-                    color: Theme.fg
-                    font.family: Theme.fontFamily
-                    font.pixelSize: 12
-                    font.weight: Font.DemiBold
-                }
-            }
-
-            Item {
-                Layout.fillWidth: true
-                height: 3
-                visible: root.showProgress
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 2
-                    color: Theme.track
-                }
-                Rectangle {
-                    width: Math.max(0, Math.min(parent.width, parent.width * root.derivedProgress))
-                    height: parent.height
-                    radius: 2
-                    color: (kind === "volume" && Services.System.volumeMuted)
-                        || (kind === "mic" && Services.System.micMuted)
-                        ? Theme.muted
-                        : (kind === "battery" && Services.System.batteryPercent <= 15 ? Theme.danger : Theme.fg)
-                    Behavior on width { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
-                }
+            text: root.kind === "workspace"
+                ? (root.derivedText.toLowerCase() === "home" ? "Home" : "Workspace " + root.derivedText)
+                : (root.derivedText || root.derivedTitle)
+            textFormat: Text.PlainText
+            color: Theme.fg
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontBody
+            font.weight: Font.Medium
+            elide: Text.ElideRight
+            maximumLineCount: 1
+        }
+        Item {
+            visible: root.showProgress
+            Layout.fillWidth: true
+            Layout.preferredHeight: 4
+            Rectangle { anchors.fill: parent; radius: 2; color: Theme.track }
+            Rectangle {
+                width: parent.width * Math.max(0, Math.min(1, root.derivedProgress))
+                height: parent.height
+                radius: 2
+                color: Theme.accent
+                Behavior on width { NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
             }
         }
-    }
-
-    Text {
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.leftMargin: 38
-        anchors.rightMargin: 12
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 4
-        visible: !root.showProgress && root.derivedText.length > 0
-        text: root.derivedText
-        color: Theme.muted
-        font.family: Theme.fontFamily
-        font.pixelSize: 11
-        elide: Text.ElideRight
+        Text {
+            visible: root.showProgress
+            text: root.derivedValue
+            textFormat: Text.PlainText
+            color: Theme.fg
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.fontLabel
+            font.weight: Font.Medium
+            Layout.preferredWidth: 34
+            horizontalAlignment: Text.AlignRight
+        }
     }
 }

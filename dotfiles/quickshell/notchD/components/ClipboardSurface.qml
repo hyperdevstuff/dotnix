@@ -5,6 +5,8 @@ import ".."
 
 Item {
     id: root
+    implicitWidth: 440
+    implicitHeight: 350
     property var state: null
     property var entries: []
     property var filtered: []
@@ -52,8 +54,10 @@ Item {
     }
     onActiveFocusChanged: if (activeFocus)
         search.forceActiveFocus()
-    onVisibleChanged: if (visible)
-        search.forceActiveFocus()
+    onVisibleChanged: if (visible) {
+        refresh();
+        search.forceActiveFocus();
+    }
 
     Process {
         id: listProc
@@ -152,7 +156,7 @@ Item {
                         root.perform("copy");
                     else if (event.key === Qt.Key_Escape)
                         root.closeRequested();
-                    else if (event.key === Qt.Key_Delete)
+                    else if (event.key === Qt.Key_Delete && (event.modifiers & Qt.ControlModifier))
                         root.perform("delete");
                     else
                         return;
@@ -174,14 +178,13 @@ Item {
             font.pixelSize: 12
             font.family: Theme.fontFamily
         }
-        RowLayout {
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 8
             ListView {
                 id: list
-                Layout.preferredWidth: Math.max(120, parent.width * 0.48)
-                Layout.fillHeight: true
+                width: Math.floor((parent.width - 8) * 0.48)
+                height: parent.height
                 clip: true
                 spacing: 4
                 model: root.filtered
@@ -191,6 +194,8 @@ Item {
                     width: list.width
                     height: 44
                     radius: Theme.radiusSmall
+                    border.width: index === root.selected ? 1 : 0
+                    border.color: Theme.muted
                     color: mouse.pressed ? Theme.surfacePress : (mouse.containsMouse || index === root.selected ? Theme.surfaceHover : Theme.surface)
                     Accessible.role: Accessible.Button
                     Accessible.name: modelData.label
@@ -201,6 +206,7 @@ Item {
                     Text {
                         anchors.fill: parent
                         anchors.margins: 8
+                        textFormat: Text.PlainText
                         text: modelData.label
                         color: Theme.fg
                         font.family: Theme.fontFamily
@@ -215,14 +221,17 @@ Item {
                         hoverEnabled: true
                         onClicked: {
                             root.selected = index;
-                            root.perform("copy");
+                            root.updatePreview();
+                            search.forceActiveFocus();
                         }
+                        onDoubleClicked: { root.selected = index; root.perform("copy"); }
                     }
                 }
             }
             Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
+                x: list.width + 8
+                width: Math.max(0, parent.width - x)
+                height: parent.height
                 radius: Theme.radiusSmall
                 color: Theme.surface
                 clip: true
@@ -244,6 +253,7 @@ Item {
                     Text {
                         id: preview
                         width: parent.width
+                        textFormat: Text.PlainText
                         text: root.previewText
                         color: Theme.muted
                         font.family: Theme.fontFamily
@@ -254,7 +264,9 @@ Item {
             }
         }
         Text {
-            text: "↑ ↓ Navigate   ↵ Copy   Delete Remove   Esc Close"
+            Layout.fillWidth: true
+            wrapMode: Text.Wrap
+            text: "↑ ↓ Preview   Enter Copy   Ctrl+Delete Remove   Esc Close"
             color: Theme.muted
             font.family: Theme.fontFamily
             font.pixelSize: 11

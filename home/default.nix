@@ -16,6 +16,7 @@
     ./kitty.nix
     ./shell.nix
     ./niri.nix
+    ./wallpaper-fx.nix
     ./matugen.nix
     ./nvim.nix
     ./dev.nix

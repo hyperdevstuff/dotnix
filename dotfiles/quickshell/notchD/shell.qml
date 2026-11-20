@@ -10,6 +10,8 @@ import "components" as Components
 ShellRoot {
     id: shell
 
+    WallpaperFx {}
+
     // Cross-restart settings. JsonAdapter keeps the QML side declarative;
     // FileView writes atomically and reloads if the file changes on disk.
     //
@@ -507,6 +509,11 @@ ShellRoot {
                 locked: lockScreen.locked,
                 mode: islandState.mode,
                 hubWidth: notch.hubW,
+                surfaceWidth: notch.surfaceW,
+                surfaceHeight: notch.surfaceH,
+                surfaceCenter: notch.x + notch.surfaceX + notch.surfaceW / 2,
+                screenCenter: win.width / 2,
+                surfaceMoving: notch.surfaceMoving,
                 hubMin: Math.round(notch.minHubW),
                 flyout: islandState.flyoutKind,
                 hubIndex: islandState.hubIndex,

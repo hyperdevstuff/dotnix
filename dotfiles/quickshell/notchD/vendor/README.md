@@ -21,3 +21,14 @@ Notes:
   `NotchD.qml`, not copied. Tide Island Extended is GPL-3.0.
 
 Modifications made to vendored files: none (only the provenance header).
+
+The Dux vector spring now drives notchD's width, height and corner radii as one
+motion, retaining velocity during reversals. Hub content keeps its final layout
+and follows the surface's reveal progress. Caelestia's drawer wrappers informed
+this separation between stable content and animated reveal; reference inspected:
+`caelestia-dots/shell` at `e72df8eb687246aa6c6ec6daa631073b374e5215`,
+`modules/drawers/Panels.qml` and `modules/dashboard/Wrapper.qml`.
+No Caelestia source was vendored in this adaptation.
+
+Dux artwork and button adaptations have their own attribution in
+`../components/ATTRIBUTION.md`.

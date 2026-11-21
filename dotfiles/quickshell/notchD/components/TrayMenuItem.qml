@@ -12,8 +12,13 @@ MenuItem {
     padding: 0
     background: Rectangle {
         radius: 7
-        color: control.down ? Theme.surfacePress : control.highlighted ? Theme.surfaceHover : "transparent"
-        border.color: control.activeFocus ? Theme.accent : "transparent"
+        color: "transparent"
+        StateLayer {
+            radius: 7
+            hovered: control.highlighted
+            pressed: control.down
+            focused: control.activeFocus
+        }
     }
     contentItem: Item {
         opacity: control.enabled ? 1 : 0.48

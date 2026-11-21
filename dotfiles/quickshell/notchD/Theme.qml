@@ -68,6 +68,12 @@ Singleton {
     readonly property color secondary: tone("secondary", dark ? "#cbc5a6" : "#625f46")
     readonly property color track: tone("surface_container_highest", dark ? "#333333" : "#e4e4e7")
 
+    // Material's content-tinted interaction layers. Keep focus separate from
+    // selection, and never stack hover/focus/pressed opacity.
+    readonly property real hoverStateOpacity: 0.08
+    readonly property real focusStateOpacity: 0.12
+    readonly property real pressedStateOpacity: 0.12
+
     // Status
     readonly property color ok: dark ? "#4ade80" : "#16a34a"
     readonly property color warn: dark ? "#fbbf24" : "#d97706"

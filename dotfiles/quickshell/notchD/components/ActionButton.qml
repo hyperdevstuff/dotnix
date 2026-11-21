@@ -13,10 +13,9 @@ Rectangle {
     implicitWidth: label.length ? row.implicitWidth + 24 : 36
     implicitHeight: 36
     radius: 12
-    color: !enabled ? Theme.surface : filled ? Theme.accent : selected || tonal ? Theme.accentContainer : mouse.pressed ? Theme.surfacePress : mouse.containsMouse || activeFocus ? Theme.surfaceHover : "transparent"
+    color: !enabled ? Theme.surface : filled ? Theme.accent : selected || tonal ? Theme.accentContainer : "transparent"
     readonly property color ink: filled ? Theme.accentInk : selected || tonal ? Theme.accentContainerInk : Theme.fg
     opacity: enabled ? 1 : 0.4
-    border.color: activeFocus ? Theme.accent : "transparent"
     scale: mouse.pressed ? 0.97 : 1
     Behavior on scale {
         NumberAnimation {
@@ -32,6 +31,13 @@ Rectangle {
         clicked()
     Keys.onSpacePressed: if (enabled)
         clicked()
+    StateLayer {
+        radius: root.radius
+        ink: root.ink
+        hovered: mouse.containsMouse
+        pressed: mouse.pressed
+        focused: root.activeFocus
+    }
     Row {
         id: row
         anchors.centerIn: parent

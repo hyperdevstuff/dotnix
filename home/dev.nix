@@ -22,6 +22,15 @@ in
     nodejs
     bun
 
+    # Cloudflare. wrangler covers Workers, Pages, D1, R2, KV and Queues;
+    # cloudflared is the tunnel client and the DoH proxy; flarectl drives the
+    # REST API (DNS, zones, firewall rules); cf-terraforming generates
+    # Terraform HCL from resources that already exist in an account.
+    wrangler
+    cloudflared
+    flarectl
+    cf-terraforming
+
     # OpenAI Codex CLI (the `codex` coding agent).
     codex
 

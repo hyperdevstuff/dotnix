@@ -12,6 +12,7 @@
     ../../modules/nixos/nvidia.nix
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/packages.nix
+    ../../modules/nixos/steam.nix
   ];
 
   networking.hostName = "LOQ";

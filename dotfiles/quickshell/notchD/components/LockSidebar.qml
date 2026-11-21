@@ -18,15 +18,14 @@ Item {
     readonly property bool hasActivity: Services.Media.hasPlayer
     readonly property bool hasNotes: notes.length > 0
 
-    // The lock surface is always light ink on a darkened wallpaper, not the
-    // app palette: light mode should not paint a white sheet over the wall.
-    readonly property color ink: "#f5f5f5"
-    readonly property color inkSoft: "#b8b8bf"
-    readonly property color card: Qt.rgba(1, 1, 1, 0.07)
-    readonly property color hairline: Qt.rgba(1, 1, 1, 0.14)
+    // The lock owner supplies its dark matugen palette even in light mode.
+    property color ink: "#f5f5f5"
+    property color inkSoft: "#b8b8bf"
+    property color card: Qt.rgba(1, 1, 1, 0.07)
 
-    implicitWidth: 300
+    implicitWidth: 320
     implicitHeight: column.implicitHeight
+    clip: true
 
     ColumnLayout {
         id: column
@@ -36,19 +35,17 @@ Item {
         // ------------------------------------------------------- activity
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: activity.implicitHeight + 24
+            Layout.preferredHeight: activity.implicitHeight + 28
             visible: root.hasActivity
-            radius: Theme.radius
+            radius: 28
             color: root.card
-            border.width: 1
-            border.color: root.hairline
 
             ColumnLayout {
                 id: activity
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: 12
+                anchors.margins: 14
                 spacing: 9
 
                 RowLayout {
@@ -56,9 +53,9 @@ Item {
                     spacing: 10
 
                     Rectangle {
-                        Layout.preferredWidth: 44
-                        Layout.preferredHeight: 44
-                        radius: 12
+                        Layout.preferredWidth: 56
+                        Layout.preferredHeight: 56
+                        radius: 14
                         color: Qt.rgba(1, 1, 1, 0.06)
                         clip: true
 
@@ -90,7 +87,7 @@ Item {
                             text: Services.Media.title || "Now playing"
                             color: root.ink
                             font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontBody
+                            font.pixelSize: 15 * Theme.textScale
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
                             maximumLineCount: 1
@@ -102,7 +99,7 @@ Item {
                             text: Services.Media.artist || "Unknown artist"
                             color: root.inkSoft
                             font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontLabel
+                            font.pixelSize: 13 * Theme.textScale
                             elide: Text.ElideRight
                             maximumLineCount: 1
                             textFormat: Text.PlainText
@@ -140,7 +137,7 @@ Item {
             text: "NOTIFICATIONS"
             color: root.inkSoft
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontLabel
+            font.pixelSize: 13 * Theme.textScale
             font.weight: Font.DemiBold
             font.letterSpacing: 1.1
             textFormat: Text.PlainText
@@ -169,24 +166,22 @@ Item {
                 }
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: noteBody.implicitHeight + 20
-                radius: Theme.radius
+                Layout.preferredHeight: noteBody.implicitHeight + 28
+                radius: 28
                 color: root.card
-                border.width: 1
-                border.color: root.hairline
 
                 RowLayout {
                     id: noteBody
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.top: parent.top
-                    anchors.margins: 10
+                    anchors.margins: 14
                     spacing: 9
 
                     Rectangle {
                         Layout.alignment: Qt.AlignTop
-                        Layout.preferredWidth: 28
-                        Layout.preferredHeight: 28
+                        Layout.preferredWidth: 36
+                        Layout.preferredHeight: 36
                         radius: 8
                         color: Qt.rgba(1, 1, 1, 0.06)
 
@@ -222,7 +217,7 @@ Item {
                             text: noteCard.note ? (noteCard.note.appName || "Notification") : ""
                             color: root.inkSoft
                             font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontLabel
+                            font.pixelSize: 13 * Theme.textScale
                             elide: Text.ElideRight
                             maximumLineCount: 1
                             textFormat: Text.PlainText
@@ -233,7 +228,7 @@ Item {
                             text: noteCard.note ? (noteCard.note.summary || "") : ""
                             color: root.ink
                             font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontBody
+                            font.pixelSize: 15 * Theme.textScale
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
                             maximumLineCount: 1
@@ -246,7 +241,7 @@ Item {
                             text: noteCard.note ? (noteCard.note.body || "") : ""
                             color: root.inkSoft
                             font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontLabel
+                            font.pixelSize: 13 * Theme.textScale
                             elide: Text.ElideRight
                             wrapMode: Text.Wrap
                             maximumLineCount: 2
@@ -263,7 +258,7 @@ Item {
             text: "+" + (root.notes.length - root.recentNotes.length) + " more"
             color: root.inkSoft
             font.family: Theme.fontFamily
-            font.pixelSize: Theme.fontLabel
+            font.pixelSize: 13 * Theme.textScale
             textFormat: Text.PlainText
         }
     }

@@ -27,6 +27,7 @@ Item {
         const query = search.text.toLowerCase();
         filtered = entries.filter(e => e.label.toLowerCase().includes(query));
         selected = 0;
+        Qt.callLater(() => list.positionViewAtBeginning());
         updatePreview();
     }
     function updatePreview() {
@@ -134,16 +135,32 @@ Item {
             font.weight: Font.DemiBold
         }
         Rectangle {
+            id: searchContainer
             Layout.fillWidth: true
-            height: 34
-            radius: Theme.radiusSmall
+            height: 40
+            radius: 20
             color: Theme.surface
-            border.color: search.activeFocus ? Theme.muted : Theme.hairline
+            StateLayer {
+                radius: searchContainer.radius
+                focused: search.activeFocus
+            }
+            Symbol {
+                x: 12
+                anchors.verticalCenter: parent.verticalCenter
+                name: "search"
+                size: 18
+                tint: search.activeFocus ? Theme.accent : Theme.muted
+            }
             TextInput {
                 id: search
+                objectName: "clipboardSearch"
                 anchors.fill: parent
-                anchors.margins: 9
+                anchors.leftMargin: 38
+                anchors.rightMargin: 14
+                verticalAlignment: TextInput.AlignVCenter
                 color: Theme.fg
+                selectionColor: Theme.accentContainer
+                selectedTextColor: Theme.accentContainerInk
                 font.family: Theme.fontFamily
                 font.pixelSize: 12 * Theme.textScale
                 clip: true
@@ -167,6 +184,7 @@ Item {
                 }
                 Text {
                     anchors.fill: parent
+                    verticalAlignment: Text.AlignVCenter
                     visible: !search.text
                     text: "Search history"
                     color: Theme.muted
@@ -186,20 +204,28 @@ Item {
             Layout.fillHeight: true
             ListView {
                 id: list
+                objectName: "clipboardList"
                 width: Math.floor((parent.width - 8) * 0.48)
                 height: parent.height
                 clip: true
                 spacing: 4
                 model: root.filtered
                 delegate: Rectangle {
+                    id: clipRow
                     required property var modelData
                     required property int index
                     width: list.width
                     height: 44
                     radius: Theme.radiusSmall
-                    border.width: index === root.selected ? 1 : 0
-                    border.color: Theme.muted
-                    color: mouse.pressed ? Theme.surfacePress : (mouse.containsMouse || index === root.selected ? Theme.surfaceHover : Theme.surface)
+                    readonly property bool current: index === root.selected
+                    color: current ? Theme.accentContainer : Theme.surface
+                    StateLayer {
+                        radius: clipRow.radius
+                        ink: clipRow.current ? Theme.accentContainerInk : Theme.fg
+                        pressed: mouse.pressed
+                        hovered: mouse.containsMouse
+                        focused: clipRow.current
+                    }
                     Accessible.role: Accessible.Button
                     Accessible.name: modelData.label
                     Accessible.onPressAction: {
@@ -208,10 +234,13 @@ Item {
                     }
                     Text {
                         anchors.fill: parent
-                        anchors.margins: 8
+                        anchors.leftMargin: 16
+                        anchors.rightMargin: 10
+                        anchors.topMargin: 8
+                        anchors.bottomMargin: 8
                         textFormat: Text.PlainText
                         text: modelData.label
-                        color: Theme.fg
+                        color: clipRow.current ? Theme.accentContainerInk : Theme.fg
                         font.family: Theme.fontFamily
                         font.pixelSize: 12 * Theme.textScale
                         elide: Text.ElideRight

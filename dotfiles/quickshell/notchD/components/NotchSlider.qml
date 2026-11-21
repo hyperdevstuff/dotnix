@@ -34,11 +34,28 @@ Item {
         }
     }
     Rectangle {
+        id: muteButton
         width: 40
         height: 40
         radius: 14
         anchors.verticalCenter: parent.verticalCenter
-        color: muteMouse.containsMouse ? Theme.surfaceHover : "transparent"
+        color: "transparent"
+        activeFocusOnTab: root.canToggle
+        Accessible.role: Accessible.Button
+        Accessible.name: root.muted ? "Unmute " + root.label : "Mute " + root.label
+        Accessible.onPressAction: if (root.canToggle)
+            root.toggled()
+        Keys.onReturnPressed: if (root.canToggle)
+            root.toggled()
+        Keys.onSpacePressed: if (root.canToggle)
+            root.toggled()
+        StateLayer {
+            radius: muteButton.radius
+            enabled: root.canToggle
+            hovered: muteMouse.containsMouse
+            pressed: muteMouse.pressed
+            focused: muteButton.activeFocus
+        }
         Icon {
             anchors.centerIn: parent
             glyph: root.glyph
@@ -61,6 +78,12 @@ Item {
         height: 40
         anchors.verticalCenter: parent.verticalCenter
         Rectangle {
+            anchors.fill: parent
+            radius: 12
+            color: Theme.accentContainer
+            visible: root.activeFocus
+        }
+        Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width
             height: 16
@@ -77,12 +100,10 @@ Item {
         Rectangle {
             x: (parent.width - width) * root.amount
             anchors.verticalCenter: parent.verticalCenter
-            width: 4
-            height: root.dragging ? 32 : 28
+            width: root.activeFocus ? 6 : 4
+            height: root.dragging || root.activeFocus ? 32 : 28
             radius: 2
             color: root.activeFocus ? Theme.fg : Theme.accent
-            border.width: root.activeFocus ? 1 : 0
-            border.color: Theme.panelSolid
         }
         MouseArea {
             anchors.fill: parent

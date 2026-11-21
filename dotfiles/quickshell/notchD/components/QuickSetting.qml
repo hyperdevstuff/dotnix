@@ -13,7 +13,7 @@ Rectangle {
     signal detailsRequested
     implicitHeight: 68
     radius: primaryMouse.pressed ? 16 : 22
-    color: checked ? Theme.accentContainer : primaryMouse.containsMouse || primary.activeFocus ? Theme.surfaceHover : Theme.surface
+    color: checked ? Theme.accentContainer : Theme.surface
     readonly property color ink: checked ? Theme.accentContainerInk : Theme.fg
     Behavior on radius {
         NumberAnimation {
@@ -23,20 +23,21 @@ Rectangle {
     }
     Item {
         id: primary
-        width: parent.width - 30
+        width: Math.max(0, parent.width - 40)
         height: parent.height
         activeFocusOnTab: true
         Accessible.role: root.toggleable ? Accessible.CheckBox : Accessible.Button
         Accessible.name: root.title + ", " + root.subtitle
         Accessible.checked: root.checked
+        Accessible.onPressAction: root.triggered()
         Keys.onReturnPressed: root.triggered()
         Keys.onSpacePressed: root.triggered()
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: 3
-            radius: 18
-            color: "transparent"
-            border.color: parent.activeFocus ? Theme.accent : "transparent"
+        StateLayer {
+            radius: root.radius
+            ink: root.ink
+            hovered: primaryMouse.containsMouse
+            pressed: primaryMouse.pressed
+            focused: primary.activeFocus
         }
         RowLayout {
             anchors.fill: parent
@@ -82,18 +83,26 @@ Rectangle {
         }
     }
     Rectangle {
+        id: details
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        width: 30
+        width: 40
         height: 48
         radius: 12
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: root.title + " details"
-        color: detailMouse.containsMouse || activeFocus ? Theme.surfacePress : "transparent"
-        border.color: activeFocus ? Theme.accent : "transparent"
+        Accessible.onPressAction: root.detailsRequested()
+        color: "transparent"
         Keys.onReturnPressed: root.detailsRequested()
         Keys.onSpacePressed: root.detailsRequested()
+        StateLayer {
+            radius: details.radius
+            ink: root.ink
+            hovered: detailMouse.containsMouse
+            pressed: detailMouse.pressed
+            focused: details.activeFocus
+        }
         Symbol {
             anchors.centerIn: parent
             name: "keyboard_arrow_right"

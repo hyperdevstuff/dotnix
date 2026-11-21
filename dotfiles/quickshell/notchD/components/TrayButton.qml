@@ -14,8 +14,7 @@ Rectangle {
     implicitWidth: showLabel ? 180 : 32
     implicitHeight: showLabel ? 48 : 32
     radius: showLabel ? 12 : 10
-    color: mouse.pressed ? Theme.surfacePress : mouse.containsMouse || activeFocus || menuVisible ? Theme.surfaceHover : "transparent"
-    border.color: activeFocus ? Theme.accent : "transparent"
+    color: menuVisible ? Theme.surfaceHover : "transparent"
     activeFocusOnTab: true
     Accessible.role: Accessible.Button
     Accessible.name: title
@@ -51,6 +50,12 @@ Rectangle {
     }
     onVisibleChanged: if (!visible && contextMenu.visible)
         contextMenu.close()
+    StateLayer {
+        radius: root.radius
+        hovered: mouse.containsMouse
+        pressed: mouse.pressed
+        focused: root.activeFocus
+    }
     Image {
         id: appIcon
         x: root.showLabel ? 12 : (parent.width - width) / 2

@@ -50,11 +50,12 @@ RowLayout {
                         if (root.state)
                             root.state.selectTab(modelData, animate);
                     }
-                    Rectangle {
-                        anchors.fill: parent
+                    StateLayer {
                         radius: 15
-                        color: tabMouse.pressed ? Theme.surfacePress : "transparent"
-                        border.color: parent.activeFocus ? Theme.accent : "transparent"
+                        ink: root.state && root.state.hubTab === modelData ? Theme.accentContainerInk : Theme.fg
+                        pressed: tabMouse.pressed
+                        hovered: tabMouse.containsMouse
+                        focused: parent.activeFocus
                     }
                     Text {
                         anchors.centerIn: parent
@@ -70,6 +71,7 @@ RowLayout {
                     MouseArea {
                         id: tabMouse
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
                             parent.select(true);
@@ -151,10 +153,11 @@ RowLayout {
         }
     }
     Rectangle {
+        id: clockButton
         implicitWidth: timeLabel.implicitWidth + (root.width > 580 ? dateLabel.implicitWidth + 12 : 0) + 14
         implicitHeight: 36
         radius: 12
-        color: clockMouse.pressed ? Theme.surfacePress : clockMouse.containsMouse || activeFocus ? Theme.surfaceHover : "transparent"
+        color: "transparent"
         activeFocusOnTab: true
         Accessible.role: Accessible.Button
         Accessible.name: Services.Time.time + ", " + Services.Time.date + ". Open calendar."
@@ -164,7 +167,12 @@ RowLayout {
         }
         Keys.onReturnPressed: activate()
         Keys.onSpacePressed: activate()
-        border.color: activeFocus ? Theme.accent : "transparent"
+        StateLayer {
+            radius: clockButton.radius
+            hovered: clockMouse.containsMouse
+            pressed: clockMouse.pressed
+            focused: clockButton.activeFocus
+        }
         Row {
             anchors.centerIn: parent
             spacing: 12

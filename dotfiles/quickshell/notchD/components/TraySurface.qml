@@ -6,13 +6,25 @@ import "../services" as Services
 Flickable {
     id: root
     property var state: null
+    function focusFirst() {
+        const button = trayButtons.itemAt(0);
+        if (button)
+            button.forceActiveFocus();
+    }
+    onActiveFocusChanged: if (activeFocus)
+        Qt.callLater(focusFirst)
+    onVisibleChanged: if (visible)
+        Qt.callLater(focusFirst)
     contentWidth: width
     contentHeight: content.implicitHeight
     activeFocusOnTab: true
     Keys.onPressed: event => {
-        if (event.key === Qt.Key_Down || event.key === Qt.Key_PageDown) contentY = Math.min(Math.max(0, contentHeight - height), contentY + (event.key === Qt.Key_Down ? 40 : height));
-        else if (event.key === Qt.Key_Up || event.key === Qt.Key_PageUp) contentY = Math.max(0, contentY - (event.key === Qt.Key_Up ? 40 : height));
-        else return;
+        if (event.key === Qt.Key_Down || event.key === Qt.Key_PageDown)
+            contentY = Math.min(Math.max(0, contentHeight - height), contentY + (event.key === Qt.Key_Down ? 40 : height));
+        else if (event.key === Qt.Key_Up || event.key === Qt.Key_PageUp)
+            contentY = Math.max(0, contentY - (event.key === Qt.Key_Up ? 40 : height));
+        else
+            return;
         event.accepted = true;
     }
     clip: true
@@ -43,6 +55,7 @@ Flickable {
             Layout.fillWidth: true
             spacing: 8
             Repeater {
+                id: trayButtons
                 model: Services.Tray.items
                 delegate: TrayButton {
                     required property var modelData

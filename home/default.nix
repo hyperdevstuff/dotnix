@@ -103,6 +103,17 @@
       "x-scheme-handler/http" = [ "helium.desktop" ];
       "x-scheme-handler/https" = [ "helium.desktop" ];
       "application/pdf" = [ "helium.desktop" ];
+      # Brave's .desktop file advertises image/gif, png, jpeg and webp, so
+      # with no explicit default XDG hands those files to the browser.
+      # imv animates GIFs through libnsgif and already handles the rest.
+      "image/gif" = [ "imv.desktop" ];
+      "image/png" = [ "imv.desktop" ];
+      "image/jpeg" = [ "imv.desktop" ];
+      "image/webp" = [ "imv.desktop" ];
+      "image/avif" = [ "imv.desktop" ];
+      "image/svg+xml" = [ "imv.desktop" ];
+      "image/bmp" = [ "imv.desktop" ];
+      "image/tiff" = [ "imv.desktop" ];
       "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.Nightly.desktop" ];
       "x-scheme-handler/paper" = [ "paper-desktop.desktop" ];
       "x-scheme-handler/paper-dev" = [ "paper-desktop.desktop" ];
@@ -153,8 +164,10 @@
 
   home.packages = with pkgs; [
     brave-origin
-    firefox
     inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
+    (pkgs.callPackage ../pkgs/ardia.nix { })
+    qbittorrent
+    audacity
     mpv
     imv
     zathura

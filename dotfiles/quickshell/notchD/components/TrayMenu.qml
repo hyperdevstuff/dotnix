@@ -11,6 +11,14 @@ Menu {
     title: entry ? entry.text : ""
     enabled: entry ? entry.enabled : true
     popupType: Popup.Window
+    implicitWidth: {
+        let widest = 216;
+        for (let index = 0; index < count; index++) {
+            const row = itemAt(index);
+            if (row) widest = Math.max(widest, row.implicitWidth);
+        }
+        return Math.min(360, widest);
+    }
     padding: 6
     overlap: 2
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside

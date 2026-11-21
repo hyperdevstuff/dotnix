@@ -5,6 +5,9 @@ The expanded hub presents media, controls and notifications in three columns.
 Module details replace the dashboard; Escape steps back to the hub and
 then to the pill. Ctrl+Tab switches hub tabs.
 
+The current feature audit, remaining gaps and design rules are recorded in
+[DESIGN-STATUS.md](DESIGN-STATUS.md).
+
 ## Modules
 
 `Modules.qml` is a built-in registry, not a binary plugin ABI. Each manifest
@@ -21,10 +24,12 @@ the shared Quickshell services stay alive.
 | Display | `brightnessctl`, night-light tint overlay, niri `power-off-monitors` |
 | Session | logind / systemctl, native lock screen |
 
-The Settings button in the hub opens **Modules**, where modules can be enabled, disabled
-and reordered. The order and enabled set are written to
+The Settings button opens **Appearance**; its **Modules** action opens the module
+registry, where modules can be enabled, disabled and reordered. The order and enabled set are written to
 `$XDG_STATE_HOME/notchD/settings.json` through a `FileView` + `JsonAdapter`, so
-they survive restarts, config reloads and home-manager rebuilds. The default grid order is Wi-Fi, Bluetooth, Battery, Audio, Display and Session.
+they survive restarts, config reloads and home-manager rebuilds. The dashboard uses split Wi-Fi, Bluetooth, Audio and Night light controls. Primary
+actions toggle their state; separate chevrons open details. Battery percentage
+and power profile live in Performance and power details.
 
 ### Advanced fallbacks
 
@@ -41,12 +46,20 @@ These remain installed for genuinely advanced tasks, not the normal path:
   primary locker; `Super+Alt+L`, the Session flyout and lid close all invoke
   it through `quickshell ipc`.
 - The lock has two pages:
-  - page 1 is the ambient clock: time only, over the dotted wallpaper. Any
-    key, click or scroll advances to page 2.
-  - page 2 is authentication: long date, account, password field, Wi-Fi and
+  - page 1 is the ambient clock and date, grouped halfway between the top edge and center
+    of the wallpaper. Any key, click or scroll advances to page 2; that first
+    key is consumed rather than typed into the password field.
+  - page 2 is authentication: long date, a 96px account avatar, larger labels,
+    a 64px filled password field with a 48px unlock target, Wi-Fi and
     battery in the bottom corners, and a read-only sidebar with the current
     media activity and recent notifications. Escape clears the password, or
     returns to page 1 when the field is already empty.
+- The lock uses the dark matugen palette even when the desktop is in light
+  mode. `components/LockContent.qml` owns presentation; the session-lock and
+  PAM controller remain in `LockScreen.qml`. Short outputs scroll the sign-in
+  form, and reduced motion removes page movement. The sidebar remains passive.
+  Visual and keyboard checks are in
+  [tests/lockscreen](../../../tests/lockscreen/README.md).
 - Notification expiry is paused while locked, so the sidebar keeps whatever
   arrived; expiry resumes on unlock. The sidebar is read-only: cards there
   cannot invoke actions or dismiss anything.
@@ -130,6 +143,7 @@ Defined in `dotfiles/niri/config.kdl`:
 | `Mod+Alt+M` | Now playing |
 | `Mod+Alt+H` | Toggle the desktop home widgets |
 | `Mod+Shift+B` | Brightness 60% + OSD |
+| `Mod+Shift+S` | Select a screenshot region, then annotate, copy or save |
 
 The hub is also fully keyboard driven: arrows move between chips, `1`–`6`
 open a module directly, `m` opens now playing, `s` opens Modules, Enter opens
@@ -149,7 +163,7 @@ quickshell ipc -c notchD call notchD status
 # surfaces
 expand / collapse / back / toggleExpanded
 openHub / openWifi / openBluetooth / openAudio / openBattery / openDisplay
-openSession / openSettings
+openSession / openSettings / openAppearance / openActivity / openCalendar / openTray
 toggleHome / showHome / hideHome
 
 # media
@@ -164,6 +178,7 @@ setNightLightTemp <1700-6500> / nightLightWarmer / nightLightCooler
 # actions
 volumeUp / volumeDown / toggleMute / toggleMic
 brightnessUp / brightnessDown
+keepAwake <15|30|60> / stopKeepAwake
 lock / unlock
 
 # modules
@@ -173,6 +188,9 @@ moveModule <id> <delta>
 # appearance
 toggleStyle / setStyle pill|notch
 setTheme light|dark / toggleTheme
+setAppearance clock12|reduceMotion <0|1>
+setAppearance textScale <1.0-1.2>
+setAppearance opacity <0.70-1.0>
 ```
 
 `status` returns JSON with style, hidden, lock state, current surface, flyout,
@@ -187,6 +205,7 @@ registered modules.
 - `IslandState.qml` — idle / osd / hub / flyout / media / runner / auth state machine.
 - `LockScreen.qml` — two-page `WlSessionLock` + PAM lock screen.
 - `components/LockSidebar.qml` — read-only lock-screen activity/notifications sidebar.
+- `components/LockContent.qml` — two-page dark-matugen lock presentation.
 - `Modules.qml` — built-in module registry.
 - `Theme.qml` — light/dark palette, type scale and geometry tokens.
 - `Motion.qml` — duration/easing tokens.
@@ -260,9 +279,10 @@ Open **Wallpapers** from Dashboard, or run:
 quickshell ipc -c notchD call notchD openWallpapers
 ```
 
-The bottom preview and thumbnail strip browse `~/Pictures/walls`; override
-with `NOTCHD_WALLS_DIR`. Search by filename, use ←/→ to select, Enter to apply,
-and Escape to close. Apply invokes the existing `wp` command, preserving awww
+The bottom sheet combines a large selected preview, filename and collection position,
+All/Favorites filters, search and a horizontal thumbnail filmstrip. It browses
+`~/Pictures/walls`; override with `NOTCHD_WALLS_DIR`. Use ←/→ to select, Enter
+to apply, and Escape to close. Apply invokes the existing `wp` command, preserving awww
 transitions and matugen. Favorites use the same file as `wp fav`.
 
 The expanded control center takes visual inspiration from [pocket-dots](https://github.com/diegoMalagrida/pocket-dots) by diegoMalagrida; its implementation uses notchD services.
@@ -312,22 +332,23 @@ Wi-Fi/Bluetooth details replace the dashboard and Back returns to its prior tab.
 
 ### Clock, calendar and tray
 
-Every expanded hub page has a 24-hour local clock, weekday and full date in its
-header. Click it for the month calendar. Calendar supports arrows to move days,
-PageUp/PageDown to change months, Home/Today to return to today, and Escape to
-return to Dashboard. The grid follows the locale's first weekday. It does not
+A single compact header combines Dashboard/Media/Performance navigation, local
+time and date, activity indicators, background apps and Settings. Click the
+clock for the month calendar; Appearance offers 12/24-hour time. The calendar
+uses only the weeks needed by the selected month and the island fits its height.
+Arrows move days, PageUp/PageDown change months, Home/Today returns to today,
+and Escape goes back. The grid follows the locale's first weekday. It does not
 sync events or calendars yet.
 
-The same header hosts active StatusNotifier tray icons and a **Tray** button
-for the full background-app list, including passive entries. Left-click or
-Enter activates an app, right-click or Menu/Shift+F10 opens its menu, middle-click
-invokes its secondary action, and scrolling is forwarded to the app. Menu-only
-apps open their menu on activation. Attention states get a quiet accent dot.
-Apps must publish a tray icon; this is not a list of all running processes.
-Legacy XEmbed icons are not hosted.
+The background-apps button opens StatusNotifier tray entries, including passive
+entries. Left-click or Enter activates an app, right-click or Menu/Shift+F10
+opens its menu, middle-click invokes its secondary action, and scrolling is
+forwarded to the app. Menu-only apps open their menu on activation. Attention
+states get a quiet accent dot. Apps must publish a tray icon; this is not a list
+of all running processes. Legacy XEmbed icons are not hosted.
 
-Menus use `QsMenuAnchor` and Qt platform styling, which may differ from the
-matugen surfaces. The root opts into QApplication mode for these menus.
+Menus use matugen surfaces and the shell's typography, with separators,
+check/radio states, disabled actions, recursive submenus and keyboard navigation.
 `> calendar` and `> background apps` open these pages through the runner.
 `openCalendar` and `openTray` are also available through IPC. Calendar and
 tray integration checks are in [tests/tray-calendar](../../../tests/tray-calendar/README.md).
@@ -346,6 +367,28 @@ source selection. Selecting a source changes which player the controls target;
 if it disappears, the shell follows another available player. The pill retains
 its compact playback indicator; the expanded player has no decorative bars.
 
-Dashboard's battery percentage and power profile have labeled icons and open
-power details. Wi-Fi uses a symmetric vector icon with consistent centering.
+Performance and power details show battery percentage and power profile with
+labeled icons. Shared controls use rounded Material Symbols vectors with
+consistent centering, focus, hover, pressed and disabled states.
 Polish checks are documented in [tests/notchd-polish](../../../tests/notchd-polish/README.md).
+
+### Appearance and activity
+
+Settings offers light/dark/automatic matugen mode, 12/24-hour time, 100–120% text
+size, reduced motion, pill/notch shape and panel opacity. Clock, text, motion,
+shape and opacity preferences survive restarts in the same `settings.json`.
+
+Privacy indicators identify active PipeWire microphone/camera links and niri
+screen casts. The Activity page explains the source and shows app names when
+available. Direct V4L2 camera access outside PipeWire cannot be detected.
+Keep-awake uses a Wayland idle inhibitor for 15, 30 or 60 minutes, displays the
+remaining time, and stops on expiry, explicit cancellation, hiding or locking.
+
+### Screenshot and annotation
+
+`Mod+Shift+S` collapses the island and starts an area selection. Escape cancels;
+a completed selection opens Swappy with crop, pen, arrow, shape, text and blur
+tools. Use **Copy** / `Ctrl+C` for the clipboard or **Save** / `Ctrl+S` to keep a
+PNG in `~/Pictures/Screenshots`. Nothing is copied or saved automatically.
+`Print` keeps niri's existing screenshot behavior. The helper rejects locked
+sessions and cleans its private capture file when the editor exits.

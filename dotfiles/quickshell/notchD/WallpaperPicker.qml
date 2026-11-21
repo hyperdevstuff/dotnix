@@ -5,8 +5,8 @@ import Quickshell.Wayland
 import "components" as Components
 import "services" as Services
 
-// Native wallpaper switcher: a bottom-anchored overlay with a large preview
-// of the selected image and a horizontal filmstrip of thumbnails.
+// Native wallpaper switcher: a compact bottom sheet with a selected preview
+// and a horizontal filmstrip of thumbnails.
 //
 // Design constraints kept deliberately:
 //   * no opaque full-screen window while hidden — both layer surfaces are
@@ -36,6 +36,7 @@ Item {
 
     property string searchText: ""
     property int selectedIndex: -1
+    property bool favoritesOnly: false
 
     readonly property var catalog: Services.WallpaperCatalog
     readonly property bool busy: catalog.status === "loading" || catalog.status === "idle"
@@ -45,8 +46,8 @@ Item {
     readonly property var results: {
         const q = root.searchText.trim().toLowerCase();
         const all = catalog.items;
-        if (!q) return all;
-        return all.filter(p => catalog.displayName(p).toLowerCase().indexOf(q) >= 0);
+        return all.filter(p => (!root.favoritesOnly || catalog.isFavorite(p))
+            && (!q || catalog.displayName(p).toLowerCase().indexOf(q) >= 0));
     }
 
     readonly property string selectedPath: (root.selectedIndex >= 0 && root.selectedIndex < results.length)
@@ -54,7 +55,7 @@ Item {
 
     readonly property int panelH: {
         const h = root.screen ? root.screen.height : 1080;
-        return Math.min(h, 560, Math.max(420, Math.round(h * 0.62)));
+        return Math.min(h, 410);
     }
 
     // ------------------------------------------------------------- behaviour
@@ -93,6 +94,8 @@ Item {
     onShownChanged: {
         if (root.shown) {
             root.searchText = "";
+            root.favoritesOnly = false;
+            searchField.text = "";
             root.selectedIndex = -1;
             root.catalog.reload();
             Qt.callLater(() => focusTarget.forceActiveFocus());
@@ -103,6 +106,12 @@ Item {
         const n = root.results.length;
         root.selectedIndex = n ? 0 : -1;
         if (n) strip.positionViewAtIndex(0, ListView.Contain);
+    }
+
+    onFavoritesOnlyChanged: resetSelection(false)
+    onResultsChanged: {
+        if (selectedIndex >= results.length) selectedIndex = results.length - 1;
+        if (selectedIndex < 0 && results.length && !busy) selectedIndex = 0;
     }
 
     Connections {
@@ -200,456 +209,243 @@ Item {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: Theme.pad
-            spacing: Theme.gap
+            anchors.leftMargin: Math.max(24, (parent.width - 1120) / 2)
+            anchors.rightMargin: anchors.leftMargin
+            anchors.topMargin: 18
+            anchors.bottomMargin: 18
+            spacing: 12
 
-            // ------------------------------------------------------- header
-            Item {
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 30
-
-                RowLayout {
-                    anchors.fill: parent
-                    spacing: Theme.gap
-
+                spacing: 12
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
                     Text {
-                        text: "Wallpapers"
+                        text: "Wallpaper"
                         color: Theme.fg
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontTitle
-                        font.weight: Font.DemiBold
+                        font { family: Theme.fontFamily; pixelSize: 20; weight: Font.DemiBold }
                     }
-
                     Text {
-                        text: catalog.items.length && root.results.length !== catalog.items.length
-                            ? root.results.length + " of " + catalog.items.length + " shown"
-                            : ""
+                        text: "Choose a view for your desktop"
                         color: Theme.muted
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontLabel
+                        font { family: Theme.fontFamily; pixelSize: Theme.fontBody }
                     }
-
-                    Item { Layout.fillWidth: true }
-
-                    Rectangle {
-                        Layout.preferredWidth: 260
-                        Layout.maximumWidth: 320
-                        Layout.preferredHeight: 30
-                        radius: Theme.radiusSmall
-                        color: Theme.surface
-                        border.width: 1
-                        border.color: searchField.activeFocus ? Theme.muted : Theme.hairline
-
+                }
+                Rectangle {
+                    Layout.preferredWidth: 245
+                    Layout.preferredHeight: 40
+                    radius: 20
+                    color: Theme.surfaceHover
+                    border.width: searchField.activeFocus ? 2 : 0
+                    border.color: Theme.accent
+                    Components.Icon {
+                        anchors { left: parent.left; leftMargin: 15; verticalCenter: parent.verticalCenter }
+                        glyph: "\uf002"; size: 13; tint: Theme.muted
+                    }
+                    TextInput {
+                        id: searchField
+                        anchors { fill: parent; leftMargin: 38; rightMargin: 14 }
+                        verticalAlignment: TextInput.AlignVCenter
+                        color: Theme.fg
+                        font { family: Theme.fontFamily; pixelSize: Theme.fontBody }
+                        selectByMouse: true
+                        clip: true
+                        onTextChanged: root.searchText = text
+                        Keys.onEscapePressed: (e) => { root.closeRequested(); e.accepted = true; }
+                        Keys.onReturnPressed: (e) => { root.applySelection(); e.accepted = true; }
+                        Keys.onEnterPressed: (e) => { root.applySelection(); e.accepted = true; }
+                        Keys.onLeftPressed: (e) => { if (cursorPosition === 0) { root.move(-1); e.accepted = true; } }
+                        Keys.onRightPressed: (e) => { if (cursorPosition === text.length) { root.move(1); e.accepted = true; } }
                         Text {
-                            anchors.left: searchField.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "Search wallpapers…"
-                            color: Theme.muted
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontBody
-                            visible: searchField.text.length === 0
-                        }
-
-                        TextInput {
-                            id: searchField
-                            anchors { fill: parent; leftMargin: 10; rightMargin: 10 }
-                            verticalAlignment: TextInput.AlignVCenter
-                            color: Theme.fg
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontBody
-                            selectByMouse: true
-
-                            onTextChanged: root.searchText = text
-
-                            // Let typing keep focus for the search field, but
-                            // hand navigation / Escape / Enter back to root.
-                            Keys.onEscapePressed: (e) => { root.closeRequested(); e.accepted = true; }
-                            Keys.onReturnPressed: (e) => { root.applySelection(); e.accepted = true; }
-                            Keys.onEnterPressed: (e) => { root.applySelection(); e.accepted = true; }
-                            Keys.onLeftPressed: (e) => {
-                                if (cursorPosition === 0) { root.move(-1); e.accepted = true; }
-                            }
-                            Keys.onRightPressed: (e) => {
-                                if (cursorPosition === text.length) { root.move(1); e.accepted = true; }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.preferredWidth: 28
-                        Layout.preferredHeight: 28
-                        radius: Theme.radiusSmall
-                        color: closeMouse.containsMouse ? Theme.surfaceHover : "transparent"
-
-                        Components.Icon {
-                            anchors.centerIn: parent
-                            glyph: "\uf00d"
-                            size: 12
-                            tint: Theme.muted
-                        }
-
-                        MouseArea {
-                            id: closeMouse
                             anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.closeRequested()
+                            verticalAlignment: Text.AlignVCenter
+                            visible: !searchField.text.length
+                            text: "Search wallpapers"
+                            color: Theme.muted
+                            font: searchField.font
                         }
                     }
                 }
+                Rectangle {
+                    Layout.preferredWidth: 40; Layout.preferredHeight: 40
+                    radius: 20; color: closeMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                    Components.Icon { anchors.centerIn: parent; glyph: "\uf00d"; size: 14; tint: Theme.fg }
+                    MouseArea { id: closeMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.closeRequested() }
+                }
             }
 
-            // ------------------------------------------------------- preview
-            Item {
-                id: previewPane
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                clip: true
-
+                spacing: 18
                 Rectangle {
-                    anchors.fill: parent
-                    color: "#000000"
-                    radius: Theme.radiusSmall
-                    border.width: 1
-                    border.color: Theme.hairlineSoft
-                }
-
-                Image {
-                    id: previewImg
-                    anchors { fill: parent; margins: 1 }
-                    source: catalog.fileUrl(root.selectedPath)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                    cache: true
-                    visible: status === Image.Ready
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    visible: !root.selectedPath || previewImg.status === Image.Error
-                    text: root.busy ? "Loading…"
-                        : (root.selectedPath ? "Preview unavailable" : "No wallpaper selected")
-                    color: Theme.muted
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontBody
-                }
-
-                Rectangle {
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: 46
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: Qt.rgba(0, 0, 0, 0) }
-                        GradientStop { position: 1; color: Qt.rgba(0, 0, 0, 0.72) }
-                    }
-                }
-
-                Text {
-                    anchors {
-                        left: parent.left; right: parent.right; bottom: parent.bottom
-                        leftMargin: 14; rightMargin: 56; bottomMargin: 10
-                    }
-                    text: catalog.displayName(root.selectedPath)
-                    color: "#ffffff"
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontTitle
-                    font.weight: Font.Medium
-                    elide: Text.ElideMiddle
-                    textFormat: Text.PlainText
-                }
-
-                Components.Icon {
-                    anchors { right: parent.right; bottom: parent.bottom; rightMargin: 16; bottomMargin: 11 }
-                    visible: catalog.isFavorite(root.selectedPath)
-                    glyph: "\uf005"
-                    size: 14
-                    tint: "#fbbf24"
-                }
-
-                Rectangle {
-                    id: prevBtn
-                    width: 30
-                    height: 30
-                    anchors { left: parent.left; leftMargin: 12; verticalCenter: parent.verticalCenter }
-                    radius: 15
-                    color: prevMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(0, 0, 0, 0.38)
-                    visible: root.results.length > 1
-
-                    Components.Icon {
-                        anchors.centerIn: parent
-                        glyph: "\uf053"
-                        size: 14
-                        tint: "#ffffff"
-                    }
-
-                    MouseArea {
-                        id: prevMouse
+                    id: previewPane
+                    Layout.preferredWidth: 300
+                    Layout.fillHeight: true
+                    radius: 18
+                    color: Theme.track
+                    clip: true
+                    Image {
+                        id: previewImg
                         anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.move(-1)
+                        source: catalog.fileUrl(root.selectedPath)
+                        sourceSize: Qt.size(660, 400)
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true; cache: true
+                        visible: status === Image.Ready
+                    }
+                    Text {
+                        anchors.centerIn: parent
+                        text: root.busy || previewImg.status === Image.Loading ? "Loading preview…" : (root.selectedPath ? "Preview unavailable" : "No selection")
+                        visible: previewImg.status !== Image.Ready
+                        color: Theme.muted
+                        font { family: Theme.fontFamily; pixelSize: Theme.fontBody }
                     }
                 }
-
-                Rectangle {
-                    id: nextBtn
-                    width: 30
-                    height: 30
-                    anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
-                    radius: 15
-                    color: nextMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.22) : Qt.rgba(0, 0, 0, 0.38)
-                    visible: root.results.length > 1
-
-                    Components.Icon {
-                        anchors.centerIn: parent
-                        glyph: "\uf054"
-                        size: 14
-                        tint: "#ffffff"
+                ColumnLayout {
+                    Layout.fillWidth: true; Layout.fillHeight: true
+                    spacing: 8
+                    Item { Layout.fillHeight: true }
+                    Text {
+                        text: root.selectedPath && root.selectedPath === catalog.currentPath ? "CURRENT WALLPAPER" : "SELECTED WALLPAPER"
+                        color: Theme.secondary
+                        font { family: Theme.fontFamily; pixelSize: Theme.fontLabel; weight: Font.DemiBold; letterSpacing: 1 }
                     }
-
-                    MouseArea {
-                        id: nextMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.move(1)
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.selectedPath ? catalog.baseName(root.selectedPath) : "Choose a wallpaper"
+                        color: Theme.fg
+                        font { family: Theme.fontFamily; pixelSize: 18; weight: Font.DemiBold }
+                        elide: Text.ElideMiddle; textFormat: Text.PlainText
                     }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root.selectedPath ? catalog.displayName(root.selectedPath) : "Select an image from the collection below."
+                        color: Theme.muted
+                        font { family: Theme.fontFamily; pixelSize: Theme.fontBody }
+                        elide: Text.ElideMiddle; textFormat: Text.PlainText
+                    }
+                    Item { Layout.fillHeight: true }
+                    RowLayout {
+                        spacing: 8
+                        Rectangle {
+                            Layout.preferredWidth: 112; Layout.preferredHeight: 36
+                            radius: 18; color: favMouse.containsMouse ? Theme.surfacePress : Theme.surfaceHover
+                            opacity: root.selectedPath ? 1 : 0.5
+                            Row {
+                                anchors.centerIn: parent; spacing: 7
+                                Components.Icon { glyph: catalog.isFavorite(root.selectedPath) ? "\uf005" : "\uf006"; size: 13; tint: Theme.fg }
+                                Text { text: catalog.isFavorite(root.selectedPath) ? "Saved" : "Favorite"; color: Theme.fg; font { family: Theme.fontFamily; pixelSize: Theme.fontBody; weight: Font.Medium } }
+                            }
+                            MouseArea { id: favMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; enabled: !!root.selectedPath; onClicked: catalog.toggleFavorite(root.selectedPath) }
+                        }
+                        Text {
+                            text: root.results.length ? (root.selectedIndex + 1) + " / " + root.results.length : ""
+                            color: Theme.muted; font { family: Theme.fontFamily; pixelSize: Theme.fontLabel }
+                        }
+                    }
+                    Item { Layout.fillHeight: true }
                 }
             }
 
-            // ----------------------------------------------------- filmstrip
-            Item {
+            RowLayout {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 104
-                clip: true
+                spacing: 8
+                Text { text: "Collection"; color: Theme.fg; font { family: Theme.fontFamily; pixelSize: 14; weight: Font.DemiBold } }
+                Text { text: root.results.length + " images"; color: Theme.muted; font { family: Theme.fontFamily; pixelSize: Theme.fontLabel } }
+                Item { Layout.fillWidth: true }
+                Rectangle {
+                    Layout.preferredWidth: 28; Layout.preferredHeight: 28; radius: 14
+                    color: previousMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                    opacity: root.selectedIndex > 0 ? 1 : 0.4
+                    Components.Icon { anchors.centerIn: parent; glyph: "\uf053"; size: 11; tint: Theme.fg }
+                    MouseArea { id: previousMouse; anchors.fill: parent; hoverEnabled: true; enabled: root.selectedIndex > 0; cursorShape: Qt.PointingHandCursor; onClicked: root.move(-1) }
+                }
+                Rectangle {
+                    Layout.preferredWidth: 28; Layout.preferredHeight: 28; radius: 14
+                    color: nextMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                    opacity: root.selectedIndex >= 0 && root.selectedIndex < root.results.length - 1 ? 1 : 0.4
+                    Components.Icon { anchors.centerIn: parent; glyph: "\uf054"; size: 11; tint: Theme.fg }
+                    MouseArea { id: nextMouse; anchors.fill: parent; hoverEnabled: true; enabled: root.selectedIndex >= 0 && root.selectedIndex < root.results.length - 1; cursorShape: Qt.PointingHandCursor; onClicked: root.move(1) }
+                }
+                Rectangle {
+                    Layout.preferredWidth: 64; Layout.preferredHeight: 28; radius: 14
+                    color: !root.favoritesOnly ? Theme.accentContainer : (allMouse.containsMouse ? Theme.surfaceHover : "transparent")
+                    Text { anchors.centerIn: parent; text: "All"; color: !root.favoritesOnly ? Theme.accentContainerInk : Theme.fg; font { family: Theme.fontFamily; pixelSize: Theme.fontLabel; weight: Font.DemiBold } }
+                    MouseArea { id: allMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.favoritesOnly = false }
+                }
+                Rectangle {
+                    Layout.preferredWidth: 92; Layout.preferredHeight: 28; radius: 14
+                    color: root.favoritesOnly ? Theme.accentContainer : (filterMouse.containsMouse ? Theme.surfaceHover : "transparent")
+                    Text { anchors.centerIn: parent; text: "★  Favorites"; color: root.favoritesOnly ? Theme.accentContainerInk : Theme.fg; font { family: Theme.fontFamily; pixelSize: Theme.fontLabel; weight: Font.DemiBold } }
+                    MouseArea { id: filterMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.favoritesOnly = true }
+                }
+            }
 
+            Item {
+                Layout.fillWidth: true; Layout.preferredHeight: 78
                 ListView {
                     id: strip
                     anchors.fill: parent
                     orientation: ListView.Horizontal
-                    layoutDirection: Qt.LeftToRight
-                    spacing: Theme.gap
-                    clip: true
+                    spacing: 8; clip: true
                     model: root.results
                     boundsBehavior: Flickable.StopAtBounds
-
                     delegate: Rectangle {
                         required property string modelData
-
-                        width: 142
-                        height: 100
-                        radius: Theme.radiusSmall
-                        color: modelData === root.selectedPath ? Theme.surfaceHover : Theme.surface
-                        border.width: modelData === root.selectedPath ? 2 : 1
-                        border.color: modelData === root.selectedPath ? Theme.fg : Theme.hairline
-
+                        required property int index
+                        width: 120; height: 76; radius: 12
+                        color: Theme.track
+                        border.width: modelData === root.selectedPath ? 3 : 0
+                        border.color: Theme.accent
+                        clip: true
                         Image {
-                            anchors { fill: parent; margins: 1 }
-                            source: catalog.fileUrl(modelData)
-                            sourceSize: Qt.size(142, 100)
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            cache: true
-                            visible: status === Image.Ready
+                            anchors.fill: parent; anchors.margins: modelData === root.selectedPath ? 3 : 0
+                            source: catalog.fileUrl(modelData); sourceSize: Qt.size(240, 152)
+                            fillMode: Image.PreserveAspectCrop; asynchronous: true; cache: true
                         }
-
                         Rectangle {
-                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                            height: 24
-                            color: Qt.rgba(0, 0, 0, 0.62)
-
-                            Text {
-                                anchors { fill: parent; leftMargin: 6; rightMargin: 6 }
-                                text: catalog.baseName(modelData)
-                                color: "#fafafa"
-                                font.family: Theme.fontFamily
-                                font.pixelSize: Theme.fontLabel
-                                elide: Text.ElideMiddle
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                                textFormat: Text.PlainText
-                            }
+                            anchors { right: parent.right; top: parent.top; margins: 6 }
+                            width: 23; height: 23; radius: 12
+                            color: Theme.accent; visible: modelData === root.selectedPath
+                            Components.Icon { anchors.centerIn: parent; glyph: "\uf00c"; size: 11; tint: Theme.accentInk }
                         }
-
-                        Components.Icon {
-                            anchors { top: parent.top; right: parent.right; margins: 5 }
-                            visible: catalog.isFavorite(modelData)
-                            glyph: "\uf005"
-                            size: 11
-                            tint: "#fbbf24"
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                root.selectedIndex = index;
-                                searchField.forceActiveFocus();
-                            }
-                        }
+                        MouseArea { anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { root.selectAt(index); focusTarget.forceActiveFocus(); } }
                     }
                 }
-
                 Text {
-                    anchors.centerIn: parent
-                    width: parent.width - 24
-                    visible: !root.busy && !root.errored && root.results.length === 0
-                    text: root.searchText.length > 0
-                        ? "No wallpapers match “" + root.searchText + "”"
-                        : "No wallpapers found in " + catalog.wallsDir
-                    color: Theme.muted
-                    font.family: Theme.fontFamily
-                    font.pixelSize: Theme.fontBody
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                }
-
-                Column {
-                    anchors.centerIn: parent
-                    spacing: 8
-                    visible: root.busy || root.errored
-
-                    Text {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        text: root.busy ? "Loading wallpapers…" : catalog.errorText
-                        color: root.errored ? Theme.danger : Theme.muted
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontBody
-                    }
-
-                    Rectangle {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        visible: root.errored
-                        width: 80
-                        height: 26
-                        radius: 8
-                        color: Theme.surfaceHover
-                        border.width: 1
-                        border.color: Theme.hairline
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Retry"
-                            color: Theme.fg
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontLabel
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: catalog.reload()
-                        }
-                    }
+                    anchors.centerIn: parent; width: parent.width - 24
+                    visible: root.busy || root.errored || root.results.length === 0
+                    text: root.busy ? "Loading wallpapers…" : root.errored ? catalog.errorText + "  ·  Click to retry" : root.favoritesOnly ? "No favorites match this collection" : root.searchText ? "No wallpapers match your search" : "No wallpapers found in " + catalog.wallsDir
+                    color: root.errored ? Theme.danger : Theme.muted
+                    font { family: Theme.fontFamily; pixelSize: Theme.fontBody }
+                    horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+                    MouseArea { anchors.fill: parent; enabled: root.errored; cursorShape: Qt.PointingHandCursor; onClicked: catalog.reload() }
                 }
             }
-
-            // -------------------------------------------------------- footer
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 36
-
-                RowLayout {
-                    anchors.fill: parent
-                    spacing: Theme.gap
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: "← → navigate · Enter apply · Esc close"
-                        color: Theme.muted
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontLabel
-                        elide: Text.ElideRight
-                    }
-
-                    Rectangle {
-                        id: favBtn
-                        Layout.preferredWidth: 98
-                        Layout.preferredHeight: 30
-                        radius: Theme.radiusSmall
-                        color: favMouse.containsMouse ? Theme.surfaceHover : Theme.surface
-                        border.width: 1
-                        border.color: Theme.hairline
-                        opacity: root.selectedPath ? 1 : 0.5
-
-                        Components.Icon {
-                            anchors { left: parent.left; leftMargin: 9; verticalCenter: parent.verticalCenter }
-                            glyph: catalog.isFavorite(root.selectedPath) ? "\uf005" : "\uf006"
-                            size: 12
-                            tint: catalog.isFavorite(root.selectedPath) ? "#fbbf24" : Theme.muted
-                        }
-
-                        Text {
-                            anchors { left: parent.left; leftMargin: 27; right: parent.right; verticalCenter: parent.verticalCenter }
-                            text: catalog.isFavorite(root.selectedPath) ? "Favorited" : "Favorite"
-                            color: Theme.fg
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontLabel
-                        }
-
-                        MouseArea {
-                            id: favMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: { if (root.selectedPath) catalog.toggleFavorite(root.selectedPath); }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.preferredWidth: 78
-                        Layout.preferredHeight: 30
-                        radius: Theme.radiusSmall
-                        color: cancelMouse.containsMouse ? Theme.surfaceHover : Theme.surface
-                        border.width: 1
-                        border.color: Theme.hairline
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Cancel"
-                            color: Theme.fg
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontLabel
-                        }
-
-                        MouseArea {
-                            id: cancelMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.closeRequested()
-                        }
-                    }
-
-                    Rectangle {
-                        id: applyBtn
-                        Layout.preferredWidth: 86
-                        Layout.preferredHeight: 30
-                        radius: Theme.radiusSmall
-                        color: applyBtn.enabled ? Theme.accent : Theme.surface
-                        border.width: applyBtn.enabled ? 0 : 1
-                        border.color: Theme.hairline
-                        opacity: applyBtn.enabled ? (applyMouse.containsMouse ? 0.88 : 1) : 0.5
-                        enabled: !!root.selectedPath && !root.busy && !root.errored
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "Apply"
-                            color: applyBtn.enabled ? Theme.accentInk : Theme.muted
-                            font.family: Theme.fontFamily
-                            font.pixelSize: Theme.fontLabel
-                            font.weight: Font.DemiBold
-                        }
-
-                        MouseArea {
-                            id: applyMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            enabled: applyBtn.enabled
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.applySelection()
-                        }
-                    }
+            RowLayout {
+                Layout.fillWidth: true; spacing: 8
+                Text {
+                    Layout.fillWidth: true
+                    text: "← → Navigate   ·   Enter Apply   ·   Esc Close"
+                    color: Theme.muted; font { family: Theme.fontFamily; pixelSize: Theme.fontLabel }
+                    elide: Text.ElideRight
+                }
+                Rectangle {
+                    Layout.preferredWidth: 86; Layout.preferredHeight: 36; radius: 18
+                    color: cancelMouse.containsMouse ? Theme.surfaceHover : "transparent"
+                    Text { anchors.centerIn: parent; text: "Cancel"; color: Theme.fg; font { family: Theme.fontFamily; pixelSize: Theme.fontBody; weight: Font.DemiBold } }
+                    MouseArea { id: cancelMouse; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.closeRequested() }
+                }
+                Rectangle {
+                    id: applyBtn
+                    Layout.preferredWidth: 116; Layout.preferredHeight: 36; radius: 18
+                    enabled: !!root.selectedPath && !root.busy && !root.errored
+                    color: enabled ? Theme.accent : Theme.track
+                    opacity: enabled ? (applyMouse.pressed ? 0.72 : applyMouse.containsMouse ? 0.88 : 1) : 0.5
+                    Text { anchors.centerIn: parent; text: "Apply"; color: applyBtn.enabled ? Theme.accentInk : Theme.muted; font { family: Theme.fontFamily; pixelSize: Theme.fontBody; weight: Font.DemiBold } }
+                    MouseArea { id: applyMouse; anchors.fill: parent; enabled: applyBtn.enabled; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: root.applySelection() }
                 }
             }
         }

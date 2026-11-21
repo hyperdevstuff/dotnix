@@ -34,7 +34,7 @@ Item {
                 text: Services.Media.hasPlayer ? (Services.Media.title || "Untitled track") : "Nothing playing"
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 18
+                font.pixelSize: 18 * Theme.textScale
                 font.weight: Font.DemiBold
                 horizontalAlignment: Text.AlignHCenter
                 textFormat: Text.PlainText
@@ -45,7 +45,7 @@ Item {
                 text: Services.Media.hasPlayer ? (Services.Media.artist || Services.Media.playerName) : "Open a music player to start listening"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 12 * Theme.textScale
                 horizontalAlignment: Text.AlignHCenter
                 textFormat: Text.PlainText
                 elide: Text.ElideRight

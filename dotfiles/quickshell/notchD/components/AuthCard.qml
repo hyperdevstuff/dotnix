@@ -56,7 +56,7 @@ Item {
                     text: root.flow ? String(root.flow.actionId || "") : ""
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     elide: Text.ElideRight
                 }
             }
@@ -73,7 +73,7 @@ Item {
             text: root.flow ? String(root.flow.message || "") : ""
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             wrapMode: Text.WordWrap
             maximumLineCount: 3
             elide: Text.ElideRight
@@ -85,7 +85,7 @@ Item {
             text: root.flow ? String(root.flow.supplementaryMessage || "") : ""
             color: root.flow && root.flow.supplementaryIsError ? Theme.danger : Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             wrapMode: Text.WordWrap
             maximumLineCount: 2
             elide: Text.ElideRight
@@ -107,17 +107,20 @@ Item {
                 verticalAlignment: TextInput.AlignVCenter
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
                 echoMode: (root.flow && root.flow.responseVisible) ? TextInput.Normal : TextInput.Password
                 selectionColor: Theme.fg
                 selectedTextColor: Theme.bg
                 clip: true
                 focus: visible
                 onVisibleChanged: {
-                    if (visible) { text = ""; forceActiveFocus(); }
+                    if (visible) {
+                        text = "";
+                        forceActiveFocus();
+                    }
                 }
                 onAccepted: root.submit()
-                Keys.onEscapePressed: (event) => {
+                Keys.onEscapePressed: event => {
                     root.cancel();
                     event.accepted = true;
                 }
@@ -128,16 +131,16 @@ Item {
                 anchors.leftMargin: 10
                 anchors.verticalCenter: parent.verticalCenter
                 visible: pwd.text.length === 0
-                text: root.flow && root.flow.inputPrompt.length > 0
-                    ? String(root.flow.inputPrompt)
-                    : "Password"
+                text: root.flow && root.flow.inputPrompt.length > 0 ? String(root.flow.inputPrompt) : "Password"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
             }
         }
 
-        Item { Layout.fillHeight: true }
+        Item {
+            Layout.fillHeight: true
+        }
 
         RowLayout {
             Layout.fillWidth: true
@@ -155,7 +158,7 @@ Item {
                     text: "Cancel"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                 }
                 MouseArea {
                     id: cancelMouse
@@ -166,7 +169,9 @@ Item {
                 }
             }
 
-            Item { Layout.fillWidth: true }
+            Item {
+                Layout.fillWidth: true
+            }
 
             Rectangle {
                 width: 84
@@ -178,7 +183,7 @@ Item {
                     text: "Authenticate"
                     color: Theme.accentInk
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     font.weight: Font.DemiBold
                 }
                 MouseArea {
@@ -191,13 +196,15 @@ Item {
     }
 
     function submit() {
-        if (!root.flow) return;
+        if (!root.flow)
+            return;
         root.flow.submit(pwd.text);
         pwd.text = "";
     }
 
     function cancel() {
-        if (!root.flow) return;
+        if (!root.flow)
+            return;
         root.flow.cancelAuthenticationRequest();
     }
 }

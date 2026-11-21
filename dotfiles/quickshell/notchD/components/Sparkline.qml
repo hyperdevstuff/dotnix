@@ -17,7 +17,7 @@ Canvas {
         text: "Collecting history…"
         color: Theme.muted
         font.family: Theme.fontFamily
-        font.pixelSize: 11
+        font.pixelSize: 11 * Theme.textScale
     }
     onPaint: {
         const c = getContext("2d");

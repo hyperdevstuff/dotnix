@@ -215,7 +215,7 @@ Item {
             closeRunner();
             return;
         }
-        if (mode === "hub" && (hubTab === "Limits" || hubTab === "Clipboard" || hubTab === "Calendar" || hubTab === "Tray")) {
+        if (mode === "hub" && ["Limits", "Clipboard", "Calendar", "Tray", "Appearance", "Activity"].indexOf(hubTab) >= 0) {
             selectTab("Dashboard");
             return;
         }

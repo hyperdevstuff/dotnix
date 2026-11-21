@@ -19,8 +19,8 @@ Item {
 
     signal moved(real value)
     signal committed(real value)
-    signal muteToggled()
-    signal cancelled()
+    signal muteToggled
+    signal cancelled
 
     implicitHeight: 68
     implicitWidth: 260
@@ -50,7 +50,7 @@ Item {
                     text: root.title
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * Theme.textScale
                     font.weight: Font.Medium
                     elide: Text.ElideRight
                     Layout.fillWidth: true
@@ -59,7 +59,7 @@ Item {
                     text: root.subtitle
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     elide: Text.ElideRight
                     Layout.fillWidth: true
                     visible: root.subtitle.length > 0
@@ -70,7 +70,7 @@ Item {
                 text: root.muted ? "Muted" : (Math.round(root.shownValue * 100) + "%")
                 color: root.muted ? Theme.muted : Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 12 * Theme.textScale
                 font.weight: Font.Medium
                 horizontalAlignment: Text.AlignRight
             }
@@ -113,7 +113,13 @@ Item {
                 height: 4
                 radius: 2
                 color: root.muted ? Theme.muted : root.fillColor
-                Behavior on width { enabled: !root.dragging; NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+                Behavior on width {
+                    enabled: !root.dragging
+                    NumberAnimation {
+                        duration: 90
+                        easing.type: Easing.OutCubic
+                    }
+                }
             }
 
             Rectangle {
@@ -125,7 +131,13 @@ Item {
                 color: root.muted ? Theme.muted : Theme.fg
                 border.width: 1
                 border.color: Theme.panelSolid
-                Behavior on x { enabled: !root.dragging; NumberAnimation { duration: 90; easing.type: Easing.OutCubic } }
+                Behavior on x {
+                    enabled: !root.dragging
+                    NumberAnimation {
+                        duration: 90
+                        easing.type: Easing.OutCubic
+                    }
+                }
             }
 
             MouseArea {
@@ -141,19 +153,27 @@ Item {
                     root.moved(v);
                 }
 
-                onPressed: (mouse) => { root.dragging = true; applyAt(mouse.x); }
-                onPositionChanged: (mouse) => { if (root.dragging) applyAt(mouse.x); }
+                onPressed: mouse => {
+                    root.dragging = true;
+                    applyAt(mouse.x);
+                }
+                onPositionChanged: mouse => {
+                    if (root.dragging)
+                        applyAt(mouse.x);
+                }
                 onReleased: {
-                    if (!root.dragging) return;
+                    if (!root.dragging)
+                        return;
                     root.dragging = false;
                     root.committed(root.dragValue);
                 }
                 onCanceled: {
-                    if (!root.dragging) return;
+                    if (!root.dragging)
+                        return;
                     root.dragging = false;
                     root.cancelled();
                 }
-                onWheel: (wheel) => {
+                onWheel: wheel => {
                     const step = wheel.angleDelta.y > 0 ? 0.05 : -0.05;
                     const v = Math.max(0, Math.min(1, root.shownValue + step));
                     root.moved(v);

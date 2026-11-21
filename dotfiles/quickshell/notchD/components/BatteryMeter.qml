@@ -48,7 +48,7 @@ ClippingRectangle {
             text: "Battery"
             color: parent.ink
             font.family: Theme.fontFamily
-            font.pixelSize: 13
+            font.pixelSize: 13 * Theme.textScale
             font.weight: Font.DemiBold
         }
         Item {
@@ -59,7 +59,7 @@ ClippingRectangle {
             text: Services.System.batteryReady ? Services.System.batteryPercent + "%" : "AC"
             color: parent.ink
             font.family: Theme.fontFamily
-            font.pixelSize: 29
+            font.pixelSize: 29 * Theme.textScale
             font.weight: Font.DemiBold
         }
         Text {
@@ -67,7 +67,7 @@ ClippingRectangle {
             text: Services.System.batteryStateText
             color: parent.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             wrapMode: Text.Wrap
         }
         Text {
@@ -76,7 +76,7 @@ ClippingRectangle {
             visible: text.length > 0
             color: parent.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             wrapMode: Text.Wrap
         }
     }

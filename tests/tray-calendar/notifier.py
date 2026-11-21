@@ -57,17 +57,17 @@ class Notifier(ServiceInterface):
     @dbus_property(access=PropertyAccess.READ)
     def WindowId(self) -> 'u': return 0
     @dbus_property(access=PropertyAccess.READ)
-    def IconName(self) -> 's': return 'utilities-terminal'
+    def IconName(self) -> 's': return ''
     @dbus_property(access=PropertyAccess.READ)
     def IconThemePath(self) -> 's': return ''
     @dbus_property(access=PropertyAccess.READ)
-    def IconPixmap(self) -> 'a(iiay)': return []
+    def IconPixmap(self) -> 'a(iiay)': return [[24, 24, bytes([255, 120, 160, 110]) * (24 * 24)]]
     @dbus_property(access=PropertyAccess.READ)
     def OverlayIconName(self) -> 's': return ''
     @dbus_property(access=PropertyAccess.READ)
-    def AttentionIconName(self) -> 's': return 'dialog-information'
+    def AttentionIconName(self) -> 's': return ''
     @dbus_property(access=PropertyAccess.READ)
-    def AttentionIconPixmap(self) -> 'a(iiay)': return []
+    def AttentionIconPixmap(self) -> 'a(iiay)': return [[24, 24, bytes([255, 230, 180, 80]) * (24 * 24)]]
     @dbus_property(access=PropertyAccess.READ)
     def ToolTip(self) -> '(sa(iiay)ss)': return ['utilities-terminal', [], 'Test background app', 'Isolated fixture']
     @dbus_property(access=PropertyAccess.READ)

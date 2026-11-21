@@ -124,10 +124,13 @@ Item {
         anchors.fill: parent
         spacing: 8
         Text {
+            Layout.leftMargin: 46
+            Layout.preferredHeight: 36
+            verticalAlignment: Text.AlignVCenter
             text: "Clipboard"
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 14
+            font.pixelSize: 14 * Theme.textScale
             font.weight: Font.DemiBold
         }
         Rectangle {
@@ -142,7 +145,7 @@ Item {
                 anchors.margins: 9
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 12 * Theme.textScale
                 clip: true
                 selectByMouse: true
                 Accessible.name: "Search clipboard"
@@ -175,7 +178,7 @@ Item {
             visible: root.status !== "" || !root.filtered.length
             text: root.status || "No matching clips"
             color: Theme.muted
-            font.pixelSize: 12
+            font.pixelSize: 12 * Theme.textScale
             font.family: Theme.fontFamily
         }
         Item {
@@ -210,7 +213,7 @@ Item {
                         text: modelData.label
                         color: Theme.fg
                         font.family: Theme.fontFamily
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * Theme.textScale
                         elide: Text.ElideRight
                         maximumLineCount: 2
                         wrapMode: Text.Wrap
@@ -224,7 +227,10 @@ Item {
                             root.updatePreview();
                             search.forceActiveFocus();
                         }
-                        onDoubleClicked: { root.selected = index; root.perform("copy"); }
+                        onDoubleClicked: {
+                            root.selected = index;
+                            root.perform("copy");
+                        }
                     }
                 }
             }
@@ -257,7 +263,7 @@ Item {
                         text: root.previewText
                         color: Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * Theme.textScale
                         wrapMode: Text.WrapAnywhere
                     }
                 }
@@ -269,7 +275,7 @@ Item {
             text: "↑ ↓ Preview   Enter Copy   Ctrl+Delete Remove   Esc Close"
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
         }
     }
 }

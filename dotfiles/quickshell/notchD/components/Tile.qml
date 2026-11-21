@@ -14,7 +14,7 @@ Rectangle {
     property bool focused: false
     property bool hovered: false
 
-    signal activated()
+    signal activated
 
     implicitHeight: Theme.tileH
     implicitWidth: 160
@@ -24,7 +24,11 @@ Rectangle {
     border.color: Theme.fg
     antialiasing: true
 
-    Behavior on color { ColorAnimation { duration: 120 } }
+    Behavior on color {
+        ColorAnimation {
+            duration: 120
+        }
+    }
 
     RowLayout {
         anchors.fill: parent
@@ -52,7 +56,7 @@ Rectangle {
                 text: root.label
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
                 font.letterSpacing: 0.4
                 elide: Text.ElideRight
                 Layout.fillWidth: true
@@ -61,7 +65,7 @@ Rectangle {
                 text: root.value
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
                 font.weight: Font.Medium
                 elide: Text.ElideRight
                 Layout.fillWidth: true

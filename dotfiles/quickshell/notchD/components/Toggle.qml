@@ -8,7 +8,7 @@ Item {
 
     property bool checked: false
     property bool enabled: true
-    signal toggled()
+    signal toggled
 
     implicitWidth: 40
     implicitHeight: 23
@@ -19,7 +19,11 @@ Item {
         anchors.fill: parent
         radius: height / 2
         color: root.checked ? Theme.accent : Theme.track
-        Behavior on color { ColorAnimation { duration: 140 } }
+        Behavior on color {
+            ColorAnimation {
+                duration: 140
+            }
+        }
     }
 
     Rectangle {
@@ -30,8 +34,17 @@ Item {
         y: 3
         x: root.checked ? (track.width - width - 3) : 3
         color: root.checked ? Theme.accentInk : Theme.fg
-        Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-        Behavior on color { ColorAnimation { duration: 140 } }
+        Behavior on x {
+            NumberAnimation {
+                duration: 150
+                easing.type: Easing.OutCubic
+            }
+        }
+        Behavior on color {
+            ColorAnimation {
+                duration: 140
+            }
+        }
     }
 
     MouseArea {

@@ -10,16 +10,30 @@ FocusScope {
     property var state: null
     property string initialQuery: ""
     readonly property bool searchFocused: search.activeFocus
-    function focusSearch() { search.forceActiveFocus(); }
-    onVisibleChanged: if (visible) Qt.callLater(focusSearch)
+    function focusSearch() {
+        search.forceActiveFocus();
+    }
+    onVisibleChanged: if (visible)
+        Qt.callLater(focusSearch)
     signal actionRequested(string action, string value)
     signal closeRequested
 
     property int selectedIndex: 0
     property var results: []
     readonly property var actions: [
-        { name: "Calendar", detail: "Open the clock and month calendar", key: "calendar" },
-        { name: "Background apps", detail: "Show system tray icons", key: "tray" },
+        {name: "Screenshot", detail: "Select an area, annotate, copy or save", key: "screenshot"},
+        {name: "Appearance", detail: "Clock, text, motion and surface settings", key: "appearance"},
+        {name: "Keep awake", detail: "Capture indicators and timed keep-awake", key: "activity"},
+        {
+            name: "Calendar",
+            detail: "Open the clock and month calendar",
+            key: "calendar"
+        },
+        {
+            name: "Background apps",
+            detail: "Show system tray icons",
+            key: "tray"
+        },
         {
             name: "Scheme",
             detail: "Choose a palette source",
@@ -112,7 +126,14 @@ FocusScope {
                         value: query.trim()
                     });
             } else if (ctx.key === "variant") {
-                candidates = [{name: "Automatic", detail: "Use the wallpaper-aware default", key: "variant", value: "auto"}].concat(variants.map(v => ({
+                candidates = [
+                    {
+                        name: "Automatic",
+                        detail: "Use the wallpaper-aware default",
+                        key: "variant",
+                        value: "auto"
+                    }
+                ].concat(variants.map(v => ({
                             name: v.split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" "),
                             detail: "scheme-" + v,
                             key: "variant",
@@ -152,7 +173,14 @@ FocusScope {
             candidates = actions;
             if (["light", "dark", "auto"].indexOf(query.toLowerCase()) >= 0) {
                 const mode = query.toLowerCase();
-                candidates = [{ name: mode.charAt(0).toUpperCase() + mode.slice(1), detail: "Switch appearance mode", key: "theme", value: mode }];
+                candidates = [
+                    {
+                        name: mode.charAt(0).toUpperCase() + mode.slice(1),
+                        detail: "Switch appearance mode",
+                        key: "theme",
+                        value: mode
+                    }
+                ];
             }
         } else {
             const entries = DesktopEntries.applications.values;
@@ -201,7 +229,9 @@ FocusScope {
     Connections {
         target: DesktopEntries.applications
         ignoreUnknownSignals: true
-        function onValuesChanged() { root.refresh(); }
+        function onValuesChanged() {
+            root.refresh();
+        }
     }
     Component.onCompleted: {
         search.text = initialQuery;
@@ -220,7 +250,7 @@ FocusScope {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.context() ? "‹" : "⌕"
                 color: Theme.accent
-                font.pixelSize: 25
+                font.pixelSize: 25 * Theme.textScale
                 MouseArea {
                     anchors.fill: parent
                     onClicked: root.back()
@@ -237,7 +267,7 @@ FocusScope {
                 placeholderTextColor: Theme.muted
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 16
+                font.pixelSize: 16 * Theme.textScale
                 selectByMouse: true
                 background: Item {}
                 onTextChanged: root.refresh()
@@ -268,7 +298,7 @@ FocusScope {
             text: root.context() ? "COMMANDS  /  " + root.context().key.toUpperCase() : search.text.startsWith(">") ? "COMMANDS" : "APPLICATIONS"
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             font.letterSpacing: 1
         }
         Item {
@@ -308,7 +338,7 @@ FocusScope {
                                 visible: !modelData.icon
                                 text: modelData.entry ? "◈" : ">"
                                 color: Theme.accent
-                                font.pixelSize: 18
+                                font.pixelSize: 18 * Theme.textScale
                             }
                         }
                         Column {
@@ -322,7 +352,7 @@ FocusScope {
                                 elide: Text.ElideRight
                                 color: Theme.fg
                                 font.family: Theme.fontFamily
-                                font.pixelSize: 13
+                                font.pixelSize: 13 * Theme.textScale
                             }
                             Text {
                                 width: parent.width
@@ -331,14 +361,14 @@ FocusScope {
                                 elide: Text.ElideRight
                                 color: Theme.muted
                                 font.family: Theme.fontFamily
-                                font.pixelSize: 11
+                                font.pixelSize: 11 * Theme.textScale
                             }
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.nested ? "›" : index === root.selectedIndex ? "↵" : ""
                             color: Theme.muted
-                            font.pixelSize: 16
+                            font.pixelSize: 16 * Theme.textScale
                         }
                     }
                     MouseArea {
@@ -352,11 +382,10 @@ FocusScope {
             Text {
                 anchors.centerIn: parent
                 visible: root.results.length === 0
-                text: root.context() && root.context().key === "scheme" && root.context().query.trim().startsWith("#") ? "Enter a six-digit hex color, e.g. #aabbcc"
-                    : root.context() && root.context().key === "transparency" ? "Choose Opaque, Translucent, or an opacity from 0.70 to 1.00" : "No results"
+                text: root.context() && root.context().key === "scheme" && root.context().query.trim().startsWith("#") ? "Enter a six-digit hex color, e.g. #aabbcc" : root.context() && root.context().key === "transparency" ? "Choose Opaque, Translucent, or an opacity from 0.70 to 1.00" : "No results"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 13
+                font.pixelSize: 13 * Theme.textScale
             }
         }
     }

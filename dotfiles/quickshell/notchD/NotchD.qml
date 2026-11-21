@@ -17,6 +17,7 @@ Item {
     property var polkitFlow: null
     property var screen: null
     signal wallpapersRequested
+    signal settingRequested(string key, real value)
     signal runnerActionRequested(string action, string value)
     function runnerBack() {
         if (runnerLoader.item && runnerLoader.item.back)
@@ -94,15 +95,8 @@ Item {
     }
 
     readonly property real availableH: Math.max(1, screen ? screen.height - Theme.topGap - 12 : 540)
-    readonly property real pageW: Math.min(hubW,
-        state && state.hubTab === "Media" ? 820
-        : state && state.hubTab === "Performance" ? 860
-        : state && (state.hubTab === "Calendar" || state.hubTab === "Tray") ? 720
-        : state && (state.hubTab === "Clipboard" || state.hubTab === "Limits") ? 760 : Theme.hubW)
-    readonly property real pageH: Math.min(availableH,
-        state && state.hubTab === "Performance" ? 544
-        : state && state.hubTab === "Tray" ? 340
-        : state && state.hubTab === "Media" ? 484 : Theme.hubH)
+    readonly property real pageW: Math.min(hubW, state && state.hubTab === "Media" ? 820 : state && state.hubTab === "Performance" ? 860 : state && state.hubTab === "Calendar" ? 600 : state && (state.hubTab === "Tray" || state.hubTab === "Appearance" || state.hubTab === "Activity") ? 680 : state && (state.hubTab === "Clipboard" || state.hubTab === "Limits") ? 760 : Theme.hubW)
+    readonly property real pageH: Math.min(availableH, state && state.hubTab === "Performance" ? 490 : state && state.hubTab === "Calendar" ? hubSurface.calendarContentHeight + 84 : state && state.hubTab === "Tray" ? 300 : state && state.hubTab === "Media" ? 430 : Theme.hubH)
     property real revealTargetH: Theme.hubH
 
     // ----------------------------------------------------------- main surface
@@ -113,8 +107,10 @@ Item {
             return state && state.osdKind === "workspace" ? 160 : Theme.osdW;
         if (mode === "auth")
             return Theme.authW;
-        if (mode === "runner") return Math.min(hubW, 640);
-        if (mode === "flyout") return Math.min(hubW, 560);
+        if (mode === "runner")
+            return Math.min(hubW, 640);
+        if (mode === "flyout")
+            return Math.min(hubW, 560);
         return pageW;
     }
     readonly property real targetH: {
@@ -124,8 +120,10 @@ Item {
             return Theme.osdH;
         if (mode === "auth")
             return Theme.authH;
-        if (mode === "runner") return Math.min(availableH, 480);
-        if (mode === "flyout") return Math.min(availableH, Theme.flyoutH);
+        if (mode === "runner")
+            return Math.min(availableH, 480);
+        if (mode === "flyout")
+            return Math.min(availableH, Theme.flyoutH);
         return pageH;
     }
     readonly property real targetX: (hubW - targetW) / 2
@@ -149,7 +147,8 @@ Item {
         })
     property bool shapeReady: false
     onShapeTargetChanged: {
-        if (targetH > Theme.osdH) revealTargetH = targetH;
+        if (targetH > Theme.osdH)
+            revealTargetH = targetH;
         if (shapeReady) {
             // The keyboard palette must be ready for typing immediately.
             if (mode === "runner" || runnerLoader.item)
@@ -331,6 +330,7 @@ Item {
                 anchors.top: parent.top
                 state: root.state
                 onWallpapersRequested: root.wallpapersRequested()
+                onSettingRequested: (key, value) => root.settingRequested(key, value)
                 opacity: root.mode === "hub" && flyoutItem.opacity < 0.01 && runnerLoader.opacity < 0.01 ? root.hubReveal : 0
                 visible: opacity > 0.001
             }
@@ -392,7 +392,8 @@ Item {
             Loader {
                 id: runnerLoader
                 focus: root.mode === "runner"
-                onVisibleChanged: if (visible && item && item.focusSearch) Qt.callLater(item.focusSearch)
+                onVisibleChanged: if (visible && item && item.focusSearch)
+                    Qt.callLater(item.focusSearch)
                 width: Math.min(root.hubW, 640)
                 height: Math.min(root.availableH, 480)
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -481,7 +482,7 @@ Item {
             Text {
                 id: timeText
                 anchors.centerIn: parent
-                text: Qt.formatTime(clock.date, "HH:mm")
+                text: Qt.formatTime(clock.date, Theme.use12HourClock ? "h:mm AP" : "HH:mm")
                 color: Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontDisplay

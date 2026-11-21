@@ -46,7 +46,7 @@ FlyoutFrame {
                 text: Services.Bluetooth.statusText
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
                 elide: Text.ElideRight
             }
             Text {
@@ -54,7 +54,7 @@ FlyoutFrame {
                 text: "Scanning…"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
             }
             Rectangle {
                 width: 24
@@ -103,7 +103,7 @@ FlyoutFrame {
                     text: "CONNECTED"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     font.letterSpacing: 0.8
                     visible: Services.Bluetooth.connectedDevices.length > 0
                 }
@@ -128,7 +128,7 @@ FlyoutFrame {
                     text: "PAIRED"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     font.letterSpacing: 0.8
                     visible: Services.Bluetooth.pairedDevices.length > 0
                     topPadding: 4
@@ -158,7 +158,7 @@ FlyoutFrame {
                     text: "AVAILABLE"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     font.letterSpacing: 0.8
                     visible: Services.Bluetooth.availableDevices.length > 0
                     topPadding: 4
@@ -185,7 +185,7 @@ FlyoutFrame {
                     text: Services.Bluetooth.enabled ? "No devices found" : "Bluetooth is off"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     horizontalAlignment: Text.AlignHCenter
                     topPadding: 40
                 }
@@ -205,7 +205,7 @@ FlyoutFrame {
                     text: Services.Bluetooth.errorMessage
                     color: Theme.danger
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     elide: Text.ElideRight
                     visible: Services.Bluetooth.errorMessage.length > 0
                 }
@@ -226,7 +226,7 @@ FlyoutFrame {
                             text: "Passkey"
                             color: Theme.muted
                             font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 11 * Theme.textScale
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }

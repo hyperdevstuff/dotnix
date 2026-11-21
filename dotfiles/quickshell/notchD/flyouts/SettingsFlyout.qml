@@ -19,7 +19,7 @@ FlyoutFrame {
             text: "Enabled modules appear in this order. Use the arrows to reorder; changes apply immediately and persist."
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             wrapMode: Text.WordWrap
         }
 
@@ -91,7 +91,7 @@ FlyoutFrame {
                                     text: row.info ? String(row.info.title) : String(row.modelData)
                                     color: Theme.fg
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * Theme.textScale
                                     font.weight: Font.Medium
                                     elide: Text.ElideRight
                                 }
@@ -100,7 +100,7 @@ FlyoutFrame {
                                     text: row.info ? String(row.info.description) : ""
                                     color: Theme.muted
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * Theme.textScale
                                     elide: Text.ElideRight
                                 }
                             }
@@ -180,7 +180,7 @@ FlyoutFrame {
                 text: "Disabled modules unload their flyout. Services stay native Quickshell singletons and are shared."
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
                 wrapMode: Text.WordWrap
             }
         }

@@ -123,7 +123,7 @@ Item {
                     text: "System monitor"
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 16
+                    font.pixelSize: 16 * Theme.textScale
                     font.weight: Font.DemiBold
                 }
                 Item {
@@ -139,7 +139,7 @@ Item {
                     text: root.status
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                 }
             }
             RowLayout {
@@ -206,7 +206,7 @@ Item {
                                     text: root.metrics.memory ? root.bytes(root.metrics.memory.used) + " / " + root.bytes(root.metrics.memory.total) : "—"
                                     color: Theme.muted
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * Theme.textScale
                                     elide: Text.ElideRight
                                 }
                             }
@@ -228,7 +228,7 @@ Item {
                                     text: root.storage < 0 ? "—" : Math.round(root.storage) + "%"
                                     color: Theme.fg
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 26
+                                    font.pixelSize: 26 * Theme.textScale
                                     font.weight: Font.DemiBold
                                 }
                                 Rectangle {
@@ -248,14 +248,14 @@ Item {
                                     text: root.metrics.storage ? root.bytes(root.metrics.storage.free) + " free" : "—"
                                     color: Theme.muted
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * Theme.textScale
                                     elide: Text.ElideRight
                                 }
                                 Text {
                                     text: "Home filesystem"
                                     color: Theme.muted
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * Theme.textScale
                                 }
                             }
                         }
@@ -283,13 +283,13 @@ Item {
                                     text: "↓  " + root.rate(root.download)
                                     color: Theme.fg
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * Theme.textScale
                                 }
                                 Text {
                                     text: "↑  " + root.rate(root.upload)
                                     color: Theme.muted
                                     font.family: Theme.fontFamily
-                                    font.pixelSize: 11
+                                    font.pixelSize: 11 * Theme.textScale
                                 }
                             }
                         }
@@ -311,7 +311,7 @@ Item {
                     text: "Uptime " + root.uptime(root.metrics.uptime)
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                 }
                 Item {
                     Layout.fillWidth: true
@@ -325,7 +325,7 @@ Item {
                     text: Services.System.powerProfileText
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                 }
             }
         }
@@ -343,7 +343,7 @@ Item {
             text: parent.label
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: 12 * Theme.textScale
             font.weight: Font.DemiBold
         }
     }

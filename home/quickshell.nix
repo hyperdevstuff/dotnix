@@ -1,11 +1,27 @@
 { pkgs, ... }:
 
 {
-  home.packages = [ pkgs.python3 ];
+  home.packages = with pkgs; [ python3 grim slurp swappy wl-clipboard jq font-awesome ];
   home.file.".local/bin/notchd-metrics" = {
     source = ../dotfiles/bin/notchd-metrics;
     executable = true;
   };
+  home.file.".local/bin/notchd-screenshot" = {
+    source = ../dotfiles/bin/notchd-screenshot;
+    executable = true;
+  };
+  xdg.configFile."swappy/config".text = ''
+    [Default]
+    save_dir=$HOME/Pictures/Screenshots
+    save_filename_format=Screenshot-%Y%m%d-%H%M%S.png
+    show_panel=true
+    show_decorations=true
+    line_size=4
+    text_size=18
+    text_font=Inter
+    early_exit=false
+    auto_save=false
+  '';
 
   programs.quickshell = {
     enable = true;

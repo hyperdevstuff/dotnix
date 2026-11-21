@@ -8,6 +8,13 @@ Flickable {
     property var state: null
     contentWidth: width
     contentHeight: content.implicitHeight
+    activeFocusOnTab: true
+    Keys.onPressed: event => {
+        if (event.key === Qt.Key_Down || event.key === Qt.Key_PageDown) contentY = Math.min(Math.max(0, contentHeight - height), contentY + (event.key === Qt.Key_Down ? 40 : height));
+        else if (event.key === Qt.Key_Up || event.key === Qt.Key_PageUp) contentY = Math.max(0, contentY - (event.key === Qt.Key_Up ? 40 : height));
+        else return;
+        event.accepted = true;
+    }
     clip: true
     boundsBehavior: Flickable.StopAtBounds
     ColumnLayout {
@@ -15,10 +22,13 @@ Flickable {
         width: root.width
         spacing: 12
         Text {
+            Layout.leftMargin: 46
+            Layout.preferredHeight: 36
+            verticalAlignment: Text.AlignVCenter
             text: "Background apps"
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 18
+            font.pixelSize: 18 * Theme.textScale
             font.weight: Font.DemiBold
         }
         Text {
@@ -26,7 +36,7 @@ Flickable {
             text: Services.Tray.count ? "Click to open an app. Right-click for its menu." : "No apps have registered a tray icon."
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: 12 * Theme.textScale
             wrapMode: Text.Wrap
         }
         Flow {
@@ -50,7 +60,7 @@ Flickable {
             text: "Apps appear here when they offer a system-tray icon. Enable that option in the app if needed."
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: 12 * Theme.textScale
             wrapMode: Text.Wrap
         }
     }

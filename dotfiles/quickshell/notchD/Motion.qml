@@ -21,5 +21,5 @@ Singleton {
     readonly property int rTile:  13
 
     // Reduced-motion helper
-    readonly property bool reduceMotion: false
+    property bool reduceMotion: false
 }

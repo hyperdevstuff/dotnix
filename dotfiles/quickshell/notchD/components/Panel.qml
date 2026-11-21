@@ -27,7 +27,11 @@ Rectangle {
     bottomRightRadius: root.cornerBottomRight
     antialiasing: true
 
-    Behavior on color { ColorAnimation { duration: 180 } }
+    Behavior on color {
+        ColorAnimation {
+            duration: 180
+        }
+    }
 
     Rectangle {
         anchors.left: parent.left

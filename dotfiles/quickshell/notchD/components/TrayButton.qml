@@ -25,7 +25,8 @@ Rectangle {
         if (!item)
             return;
         if (item.onlyMenu) {
-            if (item.hasMenu) openMenu();
+            if (item.hasMenu)
+                openMenu();
             return;
         }
         item.activate();
@@ -48,7 +49,7 @@ Rectangle {
             return;
         event.accepted = true;
     }
-    onVisibleChanged: if (!visible)
+    onVisibleChanged: if (!visible && contextMenu.visible)
         contextMenu.close()
     Image {
         id: appIcon
@@ -78,7 +79,7 @@ Rectangle {
         elide: Text.ElideRight
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: 12
+        font.pixelSize: 12 * Theme.textScale
     }
     Rectangle {
         visible: root.item && root.item.status === Status.NeedsAttention
@@ -97,23 +98,20 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         text: "⋮"
         color: Theme.muted
-        font.pixelSize: 18
+        font.pixelSize: 18 * Theme.textScale
         MouseArea {
             anchors.fill: parent
             anchors.margins: -6
             onClicked: root.openMenu()
         }
     }
-    QsMenuAnchor {
+    TrayMenu {
         id: contextMenu
-        menu: root.item && root.item.hasMenu ? root.item.menu : null
-        anchor.item: root
-        anchor.rect.x: 0
-        anchor.rect.y: root.height
-        anchor.rect.width: root.width
-        anchor.rect.height: 0
-        anchor.edges: Edges.Bottom
-        anchor.gravity: Edges.Bottom | Edges.Right
+        menuHandle: root.item && root.item.hasMenu ? root.item.menu : null
+        x: 0
+        y: root.height
+        onMenuHandleChanged: if (!menuHandle)
+            close()
     }
     MouseArea {
         id: mouse
@@ -149,7 +147,7 @@ Rectangle {
             textFormat: Text.PlainText
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
         }
         background: Rectangle {
             radius: 8

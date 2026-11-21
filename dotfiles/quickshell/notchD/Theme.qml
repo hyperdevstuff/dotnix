@@ -16,7 +16,10 @@ Singleton {
     id: root
 
     property bool dark: true
+    property string modePreference: "auto"
     property real surfaceOpacity: 1.0
+    property real textScale: 1.0
+    property bool use12HourClock: false
 
     property var palettes: ({})
     readonly property var palette: palettes[dark ? "dark" : "light"] || ({})
@@ -39,11 +42,11 @@ Singleton {
     readonly property string iconFont: "JetBrainsMono Nerd Font"
 
     // Type scale (logical px). Do not add anything smaller than 11.
-    readonly property int fontDisplay: 14
-    readonly property int fontTitle: 12
-    readonly property int fontBody: 12
-    readonly property int fontLabel: 11
-    readonly property int fontValue: 12
+    readonly property int fontDisplay: Math.round(14 * textScale)
+    readonly property int fontTitle: Math.round(12 * textScale)
+    readonly property int fontBody: Math.round(12 * textScale)
+    readonly property int fontLabel: Math.round(11 * textScale)
+    readonly property int fontValue: Math.round(12 * textScale)
 
     // Shared matugen surfaces. Only the outer panel uses the persisted opacity.
     readonly property color bg: tone("background", dark ? "#0a0a0a" : "#fafafa")
@@ -87,7 +90,7 @@ Singleton {
     readonly property int osdW: 196
     readonly property int osdH: 32
     readonly property int hubW: 980
-    readonly property int hubH: 524
+    readonly property int hubH: 470
     // Dashboard width is bounded by the output in NotchD.qml.
     readonly property int hubSidePad: 6
     readonly property int mediaW: 400

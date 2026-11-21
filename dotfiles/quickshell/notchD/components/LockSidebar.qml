@@ -123,8 +123,7 @@ Item {
                     }
 
                     Rectangle {
-                        width: parent.width * Math.max(0, Math.min(1,
-                            Services.Media.position / Math.max(1, Services.Media.length)))
+                        width: parent.width * Math.max(0, Math.min(1, Services.Media.position / Math.max(1, Services.Media.length)))
                         height: parent.height
                         radius: 1
                         color: root.ink
@@ -157,12 +156,16 @@ Item {
                 readonly property var note: modelData
 
                 readonly property string iconSource: {
-                    if (!note) return ""
-                    if (note.image && note.image.length > 0) return note.image
-                    const icon = note.appIcon || ""
-                    if (icon.length === 0) return ""
-                    if (icon.startsWith("/")) return "file://" + icon
-                    return Quickshell.iconPath(icon, true)
+                    if (!note)
+                        return "";
+                    if (note.image && note.image.length > 0)
+                        return note.image;
+                    const icon = note.appIcon || "";
+                    if (icon.length === 0)
+                        return "";
+                    if (icon.startsWith("/"))
+                        return "file://" + icon;
+                    return Quickshell.iconPath(icon, true);
                 }
 
                 Layout.fillWidth: true

@@ -1,3 +1,4 @@
+//@ pragma UseQApplication
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
@@ -47,6 +48,9 @@ ShellRoot {
             property bool nightLight: false
             property int nightLightTemp: 3500
             property real surfaceOpacity: 1.0
+            property bool use12HourClock: false
+            property bool reduceMotion: false
+            property real textScale: 1.0
         }
     }
 
@@ -62,6 +66,15 @@ ShellRoot {
     // matugen runs (auto follows the wallpaper; `wp theme light|dark` forces
     // it). notchD follows the same file as the rest of the desktop.
     readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")
+    FileView {
+        path: shell.configHome + "/wallpapers/theme"
+        watchChanges: true
+        onFileChanged: reload()
+        onTextChanged: {
+            const value = text().trim();
+            Theme.modePreference = ["light", "dark", "auto"].indexOf(value) >= 0 ? value : "auto";
+        }
+    }
 
     FileView {
         id: modeView
@@ -80,6 +93,7 @@ ShellRoot {
     Component.onCompleted: {
         applyThemeMode();
         applySettings();
+        Services.KeepAwake.window = win;
     }
 
     function applySettings() {
@@ -90,9 +104,27 @@ ShellRoot {
                 Modules.enabledCsv = settings.modulesEnabled;
             Theme.notchMode = settings.style === "notch";
             Theme.surfaceOpacity = Math.max(0.7, Math.min(1, settings.surfaceOpacity));
+            Theme.use12HourClock = settings.use12HourClock;
+            Theme.textScale = Math.max(1, Math.min(1.2, settings.textScale));
+            Motion.reduceMotion = settings.reduceMotion;
             Services.System.nightLightTemp = Math.max(Services.System.nightLightMin, Math.min(Services.System.nightLightMax, settings.nightLightTemp));
             Services.System.setNightLight(settings.nightLight);
         }
+    }
+
+    function setAppearance(key, value) {
+        if (!isFinite(value))
+            return;
+        if (key === "clock12")
+            settings.use12HourClock = value !== 0;
+        else if (key === "reduceMotion")
+            settings.reduceMotion = value !== 0;
+        else if (key === "textScale")
+            settings.textScale = Math.max(1, Math.min(1.2, value));
+        else if (key === "opacity")
+            settings.surfaceOpacity = Math.max(0.7, Math.min(1, value));
+        else if (key === "notch")
+            settings.style = value ? "notch" : "pill";
     }
 
     // Keep Theme's shape flag in sync with the persisted style so panels and
@@ -104,6 +136,15 @@ ShellRoot {
         }
         function onSurfaceOpacityChanged() {
             Theme.surfaceOpacity = Math.max(0.7, Math.min(1, settings.surfaceOpacity));
+        }
+        function onUse12HourClockChanged() {
+            Theme.use12HourClock = settings.use12HourClock;
+        }
+        function onTextScaleChanged() {
+            Theme.textScale = Math.max(1, Math.min(1.2, settings.textScale));
+        }
+        function onReduceMotionChanged() {
+            Motion.reduceMotion = settings.reduceMotion;
         }
     }
 
@@ -254,8 +295,15 @@ ShellRoot {
             return;
         islandState.closeRunner();
         islandState.collapse();
-        if (action === "calendar" || action === "tray") {
-            islandState.selectTab(action === "calendar" ? "Calendar" : "Tray");
+        if (["calendar", "tray", "appearance", "activity"].indexOf(action) >= 0) {
+            islandState.selectTab(({
+                    calendar: "Calendar",
+                    tray: "Tray",
+                    appearance: "Appearance",
+                    activity: "Activity"
+                })[action]);
+        } else if (action === "screenshot") {
+            Quickshell.execDetached(["notchd-screenshot"]);
         } else if (action === "wallpaper") {
             wallpaperLoader.active = true;
             if (wallpaperLoader.item)
@@ -375,6 +423,7 @@ ShellRoot {
                     wallpaperLoader.item.shown = true;
             }
             onRunnerActionRequested: (action, value) => shell.runAction(action, value)
+            onSettingRequested: (key, value) => shell.setAppearance(key, value)
         }
     }
 
@@ -490,14 +539,35 @@ ShellRoot {
             islandState.openHub();
         }
         function openTab(tab: string) {
-            if (["Dashboard", "Media", "Performance", "Limits", "Clipboard", "Calendar", "Tray"].indexOf(tab) >= 0 && !lockScreen.locked)
+            if (["Dashboard", "Media", "Performance", "Limits", "Clipboard", "Calendar", "Tray", "Appearance", "Activity"].indexOf(tab) >= 0 && !lockScreen.locked)
                 islandState.selectTab(tab);
         }
+        function openAppearance() {
+            if (!lockScreen.locked)
+                islandState.selectTab("Appearance");
+        }
+        function openActivity() {
+            if (!lockScreen.locked)
+                islandState.selectTab("Activity");
+        }
+        function setAppearance(key: string, value: real) {
+            shell.setAppearance(key, value);
+        }
+        function keepAwake(minutes: int) {
+            if (!lockScreen.locked)
+                Services.KeepAwake.start(minutes);
+        }
+        function stopKeepAwake() {
+            Services.KeepAwake.stop();
+        }
+
         function openCalendar() {
-            if (!lockScreen.locked) islandState.selectTab("Calendar");
+            if (!lockScreen.locked)
+                islandState.selectTab("Calendar");
         }
         function openTray() {
-            if (!lockScreen.locked) islandState.selectTab("Tray");
+            if (!lockScreen.locked)
+                islandState.selectTab("Tray");
         }
         function openRunner() {
             if (!lockScreen.locked)
@@ -586,10 +656,17 @@ ShellRoot {
 
         // ----------------------------------------------------- notifications
         function notificationHistory(): string {
-            return JSON.stringify(Services.Notifications.history.map(n => ({key: n.key, appName: n.appName})));
+            return JSON.stringify(Services.Notifications.history.map(n => ({
+                        key: n.key,
+                        appName: n.appName
+                    })));
         }
-        function removeNotification(key: int) { Services.Notifications.removeHistory(key); }
-        function toggleDnd() { Services.Notifications.dnd = !Services.Notifications.dnd; }
+        function removeNotification(key: int) {
+            Services.Notifications.removeHistory(key);
+        }
+        function toggleDnd() {
+            Services.Notifications.dnd = !Services.Notifications.dnd;
+        }
         function dismissNotifications() {
             Services.Notifications.dismissAll();
         }
@@ -746,6 +823,14 @@ ShellRoot {
                 theme: Theme.dark ? "dark" : "light",
                 media: Services.Media.hasPlayer,
                 mediaMode: islandState.mode === "media",
+                use12HourClock: Theme.use12HourClock,
+                textScale: Theme.textScale,
+                reduceMotion: Motion.reduceMotion,
+                keepAwake: Services.KeepAwake.active,
+                keepAwakeRemaining: Services.KeepAwake.remainingSeconds,
+                microphoneActive: Services.Privacy.microphoneActive,
+                cameraActive: Services.Privacy.cameraActive,
+                screenSharing: Services.Privacy.screenActive,
                 trayItems: Services.Tray.count,
                 trayAttention: Services.Tray.attentionCount,
                 notifications: Services.Notifications.count,

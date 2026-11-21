@@ -140,7 +140,7 @@ Item {
         text: root.timeText(root.position)
         color: Theme.muted
         font.family: Theme.fontFamily
-        font.pixelSize: 11
+        font.pixelSize: 11 * Theme.textScale
     }
     Text {
         anchors.right: parent.right
@@ -148,6 +148,6 @@ Item {
         text: root.duration > 0 ? root.timeText(root.duration) : "—:—"
         color: Theme.muted
         font.family: Theme.fontFamily
-        font.pixelSize: 11
+        font.pixelSize: 11 * Theme.textScale
     }
 }

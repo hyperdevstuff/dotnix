@@ -49,7 +49,7 @@ Flickable {
                     text: Services.Media.hasPlayer ? Services.Media.playerName : "Your music"
                     color: Theme.accent
                     font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * Theme.textScale
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
                 }
@@ -57,7 +57,7 @@ Flickable {
                     text: Services.Media.hasPlayer ? (Services.Media.playing ? "Playing" : "Paused") : ""
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                 }
             }
             Item {
@@ -72,7 +72,7 @@ Flickable {
                     text: Services.Media.hasPlayer ? Services.Media.title || "Untitled track" : "Nothing playing"
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 28
+                    font.pixelSize: 28 * Theme.textScale
                     font.weight: Font.DemiBold
                     textFormat: Text.PlainText
                     wrapMode: Text.Wrap
@@ -84,7 +84,7 @@ Flickable {
                     text: Services.Media.hasPlayer ? Services.Media.artist || "Unknown artist" : "Start playback in an app to see it here."
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 15
+                    font.pixelSize: 15 * Theme.textScale
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
                 }
@@ -94,7 +94,7 @@ Flickable {
                     text: Services.Media.album
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * Theme.textScale
                     textFormat: Text.PlainText
                     elide: Text.ElideRight
                 }
@@ -137,7 +137,7 @@ Flickable {
                             text: parent.modelData.identity
                             color: parent.selected ? Theme.accentContainerInk : Theme.muted
                             font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 11 * Theme.textScale
                             textFormat: Text.PlainText
                             elide: Text.ElideRight
                         }

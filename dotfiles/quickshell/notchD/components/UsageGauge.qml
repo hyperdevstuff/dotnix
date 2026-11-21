@@ -48,7 +48,7 @@ Item {
             text: root.label
             color: root.accent
             font.family: Theme.fontFamily
-            font.pixelSize: 22
+            font.pixelSize: 22 * Theme.textScale
             font.weight: Font.DemiBold
         }
         Text {
@@ -56,7 +56,7 @@ Item {
             text: root.caption
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
         }
     }
 }

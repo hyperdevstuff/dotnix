@@ -19,8 +19,8 @@ Item {
     property bool actionDanger: false
     property color iconTint: Theme.fg
 
-    signal activated()
-    signal actionClicked()
+    signal activated
+    signal actionClicked
 
     implicitHeight: Theme.rowH
     implicitWidth: 250
@@ -29,7 +29,11 @@ Item {
         anchors.fill: parent
         radius: Theme.radiusSmall
         color: rowMouse.containsMouse && !root.busy ? Theme.surfaceHover : "transparent"
-        Behavior on color { ColorAnimation { duration: 110 } }
+        Behavior on color {
+            ColorAnimation {
+                duration: 110
+            }
+        }
     }
 
     RowLayout {
@@ -76,7 +80,7 @@ Item {
                 text: root.title
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 12 * Theme.textScale
                 font.weight: Font.Medium
                 elide: Text.ElideRight
             }
@@ -85,7 +89,7 @@ Item {
                 text: root.subtitle
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
                 elide: Text.ElideRight
                 visible: root.subtitle.length > 0
             }

@@ -300,6 +300,7 @@ Mod+Space opens the integrated launcher (falling back to fuzzel if IPC fails);
 Mod+D retains fuzzel. Type `>` for actions. Panel transparency is persisted
 under `~/.local/state/notchD/settings.json`, with opacity clamped to 0.70–1.
 The IPC methods `openRunner`, `toggleRunner` and `closeRunner` are available.
+`openCalendar` and `openTray` open the calendar and background-apps pages.
 The shared moving tab indicator is inspired by Caelestia Shell's dashboard.
 
 The command palette takes keyboard focus immediately rather than waiting for
@@ -308,6 +309,28 @@ an opening morph. `> scheme` chooses wallpaper-derived or custom hex colors;
 0.70–1.00 panel opacity; `> light`, `> dark` and `> auto` change appearance.
 Lock and Sleep actions are available, and `> wallpaper` opens the picker.
 Wi-Fi/Bluetooth details replace the dashboard and Back returns to its prior tab.
+
+### Clock, calendar and tray
+
+Every expanded hub page has a 24-hour local clock, weekday and full date in its
+header. Click it for the month calendar. Calendar supports arrows to move days,
+PageUp/PageDown to change months, Home/Today to return to today, and Escape to
+return to Dashboard. The grid follows the locale's first weekday. It does not
+sync events or calendars yet.
+
+The same header hosts active StatusNotifier tray icons and a **Tray** button
+for the full background-app list, including passive entries. Left-click or
+Enter activates an app, right-click or Menu/Shift+F10 opens its menu, middle-click
+invokes its secondary action, and scrolling is forwarded to the app. Menu-only
+apps open their menu on activation. Attention states get a quiet accent dot.
+Apps must publish a tray icon; this is not a list of all running processes.
+Legacy XEmbed icons are not hosted.
+
+Menus use `QsMenuAnchor` and Qt platform styling, which may differ from the
+matugen surfaces. The root opts into QApplication mode for these menus.
+`> calendar` and `> background apps` open these pages through the runner.
+`openCalendar` and `openTray` are also available through IPC. Calendar and
+tray integration checks are in [tests/tray-calendar](../../../tests/tray-calendar/README.md).
 
 
 ### Media and system details

@@ -91,17 +91,20 @@ Item {
             width: parent.width
             spacing: 10
             Text {
+                Layout.leftMargin: 46
+                Layout.preferredHeight: 36
+                verticalAlignment: Text.AlignVCenter
                 text: "Usage"
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 14
+                font.pixelSize: 14 * Theme.textScale
                 font.weight: Font.DemiBold
             }
             Text {
                 text: root.status
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
             }
             Repeater {
                 model: [
@@ -136,7 +139,7 @@ Item {
                             text: modelData.name
                             color: Theme.fg
                             font.family: Theme.fontFamily
-                            font.pixelSize: 12
+                            font.pixelSize: 12 * Theme.textScale
                             font.weight: Font.DemiBold
                         }
                         Text {
@@ -145,7 +148,7 @@ Item {
                             wrapMode: Text.Wrap
                             color: Theme.fg
                             font.family: Theme.fontFamily
-                            font.pixelSize: 12
+                            font.pixelSize: 12 * Theme.textScale
                         }
                         Text {
                             Layout.fillWidth: true
@@ -153,7 +156,7 @@ Item {
                             wrapMode: Text.Wrap
                             color: Theme.muted
                             font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 11 * Theme.textScale
                         }
                     }
                 }

@@ -12,6 +12,15 @@ Rectangle {
     color: Services.System.nightLightColor
     opacity: Services.System.nightLightAlpha
 
-    Behavior on opacity { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
-    Behavior on color { ColorAnimation { duration: 220 } }
+    Behavior on opacity {
+        NumberAnimation {
+            duration: 220
+            easing.type: Easing.OutCubic
+        }
+    }
+    Behavior on color {
+        ColorAnimation {
+            duration: 220
+        }
+    }
 }

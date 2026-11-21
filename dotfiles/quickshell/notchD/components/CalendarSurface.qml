@@ -10,9 +10,11 @@ Flickable {
     property date displayedMonth: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1, 12)
     readonly property int firstWeekday: Qt.locale().firstDayOfWeek % 7
     readonly property int offset: (displayedMonth.getDay() - firstWeekday + 7) % 7
+    readonly property int weekCount: Math.ceil((offset + new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + 1, 0).getDate()) / 7)
     readonly property int selectedIndex: selectedDate.getFullYear() === displayedMonth.getFullYear() && selectedDate.getMonth() === displayedMonth.getMonth() ? selectedDate.getDate() + offset - 1 : -1
     contentWidth: width
     contentHeight: content.implicitHeight
+    implicitHeight: content.implicitHeight
     boundsBehavior: Flickable.StopAtBounds
     clip: true
     function cellDate(index) {
@@ -37,8 +39,14 @@ Flickable {
     }
     function focusSelection() {
         const item = days.itemAt(selectedIndex);
-        if (item)
+        if (item) {
             item.forceActiveFocus();
+            const position = item.mapToItem(content, 0, 0);
+            if (position.y < contentY)
+                contentY = Math.max(0, position.y);
+            else if (position.y + item.height > contentY + height)
+                contentY = Math.min(Math.max(0, contentHeight - height), position.y + item.height - height);
+        }
     }
     onActiveFocusChanged: if (activeFocus)
         Qt.callLater(focusSelection)
@@ -48,12 +56,16 @@ Flickable {
         spacing: 12
         RowLayout {
             Layout.fillWidth: true
+            Item {
+                Layout.preferredWidth: 40
+                Layout.preferredHeight: 36
+            }
             Text {
                 Layout.fillWidth: true
                 text: Qt.formatDate(root.displayedMonth, "MMMM yyyy")
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 21
+                font.pixelSize: 20 * Theme.textScale
                 font.weight: Font.DemiBold
                 elide: Text.ElideRight
             }
@@ -72,11 +84,6 @@ Flickable {
                 accessibleLabel: "Next month"
                 onClicked: root.moveMonth(1)
             }
-            // The shared secondary-page Back control occupies this space.
-            Item {
-                Layout.preferredWidth: 65
-                Layout.preferredHeight: 22
-            }
         }
         GridLayout {
             Layout.fillWidth: true
@@ -94,12 +101,12 @@ Flickable {
                     text: Qt.formatDate(new Date(2024, 0, 7 + (root.firstWeekday + index) % 7), "ddd")
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                 }
             }
             Repeater {
                 id: days
-                model: 42
+                model: root.weekCount * 7
                 delegate: Rectangle {
                     required property int index
                     readonly property date date: root.cellDate(index)
@@ -123,7 +130,7 @@ Flickable {
                         color: parent.selected ? Theme.accentInk : parent.currentMonth ? Theme.fg : Theme.muted
                         opacity: parent.currentMonth || parent.selected ? 1 : 0.55
                         font.family: Theme.fontFamily
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * Theme.textScale
                         font.weight: parent.today || parent.selected ? Font.DemiBold : Font.Normal
                     }
                     MouseArea {
@@ -164,14 +171,14 @@ Flickable {
                 text: Qt.formatDate(root.selectedDate, "dddd, d MMMM yyyy")
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: 12 * Theme.textScale
                 elide: Text.ElideRight
             }
             Text {
                 text: Services.Time.zone
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
             }
         }
     }
@@ -197,7 +204,7 @@ Flickable {
             text: button.label
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: 12 * Theme.textScale
         }
         MouseArea {
             id: navMouse

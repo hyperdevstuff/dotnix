@@ -42,7 +42,7 @@ FlyoutFrame {
                     text: Services.System.batteryReady ? (Services.System.batteryPercent + "%") : "No battery"
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 28
+                    font.pixelSize: 28 * Theme.textScale
                     font.weight: Font.DemiBold
                 }
                 Text {
@@ -50,7 +50,7 @@ FlyoutFrame {
                     text: Services.System.batteryReady ? Services.System.batteryTimeText : "This device is on AC power"
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     elide: Text.ElideRight
                 }
             }
@@ -82,7 +82,7 @@ FlyoutFrame {
             text: Services.System.batteryStateText + " · " + Services.System.powerProfileText
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
         }
 
         Rectangle {
@@ -138,7 +138,7 @@ FlyoutFrame {
             text: "POWER PROFILE"
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             font.letterSpacing: 0.8
         }
 
@@ -176,7 +176,7 @@ FlyoutFrame {
             text: "Battery health and power draw come from UPower. Profiles come from power-profiles-daemon."
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             wrapMode: Text.WordWrap
             opacity: 0.8
         }
@@ -188,7 +188,7 @@ FlyoutFrame {
         text: ""
         color: Theme.muted
         font.family: Theme.fontFamily
-        font.pixelSize: 11
+        font.pixelSize: 11 * Theme.textScale
         Layout.fillWidth: true
     }
 
@@ -196,7 +196,7 @@ FlyoutFrame {
         text: ""
         color: Theme.fg
         font.family: Theme.fontFamily
-        font.pixelSize: 11
+        font.pixelSize: 11 * Theme.textScale
         font.weight: Font.Medium
         horizontalAlignment: Text.AlignRight
     }
@@ -229,7 +229,7 @@ FlyoutFrame {
                 text: button.label
                 color: button.selected ? Theme.accentInk : Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
             }
         }
 

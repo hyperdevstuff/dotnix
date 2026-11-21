@@ -25,7 +25,7 @@ FlyoutFrame {
                 text: "Mixer"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
@@ -47,7 +47,7 @@ FlyoutFrame {
             text: "OUTPUT"
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             font.letterSpacing: 0.8
         }
 
@@ -81,7 +81,7 @@ FlyoutFrame {
             text: "INPUT"
             color: Theme.muted
             font.family: Theme.fontFamily
-            font.pixelSize: 11
+            font.pixelSize: 11 * Theme.textScale
             font.letterSpacing: 0.8
         }
 
@@ -128,7 +128,7 @@ FlyoutFrame {
                     text: Services.Media.title || "Nothing playing"
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
@@ -137,7 +137,7 @@ FlyoutFrame {
                     text: Services.Media.artist
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     elide: Text.ElideRight
                 }
             }
@@ -222,7 +222,7 @@ FlyoutFrame {
                         text: Services.System.nodeLabel(modelData)
                         color: selected ? Theme.accentInk : Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * Theme.textScale
                         elide: Text.ElideRight
                         width: Math.min(implicitWidth, 150)
                     }

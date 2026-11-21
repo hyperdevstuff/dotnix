@@ -39,7 +39,7 @@ FlyoutFrame {
                 text: Services.Network.statusText
                 color: Theme.fg
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
                 elide: Text.ElideRight
             }
             Text {
@@ -47,7 +47,7 @@ FlyoutFrame {
                 text: "Scanning…"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
             }
             Rectangle {
                 width: 24
@@ -110,7 +110,7 @@ FlyoutFrame {
                 text: Services.Network.available ? "No networks found" : "No Wi-Fi adapter"
                 color: Theme.muted
                 font.family: Theme.fontFamily
-                font.pixelSize: 11
+                font.pixelSize: 11 * Theme.textScale
             }
         }
 
@@ -128,7 +128,7 @@ FlyoutFrame {
                     text: Services.Network.errorMessage
                     color: Theme.danger
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     elide: Text.ElideRight
                     visible: Services.Network.errorMessage.length > 0
                 }
@@ -149,7 +149,7 @@ FlyoutFrame {
                             text: "Advanced"
                             color: Theme.muted
                             font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 11 * Theme.textScale
                             anchors.verticalCenter: parent.verticalCenter
                         }
                     }
@@ -191,7 +191,7 @@ FlyoutFrame {
                     text: "Connect to " + (Services.Network.pendingNetwork ? Services.Network.pendingNetwork.name : "")
                     color: Theme.fg
                     font.family: Theme.fontFamily
-                    font.pixelSize: 12
+                    font.pixelSize: 12 * Theme.textScale
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
                 }
@@ -212,7 +212,7 @@ FlyoutFrame {
                         verticalAlignment: TextInput.AlignVCenter
                         color: Theme.fg
                         font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * Theme.textScale
                         echoMode: TextInput.Password
                         selectionColor: Theme.fg
                         selectedTextColor: Theme.bg
@@ -236,7 +236,7 @@ FlyoutFrame {
                         text: "Password"
                         color: Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * Theme.textScale
                     }
                 }
 
@@ -248,7 +248,7 @@ FlyoutFrame {
                         text: "Cancel"
                         color: Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * Theme.textScale
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
@@ -265,7 +265,7 @@ FlyoutFrame {
                             text: "Connect"
                             color: Theme.accentInk
                             font.family: Theme.fontFamily
-                            font.pixelSize: 11
+                            font.pixelSize: 11 * Theme.textScale
                             font.weight: Font.DemiBold
                         }
                         MouseArea {

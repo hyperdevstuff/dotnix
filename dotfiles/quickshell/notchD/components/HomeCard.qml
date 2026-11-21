@@ -33,13 +33,15 @@ Rectangle {
             font.letterSpacing: 0.6
         }
 
-        Item { Layout.fillHeight: true }
+        Item {
+            Layout.fillHeight: true
+        }
 
         Text {
             text: root.value
             color: Theme.fg
             font.family: Theme.fontFamily
-            font.pixelSize: 24
+            font.pixelSize: 24 * Theme.textScale
             font.weight: Font.Medium
             elide: Text.ElideRight
             Layout.fillWidth: true

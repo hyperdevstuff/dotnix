@@ -37,7 +37,7 @@ Rectangle {
                         text: root.title
                         color: root.accent
                         font.family: Theme.fontFamily
-                        font.pixelSize: 15
+                        font.pixelSize: 15 * Theme.textScale
                         font.weight: Font.DemiBold
                     }
                 }
@@ -47,7 +47,7 @@ Rectangle {
                     textFormat: Text.PlainText
                     color: Theme.muted
                     font.family: Theme.fontFamily
-                    font.pixelSize: 11
+                    font.pixelSize: 11 * Theme.textScale
                     elide: Text.ElideRight
                 }
                 RowLayout {
@@ -60,7 +60,7 @@ Rectangle {
                         text: root.temperature >= 0 ? Math.round(root.temperature) + "°C" : "No sensor"
                         color: root.temperature > 90 ? Theme.danger : Theme.muted
                         font.family: Theme.fontFamily
-                        font.pixelSize: 12
+                        font.pixelSize: 12 * Theme.textScale
                     }
                 }
             }

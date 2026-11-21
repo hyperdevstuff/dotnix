@@ -14,7 +14,8 @@ Flickable {
             const ws = Services.Compositor.workspacesData;
             let index = ws.findIndex(w => w.is_focused);
             const card = workspaceRepeater.itemAt(Math.max(0, index));
-            if (card) card.forceActiveFocus();
+            if (card)
+                card.forceActiveFocus();
         });
     }
     Flow {
@@ -31,18 +32,26 @@ Flickable {
                 Accessible.role: Accessible.Button
                 Accessible.name: "Workspace " + Services.Compositor.workspaceLabel(modelData)
                 function activate() {
-                    Services.Compositor.activateWorkspace({ idx: modelData.idx, name: Services.Compositor.workspaceLabel(modelData), raw: modelData });
+                    Services.Compositor.activateWorkspace({
+                        idx: modelData.idx,
+                        name: Services.Compositor.workspaceLabel(modelData),
+                        raw: modelData
+                    });
                 }
                 Accessible.onPressAction: activate()
                 Keys.onPressed: event => {
                     if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Space) {
-                        activate(); event.accepted = true;
+                        activate();
+                        event.accepted = true;
                     } else {
                         const cols = Math.max(1, Math.floor((workspaceFlow.width + 10) / (width + 10)));
                         const delta = event.key === Qt.Key_Right ? 1 : event.key === Qt.Key_Left ? -1 : event.key === Qt.Key_Down ? cols : event.key === Qt.Key_Up ? -cols : 0;
                         if (delta) {
                             const card = workspaceRepeater.itemAt(Math.max(0, Math.min(workspaceRepeater.count - 1, index + delta)));
-                            if (card) { card.forceActiveFocus(); root.contentY = Math.max(0, Math.min(card.y, root.contentHeight - root.height)); }
+                            if (card) {
+                                card.forceActiveFocus();
+                                root.contentY = Math.max(0, Math.min(card.y, root.contentHeight - root.height));
+                            }
                             event.accepted = true;
                         }
                     }
@@ -60,14 +69,14 @@ Flickable {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: Services.Compositor.workspaceLabel(modelData)
                         color: Theme.fg
-                        font.pixelSize: 15
+                        font.pixelSize: 15 * Theme.textScale
                         font.weight: Font.DemiBold
                     }
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: modelData.is_focused ? "Focused" : modelData.is_active ? "Active" : String(modelData.output || "")
                         color: Theme.muted
-                        font.pixelSize: 11
+                        font.pixelSize: 11 * Theme.textScale
                     }
                 }
                 MouseArea {
@@ -81,7 +90,7 @@ Flickable {
             visible: Services.Compositor.workspacesData.length === 0
             text: "No workspaces available"
             color: Theme.muted
-            font.pixelSize: 12
+            font.pixelSize: 12 * Theme.textScale
         }
     }
 }

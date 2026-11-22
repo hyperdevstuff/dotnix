@@ -55,6 +55,7 @@
 
   programs.hex = {
     enable = true;
+    package = pkgs.callPackage ../pkgs/hex-bin.nix { };
     # Start the one supervised Hex through systemd at login. The old XDG
     # autostart entry has been removed so it cannot spawn a second instance.
     autostart = true;

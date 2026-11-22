@@ -17,6 +17,13 @@
 
   networking.hostName = "LOQ";
 
+  # Parallel source builds can fill RAM and swap, causing earlyoom to
+  # terminate the Nix client before the system build completes.
+  nix.settings = {
+    max-jobs = 1;
+    cores = 2;
+  };
+
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.systemd-boot.configurationLimit = 10;
@@ -72,19 +79,9 @@
     LC_TIME = "en_IN.UTF-8";
   };
 
-  # glibc's locale list spells this one "en_IN/UTF-8" (no dot); the NixOS
-  # module appends "/UTF-8" to defaultLocale, so the derived list contains
-  # "en_IN.UTF-8/UTF-8", which glibc rejects. Build the archive explicitly
-  # from glibc's own names — it still exposes the en_IN.UTF-8 alias at
-  # runtime, which is what LANG uses.
-  i18n.glibcLocales = pkgs.glibcLocales.override {
-    allLocales = false;
-    locales = [
-      "C.UTF-8/UTF-8"
-      "en_US.UTF-8/UTF-8"
-      "en_IN/UTF-8"
-    ];
-  };
+  # The cached full archive includes en_IN.UTF-8. The glibc locale list spells
+  # it en_IN/UTF-8, so the module's default en_IN.UTF-8/UTF-8 cannot be built.
+  i18n.glibcLocales = pkgs.glibcLocales;
 
   services.xserver.xkb = {
     layout = "us";

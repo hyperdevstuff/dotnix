@@ -12,6 +12,7 @@
 {
   antigravity-acp = pkgs.callPackage ./antigravity-acp.nix { };
   ardia = pkgs.callPackage ./ardia.nix { };
+  hex-bin = pkgs.callPackage ./hex-bin.nix { };
   paper-desktop = pkgs.callPackage ./paper-desktop.nix { };
   t3code-nightly = pkgs.callPackage ./t3code-nightly.nix { };
 }

@@ -15,7 +15,8 @@
     };
 
     hex = {
-      url = "github:anomalyco/hex";
+      # Keep the Home Manager module on the release packaged in pkgs/hex-bin.nix.
+      url = "github:anomalyco/hex/v3.4.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

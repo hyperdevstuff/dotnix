@@ -58,6 +58,9 @@ The configuration is not activated automatically. Review it first.
 # Evaluate only (does not build or switch)
 nix eval --raw ~/dotnix#nixosConfigurations.LOQ.config.system.build.toplevel.drvPath
 
+# See what Nix would build locally and what it would fetch from the binary cache
+nixos-rebuild dry-build --flake ~/dotnix#LOQ
+
 # Build the system closure without activating it
 sudo nixos-rebuild build --flake ~/dotnix#LOQ
 
@@ -66,6 +69,14 @@ sudo nixos-rebuild boot --flake ~/dotnix#LOQ
 ```
 
 Use `switch` instead of `boot` only once the graphical session is known to work.
+
+Run `dry-build` after updating `flake.lock` to catch newly uncached packages.
+Niri and Dolphin use the stock Nixpkgs binaries. Hex, T3 Code Nightly and its
+Antigravity ACP runtime, Ardia, Paper, Helium, and Zen package upstream Linux
+binaries. Nix still generates the system configuration, launchers, and other
+integration files locally. The 32-bit NVIDIA EGL packages used with Steam can
+require a local build on a fresh store. LOQ limits local builds to one job and
+two cores, and deduplicates the store on a timer outside rebuilds.
 
 ### Rollback
 

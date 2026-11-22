@@ -6,7 +6,8 @@
       "nix-command"
       "flakes"
     ];
-    auto-optimise-store = true;
+    # Deduplicate on the scheduled timer so downloads and rebuilds can finish first.
+    auto-optimise-store = false;
   };
 
   nix.gc = {

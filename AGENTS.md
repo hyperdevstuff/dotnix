@@ -7,6 +7,6 @@
 - Keep Nix signature verification enabled. Verify the publisher and public signing key before adding a third-party cache.
 - For software packaged from a vendor binary, use the official versioned release and pin the exact asset's SHA-256. Check signatures or signed checksums when the publisher provides them. A checksum verifies the bytes against the pin. Trust in the binary comes from its provenance. Investigate an unexpected hash change for an already pinned release before accepting it.
 
-## Updating Hex
+## Updating Hex and T3 Code Nightly
 
-Use the SHA-256 for the official `hex-<version>-linux-x64.deb` asset. Convert GitHub's hex digest with `nix hash convert --hash-algo sha256 --to sri`, then update `version` and `src.hash` in `pkgs/hex-bin.nix`. Set the Hex input in `flake.nix` to the matching `v<version>` tag and run `nix flake update hex` to refresh its lock entry. Build `.#hex-bin` and run the LOQ dry build before activation.
+Run `./scripts/update-package hex --version VERSION` or `./scripts/update-package t3code-nightly --version VERSION`. The updater pins the official release asset, and for Hex it also updates the matching Home Manager input and lock entry. Review the diff and run the LOQ dry build before building the package and activating the configuration.

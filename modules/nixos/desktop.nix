@@ -93,7 +93,7 @@ in
     foot
     kitty
     ghostty
-    # KDE file manager, bound to Mod+E. Themed by home/dolphin.nix.
+    # KDE file manager, available on Mod+Alt+E during the Dux Files trial.
     dolphin
     swaybg
     swaylock

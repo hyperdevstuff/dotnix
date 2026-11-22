@@ -21,6 +21,7 @@
     ./nvim.nix
     ./dev.nix
     ./dolphin.nix
+    ./dux-files.nix
     ./quickshell.nix
     ./fuzzel.nix
     # Disabled on the fresh install: MPD points at /mnt/library, which is
@@ -87,10 +88,28 @@
 
   xdg.enable = true;
 
+  # Export mpv playback and controls over MPRIS for notchD and media keys.
+  xdg.configFile."mpv/scripts/mpris.so".source = "${pkgs.mpvScripts.mpris}/share/mpv/scripts/mpris.so";
+
   # OpenCode uses the "system" TUI theme: it takes its ANSI colors from the
   # terminal, which matugen writes for kitty/foot. So the agent UI follows the
   # wallpaper too.
   xdg.configFile."opencode/tui.json".source = ../dotfiles/opencode/tui.json;
+
+  # Use Kitty explicitly for GUI file managers, including KDE outside Plasma.
+  xdg.dataFile."applications/nvim.desktop".source = "${pkgs.makeDesktopItem {
+    name = "nvim";
+    desktopName = "Neovim";
+    genericName = "Text Editor";
+    exec = "${pkgs.kitty}/bin/kitty -e ${pkgs.neovim}/bin/nvim -- %F";
+    icon = "nvim";
+    categories = [ "Utility" "TextEditor" ];
+    terminal = false;
+    mimeTypes = [
+      "text/plain" "text/markdown" "application/json" "application/x-shellscript"
+      "text/x-python" "text/x-csrc" "text/x-rust" "text/x-lua" "text/x-nix"
+    ];
+  }}/share/applications/nvim.desktop";
 
   # Helium is the default browser (CLI also respects BROWSER below).
   xdg.mimeApps = {
@@ -121,6 +140,7 @@
       "text/plain" = [ "nvim.desktop" ];
       "text/markdown" = [ "nvim.desktop" ];
       "application/json" = [ "nvim.desktop" ];
+      "application/x-shellscript" = [ "nvim.desktop" ];
       "text/x-shellscript" = [ "nvim.desktop" ];
       "text/x-python" = [ "nvim.desktop" ];
       "text/x-csrc" = [ "nvim.desktop" ];

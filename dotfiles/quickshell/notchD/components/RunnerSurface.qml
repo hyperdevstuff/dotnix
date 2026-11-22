@@ -203,7 +203,17 @@ FocusScope {
         if (!item)
             return;
         if (item.entry) {
-            item.entry.execute();
+            const entry = item.entry;
+            if (entry.runInTerminal) {
+                if (!entry.command.length)
+                    return;
+                Quickshell.execDetached({
+                    command: ["kitty", "-e"].concat(entry.command),
+                    workingDirectory: entry.workingDirectory
+                });
+            } else {
+                entry.execute();
+            }
             closeRequested();
         } else if (item.nested) {
             search.text = "> " + (item.key === "theme" ? "mode" : item.key) + " ";

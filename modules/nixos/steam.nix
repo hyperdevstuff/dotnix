@@ -10,8 +10,14 @@
   # Enabling this also turns on hardware.steam-hardware, which installs the
   # udev rules for the Steam Controller and Valve Index.
   programs.steam = {
-    enable = true;
-
+   enable = true;
+  package = pkgs.steam.override {
+    extraEnv = {
+      LD_AUDIT = "${
+        inputs.sls-steam.packages.${pkgs.stdenv.hostPlatform.system}.sls-steam
+      }/SLSsteam.so";
+    };
+  };
     # Steam Remote Play / Steam Link ports, in case the firewall is on.
     remotePlay.openFirewall = true;
 

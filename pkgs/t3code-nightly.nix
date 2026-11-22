@@ -5,8 +5,6 @@
   fetchurl,
   makeDesktopItem,
   makeWrapper,
-  opencode,
-  codex,
   gh,
   git,
 }:
@@ -67,7 +65,7 @@ appimageTools.wrapType2 (finalAttrs: {
 
   src = fetchurl {
     url = "https://github.com/pingdotgg/t3code/releases/download/v${finalAttrs.version}/T3-Code-Nightly-x86_64.AppImage";
-    hash = "sha256-PwdpSdzOsZhNsbGbNqwIAiaSkFjf6pNAM80Rn6DMYsc=";
+    hash = "sha256-rmKtAeocTEz+ANWqjXkGmQG2suQHmhYQGTcI2iHyKNk=";
   };
 
   nativeBuildInputs = [ makeWrapper ];

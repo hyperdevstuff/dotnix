@@ -33,6 +33,10 @@ in
 
     # OpenAI Codex CLI (the `codex` coding agent).
     codex
+    # pi coding agent
+    pi-coding-agent
+    # oh-my-pi
+    omp
 
     # node-gyp fallbacks for native addons. gcc is in home/default.nix and
     # cmake/ninja/pkg-config are system packages.

@@ -12,12 +12,12 @@
 # `localharness_external` helper in the same directory.
 #
 # Registry: https://github.com/agentclientprotocol/registry/blob/main/antigravity-acp/agent.json
-stdenv.mkDerivation {
+stdenv.mkDerivation (finalAttrs: {
   pname = "antigravity-acp";
   version = "1.4.5";
 
   src = fetchurl {
-    url = "https://dl.google.com/agy-extensions/releases/linux/agy-acp-server-1.4.5-linux-x86_64.zip";
+    url = "https://dl.google.com/agy-extensions/releases/linux/agy-acp-server-${finalAttrs.version}-linux-x86_64.zip";
     hash = "sha256-kjkjoNfcgHP2bMb3hkejEH46fuK34aJN+LOSe1GIATs=";
   };
 
@@ -57,4 +57,4 @@ stdenv.mkDerivation {
     platforms = [ "x86_64-linux" ];
     sourceProvenance = with lib.sourceTypes; [ binaryNativeCode ];
   };
-}
+})

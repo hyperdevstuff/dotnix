@@ -23,6 +23,10 @@
     dconf.enable = true;
     fish.enable = true;
     nix-ld.enable = true;
+    nix-ld.libraries = with pkgs; [
+      libxcb
+      wayland
+    ];
     zsh.enable = true;
   };
 

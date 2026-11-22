@@ -62,5 +62,17 @@
 
         ];
       };
+
+      # Local packages, exposed so `nix build .#<name>` works. The same set is
+      # importable as `nix build -f pkgs <name>`, which is also how
+      # `nix-update -f pkgs <name>` updates them.
+      packages.${system} =
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+        in
+        import ./pkgs { inherit pkgs; };
     };
 }

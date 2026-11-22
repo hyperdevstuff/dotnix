@@ -3,7 +3,6 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
 import Quickshell.Services.Polkit
-import Quickshell.Services.UPower
 import QtQuick
 import "services" as Services
 import "components" as Components
@@ -200,20 +199,17 @@ ShellRoot {
             Services.Session.powerOffMonitors();
         }
         function onSuspendRequested() {
-            if (!UPower.onBattery)
-                return;
-            // Give the compositor a moment to acquire the session lock before
-            // logind freezes the machine.
             if (!lockScreen.locked)
                 lockScreen.lock();
-            suspendTimer.restart();
         }
     }
 
-    Timer {
-        id: suspendTimer
-        interval: 300
-        onTriggered: Services.Session.suspend()
+    // Wait for the compositor to confirm the lock, then recheck eligibility.
+    readonly property bool idleSuspendReady: Services.Idle.suspendDue && lockScreen.locked && lockScreen.secure
+    onIdleSuspendReadyChanged: if (idleSuspendReady) Qt.callLater(suspendIfStillIdle)
+    function suspendIfStillIdle() {
+        if (idleSuspendReady)
+            Services.Session.suspend();
     }
 
     // Now playing is a passive live activity: the idle pill shows a compact
@@ -822,6 +818,8 @@ ShellRoot {
                 home: homeWidgets.enabled,
                 theme: Theme.dark ? "dark" : "light",
                 media: Services.Media.hasPlayer,
+                playbackActive: Services.Idle.playbackActive,
+                idleSuspendArmed: Services.Idle.suspendArmed,
                 mediaMode: islandState.mode === "media",
                 use12HourClock: Theme.use12HourClock,
                 textScale: Theme.textScale,

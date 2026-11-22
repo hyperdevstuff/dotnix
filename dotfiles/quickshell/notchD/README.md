@@ -74,8 +74,12 @@ These remain installed for genuinely advanced tasks, not the normal path:
 - `services/Idle.qml` uses `IdleMonitor` (`ext-idle-notify-v1`):
   - lock after 5 minutes
   - displays off after 10 minutes
-  - suspend after 20 minutes, only on battery
-- Idle inhibitors are respected by default.
+  - suspend after 20 minutes on battery, once the compositor confirms the lock
+- Active media players and PipeWire audio playback defer automatic suspend.
+  Lock and display-off still follow their own timers. The suspend countdown
+  starts again when playback stops. App and keep-awake idle inhibitors still
+  apply to all idle actions.
+- swayidle dims the display after 3 minutes and requests a lock before sleep.
 
 ## Night light
 

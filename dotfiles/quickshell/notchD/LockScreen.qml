@@ -23,6 +23,7 @@ Item {
     id: lockRoot
 
     property bool locked: false
+    readonly property bool secure: sessionLock.secure
     // false = ambient clock, true = authentication page.
     property bool promptPage: false
     property string password: ""

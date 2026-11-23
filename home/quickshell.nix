@@ -1,5 +1,26 @@
 { pkgs, ... }:
 
+let
+  systemctl = "${pkgs.systemd}/bin/systemctl";
+  pauseGamingServices = pkgs.writeShellScript "pause-gaming-services" ''
+    set -eu
+    for unit in hex.service cliphist-watch.service cliphist-image-watch.service; do
+      if ${systemctl} --user is-active --quiet "$unit"; then
+        printf '%s\n' "$unit" >> "$RUNTIME_DIRECTORY/paused-services"
+        ${systemctl} --user stop "$unit"
+      fi
+    done
+  '';
+  resumeGamingServices = pkgs.writeShellScript "resume-gaming-services" ''
+    set -eu
+    if [[ -s "$RUNTIME_DIRECTORY/paused-services" ]] &&
+       ${systemctl} --user is-active --quiet graphical-session.target &&
+       [[ -z $(${systemctl} --user show -P Job graphical-session.target) ]]; then
+      mapfile -t units < "$RUNTIME_DIRECTORY/paused-services"
+      ${systemctl} --user --job-mode=fail start "''${units[@]}"
+    fi
+  '';
+in
 {
   home.packages = with pkgs; [ python3 grim slurp swappy wl-clipboard jq font-awesome ];
   home.file.".local/bin/notchd-metrics" = {
@@ -50,4 +71,21 @@
     "${../dotfiles/quickshell/notchD}"
   ];
   systemd.user.services.quickshell.Unit.X-SwitchMethod = "restart";
+
+  systemd.user.services.notchd-game-mode = {
+    Unit = {
+      Description = "notchD Game Mode";
+      PartOf = [ "graphical-session.target" ];
+      Requisite = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      RuntimeDirectory = "notchd-game-mode";
+      RuntimeDirectoryMode = "0700";
+      ExecStart = pauseGamingServices;
+      ExecStopPost = resumeGamingServices;
+    };
+  };
 }

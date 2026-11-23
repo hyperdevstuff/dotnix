@@ -34,6 +34,8 @@ Item {
                 readonly property bool wide: width >= 760
                 readonly property real mediaWidth: Math.floor((width - 32) * 0.30)
                 readonly property real controlsWidth: Math.floor((width - 32) * 0.35)
+                onVisibleChanged: if (visible)
+                    Services.GameMode.refresh()
                 MediaSurface {
                     visible: dashboard.wide
                     width: dashboard.mediaWidth
@@ -132,22 +134,34 @@ Item {
                                         name: "Settings",
                                         symbol: "settings",
                                         action: "Appearance"
+                                    },
+                                    {
+                                        name: "Game mode",
+                                        symbol: "play_arrow",
+                                        action: "game-mode"
                                     }
                                 ]
                                 delegate: Rectangle {
                                     required property var modelData
+                                    readonly property bool gameMode: modelData.action === "game-mode"
+                                    readonly property bool selected: gameMode && Services.GameMode.active
                                     width: (controls.width - 12) / 3
                                     height: 54
                                     radius: 16
-                                    color: utilityMouse.pressed ? Theme.surfacePress : utilityMouse.containsMouse || activeFocus ? Theme.surfaceHover : "transparent"
+                                    color: utilityMouse.pressed ? Theme.surfacePress : selected ? Theme.accentContainer : utilityMouse.containsMouse || activeFocus ? Theme.surfaceHover : "transparent"
                                     border.color: activeFocus ? Theme.accent : "transparent"
                                     activeFocusOnTab: true
-                                    Accessible.role: Accessible.Button
+                                    Accessible.role: gameMode ? Accessible.CheckBox : Accessible.Button
                                     Accessible.name: modelData.name
+                                    Accessible.checked: selected
+                                    Accessible.description: gameMode && Services.GameMode.failed ? "Could not change game mode. Try again." : ""
+                                    Accessible.onPressAction: activate()
                                     function activate() {
                                         if (!root.state)
                                             return;
-                                        if (modelData.action === "walls")
+                                        if (gameMode)
+                                            Services.GameMode.toggle();
+                                        else if (modelData.action === "walls")
                                             root.wallpapersRequested();
                                         else if (modelData.action === "capture") {
                                             root.state.collapse();
@@ -166,12 +180,12 @@ Item {
                                             anchors.horizontalCenter: parent.horizontalCenter
                                             name: modelData.symbol
                                             size: 18
-                                            tint: modelData.action === "Activity" && Services.KeepAwake.active ? Theme.accent : Theme.muted
+                                            tint: selected ? Theme.accentContainerInk : modelData.action === "Activity" && Services.KeepAwake.active ? Theme.accent : Theme.muted
                                         }
                                         Text {
                                             anchors.horizontalCenter: parent.horizontalCenter
-                                            text: modelData.name
-                                            color: Theme.muted
+                                            text: gameMode && Services.GameMode.failed ? "Try again" : modelData.name
+                                            color: selected ? Theme.accentContainerInk : Theme.muted
                                             font.family: Theme.fontFamily
                                             font.pixelSize: 11 * Theme.textScale
                                         }

@@ -20,7 +20,7 @@ Item {
         implicitHeight: Math.max(1, Math.min(list.contentHeight, root.screen.height - 24))
         color: "transparent"
         aboveWindows: true; focusable: false; exclusiveZone: 0
-        visible: !root.suppressed && !Services.Notifications.dnd && list.count > 0
+        visible: !root.suppressed && !Services.GameMode.active && !Services.Notifications.dnd && list.count > 0
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "notchD-notifications"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None

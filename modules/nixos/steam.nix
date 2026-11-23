@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, username, ... }:
 
 {
   # Steam is an X11 client, so niri runs it through xwayland-satellite
@@ -23,5 +23,14 @@
 
   # Feral GameMode: opt in per game with `gamemoderun %command%` in its
   # launch options to get CPU governor and scheduler hints while it runs.
-  programs.gamemode.enable = true;
+  programs.gamemode = {
+    enable = true;
+    settings.general.disable_splitlock = 0;
+  };
+  users.users.${username}.extraGroups = [ "gamemode" ];
+
+  # Heroic manages its own per-game runners and prefixes through umu.
+  environment.systemPackages = [
+    (pkgs.heroic.override { extraPkgs = p: [ p.gamemode ]; })
+  ];
 }

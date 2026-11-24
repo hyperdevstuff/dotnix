@@ -12,8 +12,9 @@ input {
     keyboard {
         xkb {
             layout "us"
-            // Swap CapsLock and Escape.
-            options "caps:swapescape"
+            // CapsLock/Escape are swapped by keyd at the evdev level (see
+            // modules/nixos/desktop.nix) so the swap also reaches games that
+            // read raw scancodes. Do not set "caps:swapescape" here as well.
         }
     }
 

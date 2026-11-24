@@ -41,6 +41,23 @@ in
     useNautilus = false;
   };
 
+  # Swap CapsLock and Escape below the display server. Sekiro (and other
+  # DirectInput games) reads raw scancodes, so an XKB keysym swap such as
+  # niri's "caps:swapescape" never reaches them. keyd rewrites the events at
+  # the evdev level, so every client - Wayland, Xwayland and Wine - sees the
+  # same swapped keys. This is a real swap, so the niri config must NOT also
+  # set "caps:swapescape"; the two would cancel each other out.
+  services.keyd = {
+    enable = true;
+    keyboards.default = {
+      ids = [ "*" ];
+      settings.main = {
+        capslock = "esc";
+        esc = "capslock";
+      };
+    };
+  };
+
   services.greetd = {
     enable = true;
     useTextGreeter = true;

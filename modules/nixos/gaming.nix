@@ -172,6 +172,18 @@ in
     end = "/run/wrappers/bin/sudo -n ${cpuCap}/bin/cpu-cap reset";
   };
 
+  # Gamescope gives the game its own nested Xwayland session, so Wine owns
+  # the cursor inside it instead of racing niri's cursor through
+  # xwayland-satellite (that race is what showed a Bibata cursor and Wine's
+  # cursor at the same time in Sekiro's menus). It also pins the game to a
+  # fixed 1920x1080@60 output, which keeps VRR/fractional scaling out of the
+  # picture. Lutris launches it when the per-game "Enable Gamescope" option
+  # is set (see sekiro-shadows-die-twice-local.yml).
+  programs.gamescope = {
+    enable = true;
+    capSysNice = true;
+  };
+
   # Optional: a sched_ext scheduler that understands Intel P/E cores. It
   # improves 1% lows and frame pacing on hybrid CPUs. Uncomment, rebuild,
   # and keep whichever of scx_lavd / scx_bpfland feels smoother:

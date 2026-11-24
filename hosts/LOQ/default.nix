@@ -13,6 +13,7 @@
     ../../modules/nixos/desktop.nix
     ../../modules/nixos/packages.nix
     ../../modules/nixos/steam.nix
+    ../../modules/nixos/gaming.nix
   ];
 
   networking.hostName = "LOQ";

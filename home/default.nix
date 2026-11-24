@@ -102,8 +102,11 @@ in
     frame_timing=0
     cpu_stats
     cpu_temp
+    cpu_power
+    cpu_mhz
     gpu_stats
     gpu_temp
+    gpu_power
     ram
     vram
   '';

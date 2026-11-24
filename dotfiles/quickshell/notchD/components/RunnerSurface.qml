@@ -7,11 +7,17 @@ import ".."
 
 FocusScope {
     id: root
-    property var state: null
-    property string initialQuery: ""
     readonly property bool searchFocused: search.activeFocus
+    readonly property real renderScale: Window.window?.devicePixelRatio ?? Screen.devicePixelRatio
     function focusSearch() {
         search.forceActiveFocus();
+    }
+    function resetSearch(query) {
+        if (search.text === query)
+            refresh();
+        else
+            search.text = query;
+        search.cursorPosition = search.length;
     }
     onVisibleChanged: if (visible)
         Qt.callLater(focusSearch)
@@ -72,12 +78,47 @@ FocusScope {
             name: "Sleep",
             detail: "Suspend the session",
             key: "sleep"
+        },
+        {
+            name: "Reboot",
+            detail: "Restart this computer",
+            key: "reboot",
+            nested: true
+        },
+        {
+            name: "Shutdown",
+            detail: "Power off this computer",
+            key: "shutdown",
+            nested: true
+        },
+        {
+            name: "Rebuild NixOS",
+            detail: "nixos-rebuild switch for LOQ",
+            key: "rebuild",
+            nested: true
         }
     ]
+    readonly property var commandIcons: ({
+        screenshot: "screenshot_monitor",
+        appearance: "tune",
+        activity: "coffee",
+        calendar: "calendar_month",
+        tray: "grid_view",
+        scheme: "palette",
+        wallpaper: "wallpaper",
+        variant: "tune",
+        transparency: "brightness_6",
+        theme: "dark_mode",
+        lock: "lock",
+        sleep: "schedule",
+        reboot: "restart_alt",
+        shutdown: "power_settings_new",
+        rebuild: "terminal"
+    })
     readonly property var variants: ["content", "expressive", "fidelity", "fruit-salad", "monochrome", "neutral", "rainbow", "tonal-spot", "vibrant", "smart"]
 
     function context() {
-        const match = search.text.match(/^>\s*(scheme|variant|transparency|mode|theme)\s+([\s\S]*)$/i);
+        const match = search.text.match(/^>\s*(scheme|variant|transparency|mode|theme|rebuild|reboot|shutdown)\s+([\s\S]*)$/i);
         return match ? {
             key: match[1].toLowerCase() === "mode" ? "theme" : match[1].toLowerCase(),
             query: match[2]
@@ -146,6 +187,21 @@ FocusScope {
                             key: "theme",
                             value: v
                         }));
+            } else if (ctx.key === "rebuild") {
+                candidates = [{
+                    name: "Build and switch LOQ",
+                    detail: "Activate the new system configuration. Opens Kitty for sudo and build output.",
+                    key: "rebuild",
+                    value: "switch"
+                }];
+            } else if (ctx.key === "reboot" || ctx.key === "shutdown") {
+                const reboot = ctx.key === "reboot";
+                candidates = [{
+                    name: reboot ? "Confirm reboot" : "Confirm shutdown",
+                    detail: reboot ? "Close all apps and restart this computer" : "Close all apps and power off this computer",
+                    key: ctx.key,
+                    value: "confirm"
+                }];
             } else {
                 candidates = [
                     {
@@ -232,10 +288,6 @@ FocusScope {
     }
     onActiveFocusChanged: if (activeFocus)
         search.forceActiveFocus()
-    onInitialQueryChanged: {
-        search.text = initialQuery;
-        refresh();
-    }
     Connections {
         target: DesktopEntries.applications
         ignoreUnknownSignals: true
@@ -243,33 +295,39 @@ FocusScope {
             root.refresh();
         }
     }
-    Component.onCompleted: {
-        search.text = initialQuery;
-        refresh();
-    }
+    Component.onCompleted: refresh()
 
     Column {
         anchors.fill: parent
         anchors.margins: 16
         spacing: 10
         Row {
-            width: parent.width
+            x: 12
+            width: parent.width - 24
             height: 46
             spacing: 12
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.context() ? "‹" : "⌕"
-                color: Theme.accent
-                font.pixelSize: 25 * Theme.textScale
+            Item {
+                width: 32
+                height: parent.height
+                Symbol {
+                    anchors.centerIn: parent
+                    name: root.context() ? "arrow_back" : "search"
+                    size: Math.round(22 * Theme.textScale)
+                    tint: backButton.containsMouse ? Theme.fg : Theme.accent
+                }
                 MouseArea {
+                    id: backButton
                     anchors.fill: parent
+                    enabled: !!root.context()
+                    hoverEnabled: enabled
+                    cursorShape: Qt.PointingHandCursor
                     onClicked: root.back()
                 }
             }
             TextField {
                 id: search
                 focus: true
-                width: parent.width - 45
+                width: parent.width - 44
                 height: parent.height
                 padding: 0
                 verticalAlignment: TextInput.AlignVCenter
@@ -289,7 +347,8 @@ FocusScope {
                         }
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-                        root.activate(root.results[root.selectedIndex]);
+                        if (!event.isAutoRepeat)
+                            root.activate(root.results[root.selectedIndex]);
                         event.accepted = true;
                     } else if (event.key === Qt.Key_Escape) {
                         root.back();
@@ -323,6 +382,7 @@ FocusScope {
                 delegate: Rectangle {
                     required property var modelData
                     required property int index
+                    readonly property color iconColor: modelData.value === "confirm" ? Theme.danger : index === root.selectedIndex ? Theme.accent : Theme.muted
                     width: ListView.view.width
                     height: 54
                     radius: Theme.radiusSmall
@@ -336,19 +396,22 @@ FocusScope {
                             width: 32
                             height: parent.height
                             Image {
+                                id: appIcon
                                 anchors.centerIn: parent
-                                width: 25
-                                height: 25
-                                visible: !!modelData.icon
+                                width: 24
+                                height: 24
+                                fillMode: Image.PreserveAspectFit
+                                sourceSize: Qt.size(Math.ceil(width * root.renderScale), Math.ceil(height * root.renderScale))
+                                smooth: true
                                 source: modelData.icon ? Quickshell.iconPath(modelData.icon, true) : ""
                                 asynchronous: true
                             }
-                            Text {
+                            Symbol {
                                 anchors.centerIn: parent
-                                visible: !modelData.icon
-                                text: modelData.entry ? "◈" : ">"
-                                color: Theme.accent
-                                font.pixelSize: 18 * Theme.textScale
+                                visible: appIcon.status !== Image.Ready
+                                name: root.commandIcons[modelData.key] || "grid_view"
+                                size: Math.round(20 * Theme.textScale)
+                                tint: iconColor
                             }
                         }
                         Column {
@@ -374,11 +437,12 @@ FocusScope {
                                 font.pixelSize: 11 * Theme.textScale
                             }
                         }
-                        Text {
+                        Symbol {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.nested ? "›" : index === root.selectedIndex ? "↵" : ""
-                            color: Theme.muted
-                            font.pixelSize: 16 * Theme.textScale
+                            visible: !!modelData.nested || index === root.selectedIndex
+                            name: modelData.nested ? "keyboard_arrow_right" : "keyboard_return"
+                            size: Math.round(16 * Theme.textScale)
+                            tint: Theme.muted
                         }
                     }
                     MouseArea {

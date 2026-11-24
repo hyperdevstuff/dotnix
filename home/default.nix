@@ -96,12 +96,12 @@ in
     "${pkgs.proton-ge-bin.steamcompattool}";
 
   xdg.configFile."MangoHud/MangoHud.conf".text = ''
+    font_size=18
+    background_alpha=0.30
     fps
-    frame_timing
+    frame_timing=0
     cpu_stats
     cpu_temp
-    core_load
-    core_bars
     gpu_stats
     gpu_temp
     ram

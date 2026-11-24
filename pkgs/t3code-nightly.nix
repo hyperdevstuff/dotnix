@@ -11,18 +11,16 @@
 }:
 
 let
-  # Google's ACP agent is not the Antigravity IDE or CLI. Packaging it here
-  # lets T3 find it on PATH instead of downloading ~1 GiB into the home
-  # directory on first use.
-  antigravity-acp = pkgs.callPackage ./antigravity-acp.nix { };
-
   # T3 is a control plane: the agent CLIs it orchestrates must be on PATH.
   # Keep them out of the FHS closure and prepend them to the launcher instead;
   # `AppRun` preserves the inherited PATH, so child processes still see them.
+  #
+  # Antigravity is deliberately absent: T3 manages that runtime itself, in
+  # `~/.t3/userdata/tools/antigravity-acp`, because it validates the binary
+  # against its own compatibility table and updates it in place.
   runtimePackages = agentLaunchers ++ [
     gh
     git
-    antigravity-acp
   ];
 
   # appimageTools.wrapType2 ignores the `desktopItems` argument, so the item

@@ -10,7 +10,6 @@
 # computes fixed-output hashes.
 { pkgs ? import <nixpkgs> { config.allowUnfree = true; } }:
 {
-  antigravity-acp = pkgs.callPackage ./antigravity-acp.nix { };
   ardia = pkgs.callPackage ./ardia.nix { };
   hex-bin = pkgs.callPackage ./hex-bin.nix { };
   inference-tools = pkgs.callPackage ./inference-tools.nix { };

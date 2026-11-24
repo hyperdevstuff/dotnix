@@ -223,7 +223,7 @@ window-rule { match app-id="org.pulseaudio.pavucontrol" open-floating true }</pr
 <section id="audit">
   <h2><span class="n">06</span>Available, not (yet) bound</h2>
   <div class="audit">
-    <article><b>Recent windows switcher</b> — Alt+Tab / Alt+grave with window previews, in niri ≥25.11. <code>Mod+Tab</code> stays workspace bounce-back in dotnix.</article>
+    <article><b>Recent windows switcher</b> — Alt+Tab / Alt+grave with window previews, in niri ≥25.11. <code>Mod+Tab</code> jumps directly to the previous window in dotnix.</article>
     <article><b>Focus follows mouse</b> — <code>input { focus-follows-mouse max-scroll-amount="0%" }</code>. Off on purpose: keyboard-first, less scroll jump.</article>
     <article><b>Workspace auto back-and-forth</b> — <code>input { workspace-auto-back-and-forth }</code>. Press the same workspace twice to bounce.</article>
     <article><b>Wrapping column focus</b> — bound here: <code>Mod+Ctrl+BracketLeft/Right</code> (<code>focus-column-left-or-last</code>).</article>
@@ -257,10 +257,12 @@ const KEYBINDS = [
 {keys:"Mod+Q",title:"Open kitty",cat:"launch",bound:1},
 {keys:"Mod+B",title:"Open Helium",cat:"launch",bound:1},
 {keys:"Mod+D",title:"Run an application",cat:"launch",bound:1},
-{keys:"Mod+Space",title:"Run an application",cat:"launch",bound:1},
-{keys:"Mod+N",title:"Show notchD pill",cat:"launch",bound:1},
-{keys:"Mod+Shift+Space",title:"Toggle notchD pill",cat:"launch",bound:1},
+{keys:"Mod+Space",title:"Search apps in notchD",cat:"launch",bound:1},
+{keys:"Mod+N",title:"Toggle notchD dashboard",cat:"launch",bound:1},
+{keys:"Mod+Shift+Space",title:"Search commands in notchD",cat:"launch",bound:1},
 {keys:"Mod+Shift+N",title:"Toggle notchD pill",cat:"launch",bound:1},
+{keys:"Mod+Shift+T",title:"Open calendar",cat:"launch",bound:1},
+{keys:"Mod+Shift+W",title:"Toggle wallpaper picker",cat:"launch",bound:1},
 {keys:"Super+Alt+L",title:"Lock the screen",cat:"system",bound:1},
 {keys:"Mod+O",title:"Overview",cat:"layout",bound:1},
 {keys:"Mod+Left / Mod+Right / Mod+Up / Mod+Down",title:"Focus left/right/up/down",cat:"focus",bound:1},
@@ -291,7 +293,8 @@ const KEYBINDS = [
 {keys:"Mod+U / Mod+I",title:"Workspace down/up",cat:"workspaces",bound:1},
 {keys:"Mod+Ctrl+U / Mod+Ctrl+I",title:"Move column to workspace down/up",cat:"workspaces",bound:1},
 {keys:"Mod+Page_Down / Mod+Page_Up",title:"Workspace down/up",cat:"workspaces",bound:1},
-{keys:"Mod+Tab",title:"Previous workspace",cat:"workspaces",bound:1},
+{keys:"Mod+Tab",title:"Previous window",cat:"focus",bound:1},
+{keys:"Mod+grave",title:"Previous workspace",cat:"workspaces",bound:1},
 {keys:"Mod+Shift+Page_Down / Mod+Shift+Page_Up",title:"Move workspace down/up",cat:"workspaces",bound:1},
 {keys:"Mod+WheelScrollUp/Down",title:"Workspace up/down",cat:"workspaces",bound:1},
 {keys:"Mod+WheelScrollLeft/Right",title:"Column left/right",cat:"workspaces",bound:1},
@@ -334,7 +337,7 @@ const CAPABILITIES = [
 {t:"Dynamic cast targets",d:"Set window or monitor as the PipeWire cast source; OBS follows without re-picking.",tag:"screencast",used:1},
 {t:"Overview",d:"Zoom out for the all-workspaces map. Top-left hot corner already toggles it; Mod+O forces it.",tag:"layout",used:1},
 {t:"Named workspaces",d:"Give a workspace a name and auto-open apps on it. Unbound in dotnix; zero config cost when you need it.",tag:"workspaces",used:0},
-{t:"Recent-windows switcher",d:"Alt+Tab with real previews and scope filters. Mod+Tab stays workspace bounce-back in dotnix.",tag:"layout",used:0},
+{t:"Recent-windows switcher",d:"Alt+Tab with previews and scope filters. Mod+Tab jumps directly to the previous window in dotnix.",tag:"layout",used:0},
 {t:"Window rules",d:"Regex match app-id/title; float popups, block secrets from screencasts, set output. dotnix pins pavucontrol + Firefox PiP.",tag:"rules",used:1},
 {t:"Layer rules",d:"Opacity/shadow/backdrop for layer-shell surfaces (wallpaper, bars, notifications).",tag:"rules",used:0},
 {t:"Windowed fullscreen",d:"Fake fullscreen for screencasts — the app believes it fills the screen, the WM keeps your layout.",tag:"layout",used:1},

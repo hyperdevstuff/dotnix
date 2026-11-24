@@ -408,12 +408,15 @@ Item {
                 }
                 source: "components/RunnerSurface.qml"
                 onLoaded: {
-                    if (item && item.state !== undefined)
-                        item.state = root.state;
-                    if (item && item.refresh)
-                        item.refresh();
-                    if (item)
-                        item.forceActiveFocus();
+                    item.resetSearch(root.state?.runnerInitialQuery ?? "");
+                    item.focusSearch();
+                }
+                Connections {
+                    target: root.state
+                    function onRunnerOpened(query) {
+                        if (runnerLoader.item)
+                            runnerLoader.item.resetSearch(query);
+                    }
                 }
                 Connections {
                     target: runnerLoader.item
@@ -482,7 +485,8 @@ Item {
             Text {
                 id: timeText
                 anchors.centerIn: parent
-                text: Qt.formatTime(clock.date, Theme.use12HourClock ? "h:mm AP" : "HH:mm")
+                // Qt's h format is 24-hour unless the format also includes AM/PM.
+                text: (Services.Time.now.getHours() % 12 || 12) + Qt.formatTime(Services.Time.now, ":mm")
                 color: Theme.fg
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontDisplay
@@ -494,7 +498,7 @@ Item {
                 anchors.top: timeText.bottom
                 anchors.topMargin: -1
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: Qt.formatDate(clock.date, "ddd d MMM")
+                text: Qt.formatDate(Services.Time.now, "ddd d MMM")
                 color: Theme.muted
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.fontLabel
@@ -612,12 +616,6 @@ Item {
     Component {
         id: settingsComponent
         SettingsFlyout {}
-    }
-
-    // ---------------------------------------------------------------- clock
-    SystemClock {
-        id: clock
-        precision: SystemClock.Minutes
     }
 
     // --------------------------------------------------------------- keyboard

@@ -26,6 +26,8 @@ Item {
     property bool animateTabChange: false
     readonly property var mainTabs: ["Dashboard", "Media", "Performance"]
     property string runnerReturnMode: "idle"
+    property string runnerInitialQuery: ""
+    signal runnerOpened(string query)
     function selectTab(tab, animate) {
         if (mode === "auth")
             return;
@@ -40,13 +42,16 @@ Item {
         const i = mainTabs.indexOf(hubTab);
         selectTab(mainTabs[((i < 0 ? 0 : i) + delta + mainTabs.length) % mainTabs.length]);
     }
-    function openRunner() {
+    function openRunner(query) {
         if (mode === "auth")
             return;
-        runnerReturnMode = (mode === "hub" || mode === "flyout") ? mode : "idle";
+        if (mode !== "runner")
+            runnerReturnMode = (mode === "hub" || mode === "flyout") ? mode : "idle";
+        runnerInitialQuery = query || "";
         hidden = false;
         stopPeeks();
         mode = "runner";
+        runnerOpened(runnerInitialQuery);
     }
     function closeRunner() {
         if (mode !== "runner")
@@ -54,11 +59,12 @@ Item {
         mode = runnerReturnMode;
         runnerReturnMode = "idle";
     }
-    function toggleRunner() {
-        if (mode === "runner")
+    function toggleRunner(query) {
+        const initialQuery = query || "";
+        if (mode === "runner" && runnerInitialQuery === initialQuery)
             closeRunner();
         else
-            openRunner();
+            openRunner(initialQuery);
     }
 
     // Hub keyboard focus. The chip order follows the module registry, so

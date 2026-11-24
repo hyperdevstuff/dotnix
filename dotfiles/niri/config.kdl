@@ -288,18 +288,18 @@ binds {
     Mod+Return hotkey-overlay-title="Open foot" { spawn "foot"; }
     Mod+T hotkey-overlay-title="Open foot" { spawn "foot"; }
     Mod+Q hotkey-overlay-title="Open kitty" { spawn "kitty" "--single-instance"; }
-    Mod+B hotkey-overlay-title="Open Helium" { spawn "helium"; }
+    Mod+B hotkey-overlay-title="Open Helium" { spawn "zen-beta"; }
     Mod+E hotkey-overlay-title="Open Dux Files" { spawn "dfiles" "open"; }
     Mod+Alt+E hotkey-overlay-title="Open Dolphin" { spawn "dolphin"; }
     Mod+D hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
-    Mod+Space hotkey-overlay-title="Open notchD launcher" { spawn "sh" "-c" "quickshell ipc -c notchD call notchD toggleRunner || fuzzel"; }
+    Mod+Space repeat=false hotkey-overlay-title="Search apps in notchD" { spawn "sh" "-c" "quickshell ipc -c notchD call notchD toggleRunner || fuzzel"; }
+    Mod+Shift+Space repeat=false hotkey-overlay-title="Search commands in notchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleCommandPalette"; }
     Super+Alt+L allow-when-locked=true hotkey-overlay-title="Lock the screen" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "lock"; }
 
     // Quickshell NotchD: Mod+N opens the hub and closes it again on the next
     // press (hub, flyout or media). Mod+Shift+N hides the whole island.
     Mod+N hotkey-overlay-title="Toggle NotchD hub" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleExpanded"; }
     Mod+Shift+N hotkey-overlay-title="Show/hide NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
-    Mod+Shift+Space hotkey-overlay-title="Show/hide NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
 
     // Hex dictation. niri has no working GlobalShortcuts portal, so we bind
     // Hex's own control commands (upstream's recommended Wayland setup).
@@ -331,17 +331,18 @@ binds {
     XF86MonBrightnessDown allow-when-locked=true { spawn-sh "brightnessctl --class=backlight set 5%-; quickshell ipc -c notchD call notchD showBrightness"; }
 
     // notchD-first shortcuts. External GUIs stay as advanced fallbacks.
-    Mod+Shift+B hotkey-overlay-title="Set brightness to 60%" { spawn-sh "brightnessctl set 60%; quickshell ipc -c notchD call notchD showBrightness"; }
     Mod+Shift+A hotkey-overlay-title="Audio controls" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openAudio"; }
     Mod+Alt+A hotkey-overlay-title="Advanced audio (pavucontrol)" { spawn "pavucontrol"; }
     Mod+Alt+N hotkey-overlay-title="Wi-Fi controls" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openWifi"; }
     Mod+Alt+Shift+N hotkey-overlay-title="Advanced networks (nm-connection-editor)" { spawn "nm-connection-editor"; }
     Mod+Alt+S hotkey-overlay-title="Session and power" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openSession"; }
     Mod+Alt+M hotkey-overlay-title="Now playing" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openMedia"; }
+    Mod+Shift+T repeat=false hotkey-overlay-title="Open calendar" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openCalendar"; }
+    Mod+Shift+W repeat=false hotkey-overlay-title="Toggle wallpaper picker" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleWallpapers"; }
     Mod+Alt+H hotkey-overlay-title="Toggle home" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleHome"; }
 
     // Focus jump and dynamic cast (OBS/browser screen share).
-    Mod+G              hotkey-overlay-title="Focus previous window" { focus-window-previous; }
+    Mod+G              hotkey-overlay-title=null { focus-window-previous; }
     Mod+Shift+D        hotkey-overlay-title=null { set-dynamic-cast-window; }
     Mod+Ctrl+D         hotkey-overlay-title=null { set-dynamic-cast-monitor; }
     Mod+Ctrl+Shift+D   hotkey-overlay-title=null { clear-dynamic-cast-target; }
@@ -405,10 +406,8 @@ binds {
     Mod+Shift+Page_Down { move-workspace-down; }
     Mod+Shift+Page_Up   { move-workspace-up; }
 
-    Mod+Tab { focus-workspace-previous; }
-
-    // Instant last-window toggle: no switcher UI.
-    Mod+grave { focus-window-previous; }
+    Mod+Tab hotkey-overlay-title="Focus previous window" { focus-window-previous; }
+    Mod+grave hotkey-overlay-title="Focus previous workspace" { focus-workspace-previous; }
 
     // Mouse wheel: switch workspaces, or move the focused column.
     Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
@@ -426,7 +425,7 @@ binds {
 
     // Position 1 is the always-empty home workspace. Normal workspaces start
     // at position 2, so Mod+1..9 still mean the first through ninth normal
-    // workspace. Mod+0 jumps to home; Mod+Tab returns to the previous one.
+    // workspace. Mod+0 jumps to home; Mod+grave returns to the previous workspace.
     Mod+0 { focus-workspace 1; }
     Mod+1 { focus-workspace 2; }
     Mod+2 { focus-workspace 3; }

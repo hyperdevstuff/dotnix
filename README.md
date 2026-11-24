@@ -71,8 +71,8 @@ sudo nixos-rebuild boot --flake ~/dotnix#LOQ
 Use `switch` instead of `boot` only once the graphical session is known to work.
 
 Run `dry-build` after updating `flake.lock` to catch newly uncached packages.
-Niri and Dolphin use the stock Nixpkgs binaries. Hex, T3 Code Nightly and its
-Antigravity ACP runtime, Ardia, Paper, Helium, and Zen package upstream Linux
+Niri and Dolphin use the stock Nixpkgs binaries. Hex, T3 Code Nightly,
+Ardia, Paper, Helium, and Zen package upstream Linux
 binaries. Nix still generates the system configuration, launchers, and other
 integration files locally. The 32-bit NVIDIA EGL packages used with Steam can
 require a local build on a fresh store. LOQ limits local builds to one job and

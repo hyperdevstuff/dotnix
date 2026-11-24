@@ -300,6 +300,10 @@ ShellRoot {
                 })[action]);
         } else if (action === "screenshot") {
             Quickshell.execDetached(["notchd-screenshot"]);
+        } else if (action === "rebuild" && value === "switch") {
+            const flake = Quickshell.env("HOME") + "/dotnix#LOQ";
+            Quickshell.execDetached(["kitty", "--hold", "--title", "NixOS rebuild (LOQ)", "-e",
+                "sudo", "nixos-rebuild", "switch", "--flake", flake]);
         } else if (action === "wallpaper") {
             wallpaperLoader.active = true;
             if (wallpaperLoader.item)
@@ -314,6 +318,10 @@ ShellRoot {
             Services.Session.lock();
         else if (action === "sleep")
             Services.Session.suspend();
+        else if (action === "reboot" && value === "confirm")
+            Services.Session.reboot();
+        else if (action === "shutdown" && value === "confirm")
+            Services.Session.poweroff();
     }
 
     // Workspace OSD: only after the first event-stream snapshot, so startup
@@ -572,6 +580,10 @@ ShellRoot {
         function toggleRunner() {
             if (!lockScreen.locked)
                 islandState.toggleRunner();
+        }
+        function toggleCommandPalette() {
+            if (!lockScreen.locked)
+                islandState.toggleRunner("> ");
         }
         function closeRunner() {
             islandState.closeRunner();

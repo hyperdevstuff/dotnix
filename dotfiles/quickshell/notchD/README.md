@@ -320,11 +320,14 @@ Clipboard pages. Detail pages have a Back control and preserve the current
 dashboard tab. Workspace feedback remains in the compact pill rather than a
 separate tab.
 
-Mod+Space opens the integrated launcher (falling back to fuzzel if IPC fails);
-Mod+D retains fuzzel. Type `>` for actions. Panel transparency is persisted
+Mod+Space searches apps, with fuzzel as a fallback. Mod+Shift+Space opens the
+same runner in command mode with `>` prefilled. Press either shortcut again
+to close its mode, or use the other shortcut to switch modes. Mod+D opens
+fuzzel directly. Panel transparency is persisted
 under `~/.local/state/notchD/settings.json`, with opacity clamped to 0.70–1.
-The IPC methods `openRunner`, `toggleRunner` and `closeRunner` are available.
-`openCalendar` and `openTray` open the calendar and background-apps pages.
+The IPC methods `openRunner`, `toggleRunner`, `toggleCommandPalette` and
+`closeRunner` are available. Mod+Shift+T opens the calendar and Mod+Shift+W
+toggles the wallpaper picker. Mod+Shift+/ shows niri's shortcut list.
 The shared moving tab indicator is inspired by Caelestia Shell's dashboard.
 
 The command palette takes keyboard focus immediately rather than waiting for
@@ -332,13 +335,18 @@ an opening morph. `> scheme` chooses wallpaper-derived or custom hex colors;
 `> variant` chooses a Material variant or Automatic; `> transparency` sets
 0.70–1.00 panel opacity; `> light`, `> dark` and `> auto` change appearance.
 Lock and Sleep actions are available, and `> wallpaper` opens the picker.
+`> reboot` and `> shutdown` ask you to confirm. Escape returns to the command list.
+Select `> rebuild` and then **Build and switch LOQ** to run the same
+`nixos-rebuild switch` as the Fish alias. Kitty opens for sudo and build output
+and stays open so you can read the result.
 Wi-Fi/Bluetooth details replace the dashboard and Back returns to its prior tab.
 
 ### Clock, calendar and tray
 
 A single compact header combines Dashboard/Media/Performance navigation, local
 time and date, activity indicators, background apps and Settings. Click the
-clock for the month calendar; Appearance offers 12/24-hour time. The calendar
+clock for the month calendar. The pill always shows 12-hour time with no AM/PM.
+Appearance offers 12/24-hour time for the expanded clock. The calendar
 uses only the weeks needed by the selected month and the island fits its height.
 Arrows move days, PageUp/PageDown change months, Home/Today returns to today,
 and Escape goes back. The grid follows the locale's first weekday. It does not

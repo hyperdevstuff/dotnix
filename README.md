@@ -369,11 +369,9 @@ nixos-rebuild build --flake ~/dotnix#LOQ
   Turn it on deliberately if suspend/resume behaves incorrectly.
 - **Home Manager backups:** existing dotfiles are renamed with a `.backup`
   suffix (`home-manager.backupFileExtension`).
-- **OpenCode:** intentionally **not** installed yet. The npm installation in
-  `~/.opencode/bin` still shadows Nix; `home/shell.nix` keeps that directory on
-  `PATH` temporarily so the current binary keeps working. Once the desktop is
-  stable, import `home/opencode.nix`, remove the temporary `fish_add_path`
-  block, and remove the npm install. `pkgs.opencode` on unstable is v2.
+- **OpenCode:** the Home Manager launcher uses the existing OpenCode v2 binary
+  in `~/.opencode/bin`. It also supplies provider credentials when T3 starts an
+  OpenCode server. See [Inference credentials](#inference-credentials).
 - **OpenCode mouse scrolling:** `~/.config/opencode/cli.json` enables terminal
   mouse capture, sets scroll speed, and enables the transcript scrollbar. This
   file is intentionally not Home-Manager-managed so the TUI can edit it.
@@ -381,3 +379,38 @@ nixos-rebuild build --flake ~/dotnix#LOQ
   world-readable Nix store.
 - `/etc/nixos` is intentionally left untouched as a fallback until this
   configuration has booted successfully.
+
+### Inference credentials
+
+`inference-secrets` manages a SOPS file and a dedicated age identity under
+`${XDG_CONFIG_HOME:-~/.config}/inference-secrets/`. Back up `identity.txt`
+separately from `inference.sops.yaml` and keep both outside this repository.
+These commands prompt privately and each one can also read a value from stdin.
+
+```sh
+inference-secrets set openrouter
+inference-secrets set vercel
+inference-secrets set cloudflare
+inference-secrets set cloudflare-account
+inference-secrets set cloudflare-gateway
+inference-secrets status
+```
+
+The Cloudflare fields are a gateway token with AI Gateway Run permission, the
+account ID, and the gateway ID. The gateway also needs Unified Billing or
+upstream credentials configured in Cloudflare. Use an AI Gateway API key for
+Vercel. Setting an existing field rotates the stored value. `status` prints
+field names and readiness without printing any values.
+
+Launch `pi`, `omp`, and `opencode` normally. Their wrappers load the credentials
+into the process that uses them. T3's desktop launcher exposes the wrapped
+Pi and OpenCode binaries to its provider drivers. Leave OpenCode's **Server URL**
+blank for T3 to start its own local server. If a provider instance already has a
+custom **Binary path**, point it at `/etc/profiles/per-user/hyper/bin/pi` or
+`/etc/profiles/per-user/hyper/bin/opencode`. For a separately managed OpenCode
+server, use the wrapped `opencode serve` on the server's host.
+
+After updating a key, restart Pi or OMP and any OpenCode server that was using
+it. For the standard OpenCode background service, run `opencode service
+restart`. Restart T3's local OpenCode provider before refreshing its catalog.
+A saved provider login can take precedence over an injected environment value.

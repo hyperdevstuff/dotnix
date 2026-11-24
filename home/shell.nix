@@ -52,11 +52,6 @@ in
       bind -M visual gg beginning-of-buffer
       bind -M visual G end-of-buffer
 
-      # TEMPORARY: keep the existing npm OpenCode v2 usable until the Nix
-      # package is enabled in phase 2.
-      if test -x /home/hyper/.opencode/bin/opencode
-          fish_add_path --move --prepend /home/hyper/.opencode/bin
-      end
       fish_add_path "/home/hyper/.cache/.bun/bin"
     '';
 

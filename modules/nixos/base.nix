@@ -27,6 +27,21 @@
     nix-ld.libraries = with pkgs; [
       libxcb
       wayland
+      libunwind
+      # Native Linux games (Unity/Unreal) dlopen these at runtime rather than
+      # linking them, so they have to be reachable through nix-ld too.
+      # Without libX11 the SDL x11 driver fails with "x11 not available".
+      libX11
+      libXext
+      libXcursor
+      libXrandr
+      libXi
+      libXfixes
+      libXrender
+      libGL
+      SDL2
+      libpulseaudio
+      alsa-lib
     ];
     zsh.enable = true;
   };
@@ -100,5 +115,6 @@
     roboto
     inter
     nerd-fonts.jetbrains-mono
+    freetype
   ];
 }

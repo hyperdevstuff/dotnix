@@ -310,10 +310,6 @@ binds {
     Ctrl+Alt+V hotkey-overlay-title="Hex: paste last dictation" { spawn "hex" "paste-last"; }
     Ctrl+Alt+C hotkey-overlay-title="Hex: copy last dictation" { spawn "/home/hyper/.local/bin/hexclip"; }
     Mod+Alt+X hotkey-overlay-title="Hex: cancel dictation" { spawn "hex" "dictation" "cancel"; }
-    // On Wayland Hex cannot grab Esc only while recording, so every Esc goes
-    // through a tiny helper: it cancels a running dictation, otherwise
-    // replays Esc to the focused window with wtype.
-    Escape { spawn "/home/hyper/.local/bin/hex-escape"; }
 
     // Volume keys. wpctl is the fast path; the IPC call only adds the notchD
     // OSD, so audio still works if the shell is restarting.

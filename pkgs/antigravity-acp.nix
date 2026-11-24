@@ -14,11 +14,11 @@
 # Registry: https://github.com/agentclientprotocol/registry/blob/main/antigravity-acp/agent.json
 stdenv.mkDerivation (finalAttrs: {
   pname = "antigravity-acp";
-  version = "1.4.5";
+  version = "1.5.2";
 
   src = fetchurl {
     url = "https://dl.google.com/agy-extensions/releases/linux/agy-acp-server-${finalAttrs.version}-linux-x86_64.zip";
-    hash = "sha256-kjkjoNfcgHP2bMb3hkejEH46fuK34aJN+LOSe1GIATs=";
+    hash = "sha256-md2GEkUIBQEWGde4RHzjdMKJ4AVJ2FV/NnkOHdYlaFI=";
   };
 
   nativeBuildInputs = [

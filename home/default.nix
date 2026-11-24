@@ -6,6 +6,9 @@
   ...
 }:
 
+let
+  inferenceTools = pkgs.callPackage ../pkgs/inference-tools.nix { };
+in
 {
   imports = [
     ./foot.nix
@@ -88,8 +91,26 @@
 
   xdg.enable = true;
 
+  # Let Lutris reuse the same GE-Proton build that Steam exposes.
+  xdg.dataFile."lutris/runners/wine/${pkgs.proton-ge-bin.version}".source =
+    "${pkgs.proton-ge-bin.steamcompattool}";
+
+  xdg.configFile."MangoHud/MangoHud.conf".text = ''
+    fps
+    frame_timing
+    cpu_stats
+    cpu_temp
+    core_load
+    core_bars
+    gpu_stats
+    gpu_temp
+    ram
+    vram
+  '';
+
   # Export mpv playback and controls over MPRIS for notchD and media keys.
-  xdg.configFile."mpv/scripts/mpris.so".source = "${pkgs.mpvScripts.mpris}/share/mpv/scripts/mpris.so";
+  xdg.configFile."mpv/scripts/mpris.so".source =
+    "${pkgs.mpvScripts.mpris}/share/mpv/scripts/mpris.so";
 
   # OpenCode uses the "system" TUI theme: it takes its ANSI colors from the
   # terminal, which matugen writes for kitty/foot. So the agent UI follows the
@@ -97,19 +118,31 @@
   xdg.configFile."opencode/tui.json".source = ../dotfiles/opencode/tui.json;
 
   # Use Kitty explicitly for GUI file managers, including KDE outside Plasma.
-  xdg.dataFile."applications/nvim.desktop".source = "${pkgs.makeDesktopItem {
-    name = "nvim";
-    desktopName = "Neovim";
-    genericName = "Text Editor";
-    exec = "${pkgs.kitty}/bin/kitty -e ${pkgs.neovim}/bin/nvim -- %F";
-    icon = "nvim";
-    categories = [ "Utility" "TextEditor" ];
-    terminal = false;
-    mimeTypes = [
-      "text/plain" "text/markdown" "application/json" "application/x-shellscript"
-      "text/x-python" "text/x-csrc" "text/x-rust" "text/x-lua" "text/x-nix"
-    ];
-  }}/share/applications/nvim.desktop";
+  xdg.dataFile."applications/nvim.desktop".source = "${
+    pkgs.makeDesktopItem {
+      name = "nvim";
+      desktopName = "Neovim";
+      genericName = "Text Editor";
+      exec = "${pkgs.kitty}/bin/kitty -e ${pkgs.neovim}/bin/nvim -- %F";
+      icon = "nvim";
+      categories = [
+        "Utility"
+        "TextEditor"
+      ];
+      terminal = false;
+      mimeTypes = [
+        "text/plain"
+        "text/markdown"
+        "application/json"
+        "application/x-shellscript"
+        "text/x-python"
+        "text/x-csrc"
+        "text/x-rust"
+        "text/x-lua"
+        "text/x-nix"
+      ];
+    }
+  }/share/applications/nvim.desktop";
 
   # Helium is the default browser (CLI also respects BROWSER below).
   xdg.mimeApps = {
@@ -192,7 +225,8 @@
     imv
     zathura
     nixfmt
-    (pkgs.callPackage ../pkgs/t3code-nightly.nix { })
+    inferenceTools
+    (pkgs.callPackage ../pkgs/t3code-nightly.nix { agentLaunchers = [ inferenceTools ]; })
     # pkgs.opencode-desktop
     (pkgs.callPackage ../pkgs/paper-desktop.nix { })
     obsidian
@@ -205,6 +239,9 @@
     typstyle
     trash-cli
     gcc
+    fuse-overlayfs
+    psmisc
+    bubblewrap
   ];
 
   home.pointerCursor = {

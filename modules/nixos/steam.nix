@@ -19,6 +19,7 @@
     # releases still break on. Pick it per game under Properties ->
     # Compatibility; NixOS exposes it via STEAM_EXTRA_COMPAT_TOOLS_PATHS.
     extraCompatPackages = [ pkgs.proton-ge-bin ];
+    extraPackages = [ pkgs.mangohud ];
   };
 
   # Feral GameMode: opt in per game with `gamemoderun %command%` in its
@@ -29,8 +30,11 @@
   };
   users.users.${username}.extraGroups = [ "gamemode" ];
 
-  # Heroic manages its own per-game runners and prefixes through umu.
   environment.systemPackages = [
-    (pkgs.heroic.override { extraPkgs = p: [ p.gamemode ]; })
+    (pkgs.lutris.override {
+      extraPkgs = p: [ p.mangohud ];
+    })
+    pkgs.mangohud
+    pkgs.umu-launcher
   ];
 }

@@ -7,6 +7,7 @@
   makeWrapper,
   gh,
   git,
+  agentLaunchers ? [ ],
 }:
 
 let
@@ -18,7 +19,7 @@ let
   # T3 is a control plane: the agent CLIs it orchestrates must be on PATH.
   # Keep them out of the FHS closure and prepend them to the launcher instead;
   # `AppRun` preserves the inherited PATH, so child processes still see them.
-  runtimePackages = [
+  runtimePackages = agentLaunchers ++ [
     gh
     git
     antigravity-acp
@@ -61,11 +62,11 @@ in
 # existing x-scheme-handler/t3code associations keep working.
 appimageTools.wrapType2 (finalAttrs: {
   pname = "t3code";
-  version = "0.1.12-nightly.20261120.4994";
+  version = "0.1.12-nightly.20261124.5178";
 
   src = fetchurl {
     url = "https://github.com/pingdotgg/t3code/releases/download/v${finalAttrs.version}/T3-Code-Nightly-x86_64.AppImage";
-    hash = "sha256-rmKtAeocTEz+ANWqjXkGmQG2suQHmhYQGTcI2iHyKNk=";
+    hash = "sha256-/AKr0RL833PPYENbog65FoRkjNICOxpK6kulmGHzZv4=";
   };
 
   nativeBuildInputs = [ makeWrapper ];

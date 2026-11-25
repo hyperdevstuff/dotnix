@@ -147,6 +147,14 @@ in
     }
   }/share/applications/nvim.desktop";
 
+  xdg.desktopEntries.appimage-run-local = {
+    name = "Run AppImage";
+    exec = "${pkgs.appimage-run}/bin/appimage-run %f";
+    icon = "application-x-executable";
+    terminal = false;
+    mimeType = [ "application/vnd.appimage" ];
+  };
+
   # Helium is the default browser (CLI also respects BROWSER below).
   xdg.mimeApps = {
     enable = true;
@@ -155,6 +163,7 @@ in
       "application/xhtml+xml" = [ "helium.desktop" ];
       "application/xhtml_xml" = [ "helium.desktop" ];
       "inode/directory" = [ "org.kde.dolphin.desktop" ];
+      "application/vnd.appimage" = [ "appimage-run-local.desktop" ];
       "x-scheme-handler/http" = [ "helium.desktop" ];
       "x-scheme-handler/https" = [ "helium.desktop" ];
       "application/pdf" = [ "helium.desktop" ];

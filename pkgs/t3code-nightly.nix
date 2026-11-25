@@ -60,11 +60,11 @@ in
 # existing x-scheme-handler/t3code associations keep working.
 appimageTools.wrapType2 (finalAttrs: {
   pname = "t3code";
-  version = "0.1.12-nightly.20261124.5178";
+  version = "0.1.12-nightly.20261125.5230";
 
   src = fetchurl {
     url = "https://github.com/pingdotgg/t3code/releases/download/v${finalAttrs.version}/T3-Code-Nightly-x86_64.AppImage";
-    hash = "sha256-/AKr0RL833PPYENbog65FoRkjNICOxpK6kulmGHzZv4=";
+    hash = "sha256-ShPPbtm6lRb/GVORVNHdhPFj4s4METEwVLL1hzmPnmY=";
   };
 
   nativeBuildInputs = [ makeWrapper ];

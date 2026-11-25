@@ -219,6 +219,7 @@ in
   };
 
   home.packages = with pkgs; [
+    appimage-run
     brave-origin
     inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default
     (pkgs.callPackage ../pkgs/ardia.nix { })

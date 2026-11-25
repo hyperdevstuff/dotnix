@@ -17,12 +17,13 @@
   ];
 
   networking.hostName = "LOQ";
+  networking.hosts."0.0.0.0" = [ "ingest.t3.codes" ];
 
   # Parallel source builds can fill RAM and swap, causing earlyoom to
   # terminate the Nix client before the system build completes.
   nix.settings = {
-    max-jobs = 1;
-    cores = 2;
+    max-jobs = 3;
+    cores = 8;
   };
 
   boot.loader.systemd-boot.enable = true;

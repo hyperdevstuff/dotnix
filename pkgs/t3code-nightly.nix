@@ -89,6 +89,8 @@ appimageTools.wrapType2 (finalAttrs: {
     # wrapper too, so t3code:// links still get the agent CLIs on PATH.
     wrapProgram $out/bin/t3code \
       --prefix PATH : ${lib.makeBinPath runtimePackages} \
+      --set T3CODE_TELEMETRY_ENABLED false \
+      --set T3CODE_OTEL_SDK_DISABLED true \
       --set T3CODE_DESKTOP_LAUNCHER_PATH "$out/bin/t3code"
 
     install -Dm444 ${finalAttrs.contents}/usr/share/icons/hicolor/512x512/apps/t3code.png \

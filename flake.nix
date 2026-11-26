@@ -36,33 +36,39 @@
     let
       system = "x86_64-linux";
       username = "hyper";
+
+      mkHost =
+        hostOutput: hostModule: desktopModule:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+
+          specialArgs = {
+            inherit inputs username;
+          };
+
+          modules = [
+            hostModule
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+
+              home-manager.extraSpecialArgs = {
+                inherit inputs username hostOutput;
+              };
+
+              home-manager.users.${username}.imports = [
+                ./home
+                desktopModule
+              ];
+            }
+          ];
+        };
     in
     {
-      nixosConfigurations.LOQ = nixpkgs.lib.nixosSystem {
-        inherit system;
-
-        specialArgs = {
-          inherit inputs username;
-        };
-
-        modules = [
-          ./hosts/LOQ
-
-          home-manager.nixosModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "backup";
-
-            home-manager.extraSpecialArgs = {
-              inherit inputs username;
-            };
-
-            home-manager.users.${username} = import ./home;
-          }
-
-        ];
-      };
+      nixosConfigurations.LOQ = mkHost "LOQ" ./hosts/LOQ ./home/notchd.nix;
+      nixosConfigurations.LOQ-dux = mkHost "LOQ-dux" ./hosts/LOQ-dux ./home/dux.nix;
 
       # Local packages, exposed so `nix build .#<name>` works. The same set is
       # importable as `nix build -f pkgs <name>`, which is also how

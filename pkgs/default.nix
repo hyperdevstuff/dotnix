@@ -14,5 +14,6 @@
   hex-bin = pkgs.callPackage ./hex-bin.nix { };
   inference-tools = pkgs.callPackage ./inference-tools.nix { };
   paper-desktop = pkgs.callPackage ./paper-desktop.nix { };
+  t3code-local = pkgs.callPackage ./t3code-local.nix { };
   t3code-nightly = pkgs.callPackage ./t3code-nightly.nix { };
 }

@@ -179,10 +179,12 @@ in
   # fixed 1920x1080@60 output, which keeps VRR/fractional scaling out of the
   # picture. Lutris launches it when the per-game "Enable Gamescope" option
   # is set (see sekiro-shadows-die-twice-local.yml).
-  programs.gamescope = {
-    enable = true;
-    capSysNice = true;
-  };
+  #
+  # Deliberately no capSysNice: Lutris runs inside bubblewrap with
+  # no_new_privs, so a capability wrapper is stripped at exec and gamescope
+  # dies with "failed to inherit capabilities: Operation not permitted".
+  # Gamescope runs fine without realtime priority.
+  programs.gamescope.enable = true;
 
   # Optional: a sched_ext scheduler that understands Intel P/E cores. It
   # improves 1% lows and frame pacing on hybrid CPUs. Uncomment, rebuild,

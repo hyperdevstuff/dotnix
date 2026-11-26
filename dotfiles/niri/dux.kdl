@@ -1,0 +1,35 @@
+// Keep the shared app palette, and use DMS's Niri palette when it is enabled.
+include "generated/colors.kdl" optional=true
+include "dms/colors.kdl" optional=true
+
+// Apply the same screencast rule as the notchD notification popups.
+layer-rule {
+    match namespace="^dms:notification-"
+    block-out-from "screencast"
+}
+
+binds {
+    Mod+D repeat=false hotkey-overlay-title="Open DMS launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
+    Mod+Space repeat=false hotkey-overlay-title="Open DMS launcher" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
+    Mod+Shift+Space repeat=false hotkey-overlay-title="DMS dashboard" { spawn "dms" "ipc" "call" "dash" "toggle" ""; }
+    Mod+N repeat=false hotkey-overlay-title="DMS notifications" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
+    Mod+V repeat=false hotkey-overlay-title="DMS clipboard history" { spawn "dms" "ipc" "call" "clipboard" "toggle"; }
+    Mod+Shift+A repeat=false hotkey-overlay-title="DMS control center" { spawn "dms" "ipc" "call" "control-center" "toggle"; }
+    Mod+Alt+S repeat=false hotkey-overlay-title="DMS power menu" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
+    Mod+Alt+M repeat=false hotkey-overlay-title="DMS media" { spawn "dms" "ipc" "call" "dash" "toggle" "media"; }
+    Mod+Shift+W repeat=false hotkey-overlay-title="DMS wallpapers" { spawn "dms" "ipc" "call" "dash" "toggle" "wallpaper"; }
+    Mod+Shift+S repeat=false hotkey-overlay-title="DMS area screenshot" { spawn "dms" "screenshot"; }
+    Super+Alt+L repeat=false hotkey-overlay-title="Lock the screen" { spawn "dms" "ipc" "call" "lock" "lock"; }
+
+    XF86AudioRaiseVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "increment" "5"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "decrement" "5"; }
+    XF86AudioMute        allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "mute"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn "dms" "ipc" "call" "audio" "micmute"; }
+    XF86AudioPlay        allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "playPause"; }
+    XF86AudioPause       allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "playPause"; }
+    XF86AudioStop        allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "stop"; }
+    XF86AudioPrev        allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "previous"; }
+    XF86AudioNext        allow-when-locked=true { spawn "dms" "ipc" "call" "mpris" "next"; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "increment" "5" ""; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "dms" "ipc" "call" "brightness" "decrement" "5" ""; }
+}

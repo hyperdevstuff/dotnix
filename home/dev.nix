@@ -1,6 +1,12 @@
 { pkgs, config, ... }:
 
 let
+  bunConfig = pkgs.writeText "bunfig.toml" ''
+    [install]
+    globalDir = "~/.bun/install/global"
+    globalBinDir = "~/.bun/bin"
+  '';
+
   # qmllint/qmlls need both the Qt module tree and Quickshell's own QML modules
   # on the import path. Both come from the same nixpkgs, so the Qt version
   # matches what the running shell links against.
@@ -31,9 +37,6 @@ in
     flarectl
     cf-terraforming
 
-    # OpenAI Codex CLI (the `codex` coding agent).
-    codex
-
     # node-gyp fallbacks for native addons. gcc is in home/default.nix and
     # cmake/ninja/pkg-config are system packages.
     python3
@@ -56,4 +59,8 @@ in
   };
 
   home.sessionPath = [ "${config.home.homeDirectory}/.bun/bin" ];
+
+  # Bun reads the XDG file when XDG_CONFIG_HOME is set, and the home file otherwise.
+  home.file.".bunfig.toml".source = bunConfig;
+  xdg.configFile.".bunfig.toml".source = bunConfig;
 }

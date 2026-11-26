@@ -22,7 +22,7 @@
   # Parallel source builds can fill RAM and swap, causing earlyoom to
   # terminate the Nix client before the system build completes.
   nix.settings = {
-    max-jobs = 3;
+    max-jobs = 2;
     cores = 8;
   };
 

@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  hostOutput,
   ...
 }:
 
@@ -51,8 +52,6 @@ in
       bind -M visual 0 beginning-of-line
       bind -M visual gg beginning-of-buffer
       bind -M visual G end-of-buffer
-
-      fish_add_path "/home/hyper/.cache/.bun/bin"
     '';
 
     # Hydro: fish-native prompt, async git, no process spawn per render
@@ -77,11 +76,11 @@ in
       lG = "eza --long --icons --git --color=auto --group-directories-first";
 
       # --- NixOS ---
-      rebuild = "sudo nixos-rebuild switch --flake ${config.home.homeDirectory}/dotnix#LOQ";
-      rebuild-boot = "sudo nixos-rebuild boot --flake ${config.home.homeDirectory}/dotnix#LOQ";
+      rebuild = "sudo nixos-rebuild switch --flake ${config.home.homeDirectory}/dotnix#${hostOutput}";
+      rebuild-boot = "sudo nixos-rebuild boot --flake ${config.home.homeDirectory}/dotnix#${hostOutput}";
       flake-update = "nix flake update --flake ${config.home.homeDirectory}/dotnix";
       gc = "sudo nix-collect-garbage -d";
-      reup = "nix flake update && sudo nixos-rebuild switch --flake ~/dotnix#LOQ";
+      reup = "nix flake update && sudo nixos-rebuild switch --flake ~/dotnix#${hostOutput}";
       # --- basics ---
       n = "nvim";
       x = "exit";

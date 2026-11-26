@@ -1,32 +1,25 @@
 {
   config,
+  lib,
   pkgs,
   username,
   inputs,
   ...
 }:
 
-let
-  inferenceTools = pkgs.callPackage ../pkgs/inference-tools.nix { };
-in
 {
   imports = [
+    ./agents.nix
     ./foot.nix
-    ./clipboard.nix
-    ./polkit.nix
     ./udiskie.nix
-    ./idle.nix
     ./kitty.nix
     ./shell.nix
     ./niri.nix
-    ./wallpaper-fx.nix
     ./matugen.nix
     ./nvim.nix
     ./dev.nix
     ./dolphin.nix
     ./dux-files.nix
-    ./quickshell.nix
-    ./fuzzel.nix
     # Disabled on the fresh install: MPD points at /mnt/library, which is
     # not mounted (the NTFS data disk is not attached). Re-enable together
     # with the mount in hosts/LOQ/default.nix.
@@ -34,10 +27,6 @@ in
     ./yazi.nix
     inputs.helium-browser.homeModules.default
     inputs.hex.homeManagerModules.default
-
-    # Phase 2: install OpenCode from nixpkgs only after the desktop
-    # configuration has been built and booted successfully.
-    # ./opencode.nix
   ];
 
   programs.helium = {
@@ -96,6 +85,7 @@ in
     "${pkgs.proton-ge-bin.steamcompattool}";
 
   xdg.configFile."MangoHud/MangoHud.conf".text = ''
+    left=1
     font_size=18
     background_alpha=0.30
     fps
@@ -178,7 +168,6 @@ in
       "image/svg+xml" = [ "imv.desktop" ];
       "image/bmp" = [ "imv.desktop" ];
       "image/tiff" = [ "imv.desktop" ];
-      "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.Nightly.desktop" ];
       "x-scheme-handler/paper" = [ "paper-desktop.desktop" ];
       "x-scheme-handler/paper-dev" = [ "paper-desktop.desktop" ];
       # Neovim is the default editor for text and source files.
@@ -194,13 +183,12 @@ in
       "text/x-nix" = [ "nvim.desktop" ];
     };
     associations.added = {
-      "x-scheme-handler/t3code" = [ "com.t3tools.T3Code.Nightly.desktop" ];
       "x-scheme-handler/paper" = [ "paper-desktop.desktop" ];
       "x-scheme-handler/paper-dev" = [ "paper-desktop.desktop" ];
     };
   };
 
-  home.sessionPath = [
+  home.sessionPath = lib.mkBefore [
     "${config.home.homeDirectory}/.local/bin"
   ];
 
@@ -238,9 +226,6 @@ in
     imv
     zathura
     nixfmt
-    inferenceTools
-    (pkgs.callPackage ../pkgs/t3code-nightly.nix { agentLaunchers = [ inferenceTools ]; })
-    # pkgs.opencode-desktop
     (pkgs.callPackage ../pkgs/paper-desktop.nix { })
     obsidian
     adwaita-icon-theme

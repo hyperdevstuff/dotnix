@@ -3,11 +3,6 @@
 //
 // "Mod" is Super on a TTY and Alt when niri runs as a window.
 
-// Wallpaper-derived colors (primary/outline/error) written by matugen.
-// `wp` and `wp-boot` regenerate this file and reload niri. The seed in
-// home/matugen.nix guarantees it exists before niri starts.
-include "/home/hyper/.config/niri/generated/colors.kdl"
-
 input {
     keyboard {
         xkb {
@@ -65,7 +60,7 @@ layout {
     default-column-width { proportion 1.0; }
 
     // Minimal look: no focus glow, one hairline border around every window.
-    // Colors come from the matugen include above; width/shadows stay here.
+    // The desktop shell supplies its palette. Width and shadows stay here.
     focus-ring {
         off
     }
@@ -89,11 +84,6 @@ layout {
         corner-radius 6
     }
 }
-
-// Wallpaper-first theming: wp-boot starts awww-daemon and applies a random
-// wall (regenerating kitty/foot/fuzzel via matugen). swaybg stays
-// installed as a fallback but is intentionally not spawned.
-spawn-at-startup "/home/hyper/.local/bin/wp-boot"
 
 hotkey-overlay {
     skip-at-startup
@@ -181,12 +171,6 @@ animations {
     }
 }
 
-// Lock before logind suspends on lid close (logind HandleLidSwitch=suspend).
-// The lock is the native Quickshell lock screen; swaylock remains a fallback.
-switch-events {
-    lid-close { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "lock"; }
-}
-
 // Firefox picture-in-picture should float.
 // Screenshot annotation stays above the selected area and can be resized.
 window-rule {
@@ -203,7 +187,7 @@ window-rule {
 
 // Transient dialogs and pop-ups are regular XDG toplevels, so they need
 // window rules, not layer rules. Layer rules only affect layer-shell surfaces
-// such as fuzzel and the notchD overlays below.
+// provided by the desktop shell.
 
 // Portals draw out-of-process dialogs: file choosers, screencast pickers,
 // camera/access prompts and account/sign-in prompts. They are not parented to
@@ -237,14 +221,6 @@ window-rule {
     open-floating true
 }
 
-// The clipboard picker is a kitty window with --class clipmenu; it should
-// float above the layout instead of taking a column. Its size comes from
-// kitty's initial_window_width/height overrides in the Mod+V bind.
-window-rule {
-    match app-id=r#"^clipmenu$"#
-    open-floating true
-}
-
 // Keep password managers out of screencasts and cast targets. Multiple
 // `match` lines in one rule are ORed; here the alternatives share one regex.
 window-rule {
@@ -260,47 +236,16 @@ window-rule {
     clip-to-geometry true
 }
 
-// Fuzzel: let niri round the launcher and blur the wallpaper behind it.
-// The generated fuzzel background stays slightly translucent so the blur
-// is visible.
-layer-rule {
-    match namespace="fuzzel"
-    geometry-corner-radius 14
-    background-effect {
-        xray true
-        blur true
-        noise 0.02
-        saturation 1.1
-    }
-}
-
-// Notifications can contain secrets (2FA codes, message previews); keep them
-// out of screencasts as well. notchD owns org.freedesktop.Notifications and
-// draws the cards on its own layer surface.
-layer-rule {
-    match namespace="^notchD-notifications$"
-    block-out-from "screencast"
-}
-
 binds {
     Mod+Shift+Slash { show-hotkey-overlay; }
 
-    // Terminal and launcher.
+    // Launch applications.
     Mod+Return hotkey-overlay-title="Open foot" { spawn "foot"; }
     Mod+T hotkey-overlay-title="Open foot" { spawn "foot"; }
     Mod+Q hotkey-overlay-title="Open kitty" { spawn "kitty" "--single-instance"; }
     Mod+B hotkey-overlay-title="Open Helium" { spawn "zen-beta"; }
     Mod+E hotkey-overlay-title="Open Dux Files" { spawn "dfiles" "open"; }
     Mod+Alt+E hotkey-overlay-title="Open Dolphin" { spawn "dolphin"; }
-    Mod+D hotkey-overlay-title="Run an application" { spawn "fuzzel"; }
-    Mod+Space repeat=false hotkey-overlay-title="Search apps in notchD" { spawn "sh" "-c" "quickshell ipc -c notchD call notchD toggleRunner || fuzzel"; }
-    Mod+Shift+Space repeat=false hotkey-overlay-title="Search commands in notchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleCommandPalette"; }
-    Super+Alt+L allow-when-locked=true hotkey-overlay-title="Lock the screen" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "lock"; }
-
-    // Quickshell NotchD: Mod+N opens the hub and closes it again on the next
-    // press (hub, flyout or media). Mod+Shift+N hides the whole island.
-    Mod+N hotkey-overlay-title="Toggle NotchD hub" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleExpanded"; }
-    Mod+Shift+N hotkey-overlay-title="Show/hide NotchD" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggle"; }
 
     // Hex dictation. niri has no working GlobalShortcuts portal, so we bind
     // Hex's own control commands (upstream's recommended Wayland setup).
@@ -312,35 +257,8 @@ binds {
     Ctrl+Alt+C hotkey-overlay-title="Hex: copy last dictation" { spawn "/home/hyper/.local/bin/hexclip"; }
     Mod+Alt+X hotkey-overlay-title="Hex: cancel dictation" { spawn "hex" "dictation" "cancel"; }
 
-    // Volume keys. wpctl is the fast path; the IPC call only adds the notchD
-    // OSD, so audio still works if the shell is restarting.
-    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ -l 1.0; quickshell ipc -c notchD call notchD showVolume"; }
-    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-; quickshell ipc -c notchD call notchD showVolume"; }
-    XF86AudioMute        allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; quickshell ipc -c notchD call notchD showVolume"; }
-    XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle; quickshell ipc -c notchD call notchD showMic"; }
-
-    // Media keys. playerctl keeps working without notchD; the IPC opens the
-    // downward now-playing card when it is available.
-    XF86AudioPlay  allow-when-locked=true { spawn-sh "playerctl play-pause; quickshell ipc -c notchD call notchD mediaPeek"; }
-    XF86AudioPause allow-when-locked=true { spawn-sh "playerctl play-pause; quickshell ipc -c notchD call notchD mediaPeek"; }
-    XF86AudioStop  allow-when-locked=true { spawn-sh "playerctl stop; quickshell ipc -c notchD call notchD mediaPeek"; }
-    XF86AudioPrev  allow-when-locked=true { spawn-sh "playerctl previous; quickshell ipc -c notchD call notchD mediaPeek"; }
-    XF86AudioNext  allow-when-locked=true { spawn-sh "playerctl next; quickshell ipc -c notchD call notchD mediaPeek"; }
-
-    // Brightness keys use brightnessctl for the action and notchD for Feedback.
-    XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "brightnessctl --class=backlight set +5%; quickshell ipc -c notchD call notchD showBrightness"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "brightnessctl --class=backlight set 5%-; quickshell ipc -c notchD call notchD showBrightness"; }
-
-    // notchD-first shortcuts. External GUIs stay as advanced fallbacks.
-    Mod+Shift+A hotkey-overlay-title="Audio controls" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openAudio"; }
     Mod+Alt+A hotkey-overlay-title="Advanced audio (pavucontrol)" { spawn "pavucontrol"; }
-    Mod+Alt+N hotkey-overlay-title="Wi-Fi controls" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openWifi"; }
     Mod+Alt+Shift+N hotkey-overlay-title="Advanced networks (nm-connection-editor)" { spawn "nm-connection-editor"; }
-    Mod+Alt+S hotkey-overlay-title="Session and power" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openSession"; }
-    Mod+Alt+M hotkey-overlay-title="Now playing" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openMedia"; }
-    Mod+Shift+T repeat=false hotkey-overlay-title="Open calendar" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "openCalendar"; }
-    Mod+Shift+W repeat=false hotkey-overlay-title="Toggle wallpaper picker" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleWallpapers"; }
-    Mod+Alt+H hotkey-overlay-title="Toggle home" { spawn "quickshell" "ipc" "-c" "notchD" "call" "notchD" "toggleHome"; }
 
     // Focus jump and dynamic cast (OBS/browser screen share).
     Mod+G              hotkey-overlay-title=null { focus-window-previous; }
@@ -481,13 +399,11 @@ binds {
     Mod+Shift+Minus { set-window-height "-10%"; }
     Mod+Shift+Equal { set-window-height "+10%"; }
 
-    Mod+V       hotkey-overlay-title="Clipboard history" { spawn "/home/hyper/.local/bin/clipmenu"; }
     Mod+Alt+V   hotkey-overlay-title="Toggle window floating" { toggle-window-floating; }
     Mod+Shift+V { switch-focus-between-floating-and-tiling; }
 
     Mod+W { toggle-column-tabbed-display; }
 
-    Mod+Shift+S hotkey-overlay-title="Capture area and annotate" { spawn "notchd-screenshot"; }
     Print      { screenshot; }
     Ctrl+Print { screenshot-screen; }
     Alt+Print  { screenshot-window; }
@@ -509,5 +425,4 @@ binds {
     Mod+Shift+P { power-off-monitors; }
 }
 
-// Optional bindings for this machine.
-include "local.kdl" optional=true
+include "shell.kdl"

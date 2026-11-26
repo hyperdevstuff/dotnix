@@ -33,12 +33,12 @@ NixOS + Home Manager configuration for `hyper`, built around:
 │   ├── niri.nix                       # installs config.kdl
 │   ├── quickshell.nix                 # bar, notifications, systemd service
 │   ├── dev.nix                        # Rust, Node/Bun, QML tooling
+│   ├── agents.nix                     # user-local agent and T3 launchers
 │   ├── dolphin.nix                    # Dolphin palette, rc files, view seed
 │   ├── fuzzel.nix                     # app launcher
 │   ├── clipboard.nix                  # cliphist watchers + fzf picker
 │   ├── music.nix                      # MPD + mpc + rmpc + MPRIS bridge
-│   ├── yazi.nix                       # Yazi config and plugins
-│   └── opencode.nix                   # phase 2, not imported yet
+│   └── yazi.nix                       # Yazi config and plugins
 └── dotfiles/
     ├── bin/                           # clipmenu, music-shuffle, helpers
     ├── music/ignore                   # score/soundtrack exclusions
@@ -71,12 +71,12 @@ sudo nixos-rebuild boot --flake ~/dotnix#LOQ
 Use `switch` instead of `boot` only once the graphical session is known to work.
 
 Run `dry-build` after updating `flake.lock` to catch newly uncached packages.
-Niri and Dolphin use the stock Nixpkgs binaries. Hex, T3 Code Nightly,
-Ardia, Paper, Helium, and Zen package upstream Linux
+Niri and Dolphin use the stock Nixpkgs binaries. Hex, Ardia, Paper, Helium,
+and Zen package upstream Linux
 binaries. Nix still generates the system configuration, launchers, and other
 integration files locally. The 32-bit NVIDIA EGL packages used with Steam can
-require a local build on a fresh store. LOQ limits local builds to one job and
-two cores, and deduplicates the store on a timer outside rebuilds.
+require a local build on a fresh store. LOQ allows two concurrent local build
+jobs with up to eight cores per job and deduplicates the store on a timer.
 
 ### Rollback
 
@@ -369,9 +369,6 @@ nixos-rebuild build --flake ~/dotnix#LOQ
   Turn it on deliberately if suspend/resume behaves incorrectly.
 - **Home Manager backups:** existing dotfiles are renamed with a `.backup`
   suffix (`home-manager.backupFileExtension`).
-- **OpenCode:** the Home Manager launcher uses the existing OpenCode v2 binary
-  in `~/.opencode/bin`. It also supplies provider credentials when T3 starts an
-  OpenCode server. See [Inference credentials](#inference-credentials).
 - **OpenCode mouse scrolling:** `~/.config/opencode/cli.json` enables terminal
   mouse capture, sets scroll speed, and enables the transcript scrollbar. This
   file is intentionally not Home-Manager-managed so the TUI can edit it.
@@ -379,6 +376,45 @@ nixos-rebuild build --flake ~/dotnix#LOQ
   world-readable Nix store.
 - `/etc/nixos` is intentionally left untouched as a fallback until this
   configuration has booted successfully.
+
+### Coding agents and desktop apps
+
+Nix manages Bun, Node, and the launchers. Run `agent-tools-update` to install or
+update the stable npm releases of Codex, OpenCode v2, Pi, and Oh My Pi together.
+Bun keeps all global packages under `~/.bun`. Use the launchers in
+`~/.local/bin` for provider settings and scripts. They take precedence over
+`~/.bun/bin` so the inference credentials are loaded when needed. If your shell
+still prepends `~/.opencode/bin`, remove that PATH entry.
+
+To update individual agents, run the matching command:
+
+```sh
+bun add -g --trust @opencode/cli@latest
+bun add -g --ignore-scripts @openai/codex@latest
+bun add -g --ignore-scripts @earendil-works/pi-coding-agent@latest
+bun add -g --ignore-scripts @oh-my-pi/pi-coding-agent@latest
+```
+
+| Tool | Install and update |
+| --- | --- |
+| Codex, OpenCode, Pi, Oh My Pi | `agent-tools-update` |
+| Antigravity CLI | [Google's installer](https://antigravity.google/docs/cli/install) puts `agy` in `~/.local/bin`. Its CLI manages updates. Use `agy acp` in clients that accept a custom ACP command. |
+| Hunk | [Upstream `hunkdiff` npm package](https://github.com/modem-dev/hunk#install). Install or update with `bun add -g hunkdiff@latest`. |
+| T3 Code Nightly desktop | [Upstream Nightly AppImage](https://github.com/pingdotgg/t3code/releases) at `~/.local/opt/t3code/T3-Code-Nightly.AppImage`. Use the desktop updater. |
+| T3 command line | `curl -fsSL https://t3.codes/install.sh \| T3CODE_CHANNEL=nightly sh`, then `t3 update`. |
+| Capy, Orca, Paseo | Keep each vendor AppImage at its writable path below `~/.local/opt` and update it in the app. |
+
+On a new machine, verify the T3 AppImage against the SHA-256 on its versioned
+release page and mark it executable. Launch **T3 Code (Nightly)** from Fuzzel or
+run `~/.local/bin/t3code`. The old `.#t3code-nightly` package is available for
+rollback.
+
+In T3 **Settings → Providers**, leave OpenCode's server URL blank to run a local
+server with the shared launcher. Where an ADE offers a **Binary path**, use
+`/home/hyper/.local/bin/codex`, `/home/hyper/.local/bin/opencode`,
+`/home/hyper/.local/bin/pi`, or `/home/hyper/.local/bin/agy`. Set Antigravity's
+binary path explicitly in T3 to switch from its managed runtime. Restart an ADE
+after updating its provider binaries or changing its executable paths.
 
 ### Inference credentials
 
@@ -403,12 +439,8 @@ Vercel. Setting an existing field rotates the stored value. `status` prints
 field names and readiness without printing any values.
 
 Launch `pi`, `omp`, and `opencode` normally. Their wrappers load the credentials
-into the process that uses them. T3's desktop launcher exposes the wrapped
-Pi and OpenCode binaries to its provider drivers. Leave OpenCode's **Server URL**
-blank for T3 to start its own local server. If a provider instance already has a
-custom **Binary path**, point it at `/etc/profiles/per-user/hyper/bin/pi` or
-`/etc/profiles/per-user/hyper/bin/opencode`. For a separately managed OpenCode
-server, use the wrapped `opencode serve` on the server's host.
+into the process that uses them. For a separately managed OpenCode server, run
+`~/.local/bin/opencode serve` on the server's host.
 
 After updating a key, restart Pi or OMP and any OpenCode server that was using
 it. For the standard OpenCode background service, run `opencode service

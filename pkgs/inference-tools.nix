@@ -1,15 +1,18 @@
 {
   age,
+  bun,
   lib,
-  omp,
-  pi-coding-agent,
+  nodejs,
   python3,
   sops,
   symlinkJoin,
+  util-linux,
   writeShellScriptBin,
 }:
 
 let
+  installDir = "$HOME/.bun";
+
   secrets = writeShellScriptBin "inference-secrets" ''
     export PATH=${
       lib.makeBinPath [
@@ -21,32 +24,47 @@ let
   '';
 
   wrapAgent =
-    name: executable:
+    name:
     writeShellScriptBin name ''
-      exec ${lib.getExe secrets} run ${name} ${executable} "$@"
+      executable="${installDir}/bin/${name}"
+      if [[ ! -x "$executable" ]]; then
+        echo '${name} is missing. Run agent-tools-update to install it.' >&2
+        exit 127
+      fi
+      export PATH=${
+        lib.makeBinPath [
+          nodejs
+          bun
+        ]
+      }:"$PATH"
+      exec ${lib.optionalString (name != "codex") "${lib.getExe secrets} run ${name} "}"$executable" "$@"
     '';
 
-  # Keep the currently installed OpenCode v2 build and its updater. The
-  # wrapped entry point also covers `serve`, which T3 invokes directly.
-  opencode = writeShellScriptBin "opencode" ''
-    executable="$HOME/.opencode/bin/opencode"
-    if [[ ! -x "$executable" ]]; then
-      echo "OpenCode v2 is required at $executable" >&2
-      exit 127
-    fi
-    exec ${lib.getExe secrets} run opencode "$executable" "$@"
+  update = writeShellScriptBin "agent-tools-update" ''
+    set -euo pipefail
+    export PATH=${lib.makeBinPath [ nodejs ]}:"$PATH"
+    mkdir -p "${installDir}"
+    exec 9>"${installDir}/update.lock"
+    ${lib.getExe' util-linux "flock"} -x 9
+
+    ${lib.getExe bun} add --global --ignore-scripts \
+      @openai/codex@latest @earendil-works/pi-coding-agent@latest @oh-my-pi/pi-coding-agent@latest
+    # OpenCode's documented postinstall selects its published native binary.
+    ${lib.getExe bun} add --global --trust @opencode/cli@latest
   '';
 in
 symlinkJoin {
   name = "inference-tools";
   paths = [
     secrets
-    (wrapAgent "pi" "${pi-coding-agent}/bin/pi")
-    (wrapAgent "omp" "${omp}/bin/omp")
-    opencode
+    update
     age
     sops
-    pi-coding-agent
-    omp
+  ]
+  ++ map wrapAgent [
+    "codex"
+    "opencode"
+    "omp"
+    "pi"
   ];
 }

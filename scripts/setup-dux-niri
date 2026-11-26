@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+niri_dir="${XDG_CONFIG_HOME:-$HOME/.config}/niri"
+active="$niri_dir/config.kdl"
+
+# Only migrate the old Home Manager link or set up a fresh profile.
+if [[ -L "$active" ]]; then
+  case "$(readlink -- "$active")" in
+    /nix/store/*-home-manager-files/.config/niri/config.kdl) ;;
+    *) exit 0 ;;
+  esac
+elif [[ -e "$active" ]]; then
+  exit 0
+fi
+
+mkdir -p -- "$niri_dir"
+staging=$(mktemp -d -- "$niri_dir/.dux-setup.XXXXXXXX")
+trap 'rm -rf -- "$staging"' EXIT
+staged_niri="$staging/.config/niri"
+mkdir -p -- "$staged_niri/dms" "$staging/runtime"
+
+# Let the upstream installer carry over output settings from the old config.
+if [[ -r "$active" ]]; then
+  install -m 644 -- "$active" "$staged_niri/config.kdl"
+fi
+for fragment in "$niri_dir"/dms/*.kdl; do
+  [[ -f "$fragment" ]] || continue
+  install -m 644 -- "$fragment" "$staged_niri/dms/${fragment##*/}"
+done
+
+env -u DBUS_SESSION_BUS_ADDRESS -u NIRI_SOCKET -u WAYLAND_DISPLAY -u DISPLAY \
+  -u NIRI_CONFIG -u XDG_CURRENT_DESKTOP HOME="$staging" \
+  XDG_CONFIG_HOME="$staging/.config" XDG_CACHE_HOME="$staging/.cache" \
+  XDG_STATE_HOME="$staging/.local/state" XDG_DATA_HOME="$staging/.local/share" \
+  XDG_RUNTIME_DIR="$staging/runtime" TERMINAL=foot \
+  dms setup headless --compositor niri --force --no-systemd
+
+# NixOS already starts dms.service. DMS 2.1.2 also needs these includes
+# for its window-rule editor and blurred wallpaper in niri's overview.
+sed -i '/^spawn-at-startup "dms" "run"$/d' "$staged_niri/config.kdl"
+for name in windowrules wpblur; do
+  if ! grep -Fq "\"dms/$name.kdl\"" "$staged_niri/config.kdl"; then
+    printf '\ninclude optional=true "dms/%s.kdl"\n' "$name" >> "$staged_niri/config.kdl"
+  fi
+done
+niri validate --config "$staged_niri/config.kdl"
+
+if [[ -r "$active" ]]; then
+  backups="${XDG_STATE_HOME:-$HOME/.local/state}/dotnix/niri-backups"
+  mkdir -p -- "$backups"
+  backup=$(mktemp -d -- "$backups/dux.XXXXXXXX")
+  install -m 600 -- "$active" "$backup/config.kdl"
+  if [[ -r "$niri_dir/shell.kdl" ]]; then
+    install -m 600 -- "$niri_dir/shell.kdl" "$backup/shell.kdl"
+  fi
+  printf 'Previous niri config saved in %s\n' "$backup"
+fi
+
+mkdir -p -- "$niri_dir/dms"
+for fragment in "$staged_niri"/dms/*.kdl; do
+  destination="$niri_dir/dms/${fragment##*/}"
+  if [[ ! -L "$destination" && ! -s "$destination" ]]; then
+    install -m 644 -- "$fragment" "$destination"
+  fi
+done
+mv -T -- "$staged_niri/config.kdl" "$active"

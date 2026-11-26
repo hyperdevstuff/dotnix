@@ -1,8 +1,6 @@
 { config, pkgs, ... }:
 
 {
-  xdg.configFile."niri/config.kdl".source = ../dotfiles/niri/config.kdl;
-
   # niri only applies `open-floating` window rules when a window first maps.
   # Browser OAuth/Google sign-in pop-ups set their real title afterwards, so
   # this event-stream helper floats them once the title appears.

@@ -41,15 +41,21 @@ nixpkgs package. That version builds from source the first time.
 
 `LOQ` and `LOQ-dux` are two configurations for the same laptop. They share
 the LOQ hostname, hardware, storage, NVIDIA, greetd, portals, PipeWire,
-gaming setup, and Home Manager apps. They also share niri's display settings,
-layout, window rules, and window-management shortcuts.
+gaming setup, and Home Manager apps.
 
-`LOQ` starts notchD, cliphist, swayidle, and awww. `LOQ-dux` uses the pinned
-Nixpkgs Dux Shell package and starts DMS with the niri session. DMS owns the
-bar, launcher, notifications, clipboard history, wallpaper, idle handling,
-screen lock, and polkit prompt. Its own niri fragment wires the shell keys
-to DMS. `Mod+D` or `Mod+Space` opens the launcher, `Mod+N` opens
-notifications, and `Mod+V` opens clipboard history.
+`LOQ` loads the dotnix niri config from `~/.config/niri/dotnix.kdl` and
+starts notchD, cliphist, swayidle, and awww. `LOQ-dux` starts the pinned
+Nixpkgs Dux Shell as a user service and lets DMS edit
+`~/.config/niri/config.kdl` and its `dms/` fragments. Home Manager seeds
+the stock DMS config once. Migration backs up the previous config and
+shell fragment under `~/.local/state/dotnix/niri-backups/` and carries
+over the output settings and any existing DMS fragments with content.
+
+Use `Mod+Space` for the launcher, `Mod+V` for clipboard history, and
+`Mod+Shift+Slash` for the DMS shortcut editor. DMS settings can apply
+changes to layout, input, displays, window rules, and overview effects.
+Use the DMS settings UI for these changes. NixOS starts the shell through
+`dms.service`.
 
 Both profiles retain dotnix's Matugen templates for apps such as Kitty,
 foot, and Dolphin. The Dux profile also reads DMS's generated niri colors
@@ -60,19 +66,21 @@ wallpaper picker to use the existing wallpaper library.
 
 ## 3. Boot and return
 
-When ready to try the desktop, review the dry build before preparing a
-boot generation.
+Review the dry build before updating the boot menu. Register LOQ first
+to have a fallback that uses `dotnix.kdl`, then register LOQ-dux as the
+boot default.
 
 ```bash
 nixos-rebuild dry-build --flake ~/dotnix#LOQ-dux
+sudo nixos-rebuild boot --flake ~/dotnix#LOQ
 sudo nixos-rebuild boot --flake ~/dotnix#LOQ-dux
 ```
 
-Reboot into the `LOQ-dux` generation. To return, select the earlier LOQ
-generation from systemd-boot or prepare a new LOQ generation with
-`sudo nixos-rebuild boot --flake ~/dotnix#LOQ` and reboot. Both profiles
-use the same home directory, so application data and DMS preferences
-remain available across boots.
+Reboot into the `LOQ-dux` generation. Choose the updated LOQ entry in
+systemd-boot to return to notchD. Updated generations share a home
+directory and keep both niri configs. Before booting a generation from
+before this change, move the writable `~/.config/niri/config.kdl` to a
+backup name so that generation's Home Manager can install its link there.
 
 ## 4. What is worth learning from DMS
 

@@ -1,4 +1,6 @@
 {
+  config,
+  lib,
   pkgs,
   username,
   ...
@@ -17,6 +19,11 @@
   ];
 
   networking.hostName = "LOQ";
+
+  # Give the dotnix layout its own path so both desktops can share a home.
+  systemd.user.services.niri.environment.NIRI_CONFIG = lib.mkIf (!config.programs.dux-shell.enable) (
+    "${config.home-manager.users.${username}.xdg.configHome}/niri/dotnix.kdl"
+  );
   networking.hosts."0.0.0.0" = [ "ingest.t3.codes" ];
 
   # Parallel source builds can fill RAM and swap, causing earlyoom to

@@ -10,6 +10,7 @@
     ./fuzzel.nix
   ];
 
+  xdg.configFile."niri/dotnix.kdl".source = ../dotfiles/niri/config.kdl;
   xdg.configFile."niri/shell.kdl".source = ../dotfiles/niri/notchd.kdl;
   home.packages = [ pkgs.awww ];
 

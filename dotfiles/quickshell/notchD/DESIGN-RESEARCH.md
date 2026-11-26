@@ -14,9 +14,11 @@ implementations, measured against Qt Quick's rendering model. No code changed.*
 2. **The biggest single win is not the spring.** It is (a) stop resizing the
    window on tab change, and (b) give content an in/out choreography. Both are
    small diffs in `NotchD.qml` and `HubSurface.qml`.
-3. **The tabs question is a hierarchy question.** notchD already has a horizontal
-   segmented control. It has 9 destinations, not 3, and 6 of them are drill-downs.
-   Adding a sideways strip would fix the wrong problem.
+3. **Vertical tabs fit all 9 destinations; horizontal cannot.** 9 rows of 36 px
+   take 324 px of the hub's 470 px height, while 9 horizontal segments need
+   ~940 px and leave nothing for the clock. But the count is a symptom: 6 of the
+   9 are drill-downs behind a Back arrow, so the real question is whether the hub
+   becomes a control centre with a flat 136 px rail or stays a three-tab HUD.
 4. **notchD already vendors the better engine.** `vendor/dux/VectorSpringMotion.qml`
    comes from dux-shell, and upstream dux uses the same spring with a *morph-progress*
    content crossfade, 600/49 stiffness, and an outgoing-content freeze. notchD kept
@@ -211,49 +213,97 @@ exceed the "notch-anchored" scope.
 
 ---
 
-## 5. Sideways tabs? No — the problem is hierarchy
+## 5. Tabs: horizontal or vertical?
 
-**The premise is inverted: notchD already has horizontal tabs.** `HubHeader.qml`
-is a centred segmented control (`Dashboard | Media | Performance`) with a sliding
-pill indicator, and it already shortens labels to `Home`/`Stats` below 250 px
-(`HubHeader.qml:64`). Nothing is vertical today.
+**Vertical wins on capacity, and that part of the instinct is right.** The hub is
+980×470. Nine destinations stack in 9×36 = 324 px of height with room for group
+headers and a footer; the same nine horizontally need ~940 px and leave nothing
+for the clock. A rail is the only orientation that can show all of them at once.
 
-**The real inventory is nine destinations:**
+**But capacity is not the binding constraint — hierarchy is.** notchD has 9
+destinations in two ranks:
 
 - primary: Dashboard, Media, Performance (`IslandState.qml:27`)
-- secondary, reached by drilling into dashboard tiles with a Back arrow
+- drill-downs behind dashboard tiles with a Back arrow
   (`HubSurface.qml:14, 250-256`): Calendar, Tray, Appearance, Activity, Clipboard, Limits
-- and `IslandState.qml:224-225` force-resets any secondary page to Dashboard when
-  the hub reopens, so they are not even sticky
 
-So "fit more tabs" would mean promoting six drill-downs into peers. Apple and
-NN/g both warn against mixing navigation scopes in one strip, and a 9-segment
-control at 940 px usable is ~104 px per label with no room for the clock.
+and `IslandState.qml:224-225` force-resets any drill-down to Dashboard when the
+hub reopens. That is the real defect: no direct access, no way to jump sideways
+between secondary pages, and a Back button in a surface that has no history.
 
-### Recommendation
+A rail fixes all three at once by flattening the 9 into peers. That is a
+different product: a control-centre window rather than a three-tab HUD. Whether
+that is good depends on what the hub is for, so here are the numbers.
 
-- **Keep the horizontal segmented control.** It scores 23/25 in the pattern
-  matrix (discoverability 5, space 5, keyboard 5, aesthetic fit 5) versus 21 for
-  a full-width tab strip and 17 for a vertical rail. A rail costs 48-64 px of
-  permanent width to solve a problem notchD does not have.
-- **Fix the control, don't replace it:**
-  - remove the hardcoded `/ 3` (`HubHeader.qml:22-27`) and use `root.tabs.length`
-  - widen the container for 5 segments: `Math.min(520, root.width * 0.6)`, giving
-    ~104 px per segment — the floor where labels still read
-  - stretch the indicator between the old and new index on non-adjacent jumps
-    (dots-hyprland's `AnimatedTabIndexPair`), instead of sliding through the
-    middle segment
-  - animate `Ctrl+Tab` (`IslandState.qml:41-43`)
-- **Cap primary tabs at 5.** If growth is wanted, the honest five are
-  `Overview | Media | Performance | System | Tools`, where System holds
-  Calendar/Tray/Activity/Appearance and Tools holds Clipboard/Limits as a
-  secondary segmented row. That is the maximum a 980 px hub can hold without
-  turning into a web app.
-- **Never put a drill-down page in the primary strip.** Calendar is a destination
-  you enter from a tile and leave with Back; making it a peer of Media implies it
-  is equally frequent, which it is not.
+### 5.1 Scored for this hub
 
----
+| Pattern | Discoverability | Space cost | Scalability | Keyboard | Notch fit | Total /25 |
+|---|---:|---:|---:|---:|---:|---:|
+| Horizontal segmented, 3 (today) | 5 | 5 | 2 | 5 | 5 | **22** |
+| Horizontal segmented, 5 | 5 | 5 | 3 | 5 | 5 | **23** |
+| **Vertical rail, labeled 136 px** | 5 | 3 | 5 | 5 | 3 | **21** |
+| Vertical rail, icons 64 px | 3 | 4 | 5 | 4 | 4 | **20** |
+| Horizontal tab strip, full width | 5 | 4 | 3 | 5 | 2 | 19 |
+
+### 5.2 What a rail buys beyond capacity
+
+- **No per-tab window resize.** `pageW`/`pageH` become one frame for all 9 pages,
+  which deletes the second spring morph on every tab change (cause #5 in §2.1).
+- **No Back dead-end** and no reset-to-Dashboard hack; any page is one click away.
+- **A cheaper tab morph.** The rail is chrome that stays put; only the content
+  pane crossfades (90 ms out / 160 ms in), so switching pages stops being a
+  geometry event at all.
+- **Keyboard fits the shape.** `Ctrl+1…9`, Up/Down, `j/k` all map naturally.
+
+### 5.3 What it costs
+
+| Rail width | Content pane | Dashboard columns (30 / 35 / 35) |
+|---|---|---|
+| 64 px (icons) | 868 px | 251 / 293 / 293 — unchanged layout |
+| 136 px (labeled) | 796 px | 229 / 267 / 267 — still ≥ the 760 px `wide` threshold, but ~16 % tighter |
+| 148 px (labeled) | 784 px | 226 / 264 / 264 |
+
+Page margins are 16 px and the rail gap 16 px (`HubSurface.qml:18`), so a 136 px
+rail leaves 796 px: above the dashboard's `wide >= 760` breakpoint
+(`HubSurface.qml:31`), so **no layout rework is needed** — the three columns just
+get tighter. Below ~120 px of rail the `wide` breakpoint fails and Dashboard
+collapses to one column, which is worse than the tabs it replaced.
+
+Height: 9 rows × 36 px + 2 group headers × 24 px + 16 px padding = 388 px of 470,
+leaving ~80 px for a footer (session, settings, close).
+
+### 5.4 Spec, if you take it
+
+- **Width 136 px**, rows 36 px, radius 10 px, 12 px labels DemiBold, 18 px icons,
+  selected row = accent container + accent ink (reuse `ActionButton` tokens).
+- **Two groups**, not nine peers: `Overview · Media · Performance` then a hairline
+  and `Activity · Calendar · Notifications/Tray · Clipboard · Appearance · Limits`.
+  Grouping keeps the primary three legible as primary without a second control.
+- **Header becomes** title + clock only; the segmented control and its indicator
+  go away, freeing the 352 px the control occupied.
+- **Indicator** slides vertically, 180 ms OutCubic, same token as today.
+- **Motion:** the rail fades with the shell (no separate animation, `hubReveal`
+  gated to start at 45 %), so it reads as part of the surface, not as content
+  flying in. The pane crossfades on tab change as in §3.3.
+- **Keyboard:** `Ctrl+1…9` direct, Up/Down within the rail, `Home/End` to ends,
+  focus ring per `DESIGN-STATUS.md` rules.
+
+### 5.5 Recommendation
+
+- **If the hub is a glanceable HUD** (dashboard-first, media as a peek): keep the
+  horizontal control, cap it at 5, and fix the `/ 3` hardcode and `Ctrl+Tab`
+  animation. A rail buys capacity you do not need for 3 peers.
+- **If the hub is becoming the control centre** (9 real destinations, used
+  daily): take the **labeled 136 px rail**. It is the only layout that makes all
+  9 reachable in one click, and it removes the per-tab resize, the Back button
+  and the reopen reset — three separate defects for one structural change.
+- **Do not** take an icon-only rail. Nine unlabeled icons in a transient surface
+  is a memory test; labels are the whole reason vertical wins here.
+
+My read: the drift is already toward control centre (nine pages, clipboard,
+calendar, limits, appearance), so the rail is the honest structure — but it is a
+product decision, not a polish task, and it should land after the P0 motion fixes
+so the crossfade choreography it depends on already exists.
 
 ## 6. Implementation order
 
@@ -278,7 +328,8 @@ album art, and rebuild the input `Region` only on settle or on an 8 px threshold
 **P2 — breadth**
 
 Per-output pill, live-activity TTL stack, notification mirroring + allowlist,
-auto-DND/stealth on screen share, unified OSD, 5-tab growth.
+auto-DND/stealth on screen share, unified OSD, and the 136 px rail if §5.5 is
+accepted.
 
 **Verification.** `tests/notchd-polish/run.sh` covers behaviour offscreen, but the
 software backend does not render `ClippingRectangle` or measure frame pacing.

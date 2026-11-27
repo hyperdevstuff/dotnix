@@ -10,5 +10,7 @@
     after = [ "niri.service" ];
     partOf = [ "niri.service" ];
     enableDefaultPath = false;
+    # DMS uses TERMINAL for Terminal=true entries such as btop.
+    environment.TERMINAL = "kitty";
   };
 }
